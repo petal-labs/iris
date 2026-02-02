@@ -1,0 +1,31 @@
+# Sample agent specification for testing
+name: test-agent
+entry: start
+
+nodes:
+  - id: start
+    type: prompt
+    config:
+      template: "Process the following input: {{.input}}"
+
+  - id: process
+    type: llm
+    config:
+      model: gpt-4o
+      temperature: 0.7
+
+  - id: validate
+    type: function
+    config:
+      name: validate_output
+
+  - id: end
+    type: output
+
+edges:
+  - from: start
+    to: process
+  - from: process
+    to: validate
+  - from: validate
+    to: end

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Pre-commit hook to ensure Go code is properly formatted
+# Install with: ./scripts/setup-hooks.sh
+
+# Get list of staged Go files
+STAGED_GO_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$')
+
+if [ -z "$STAGED_GO_FILES" ]; then
+    exit 0
+fi
+
+# Check if gofmt would make changes
+UNFORMATTED=$(gofmt -l $STAGED_GO_FILES 2>&1)
+
+if [ -n "$UNFORMATTED" ]; then
+    echo "ERROR: The following Go files are not properly formatted:"
+    echo ""
+    for file in $UNFORMATTED; do
+        echo "  $file"
+    done
+    echo ""
+    echo "Run 'make fmt' or 'gofmt -w .' to fix formatting, then stage the changes."
+    exit 1
+fi
+
+# Run go vet on staged files
+go vet ./... 2>&1
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "ERROR: go vet found issues. Please fix them before committing."
+    exit 1
+fi
+
+exit 0

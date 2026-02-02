@@ -1,0 +1,44 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+
+  settings:
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+      exclude-functions:
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (net/http.ResponseWriter).Write
+        - (*encoding/json.Encoder).Encode
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
+        - nilness
+        - unusedwrite
+    staticcheck:
+      checks:
+        - "all"
+        - "-SA4023"
+        - "-SA4031"
+        - "-QF1011"
+
+  exclusions:
+    rules:
+      # Allow unchecked errors in tests
+      - path: _test\.go
+        linters:
+          - errcheck
