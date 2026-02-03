@@ -6,9 +6,9 @@
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-LDFLAGS := -ldflags "-X github.com/erikhoward/iris/cli/commands.Version=$(VERSION) \
-	-X github.com/erikhoward/iris/cli/commands.Commit=$(COMMIT) \
-	-X github.com/erikhoward/iris/cli/commands.BuildDate=$(BUILD_DATE)"
+LDFLAGS := -ldflags "-X github.com/petal-labs/iris/cli/commands.Version=$(VERSION) \
+	-X github.com/petal-labs/iris/cli/commands.Commit=$(COMMIT) \
+	-X github.com/petal-labs/iris/cli/commands.BuildDate=$(BUILD_DATE)"
 
 # Default target
 all: lint test build

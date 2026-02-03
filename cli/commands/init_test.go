@@ -139,7 +139,6 @@ func TestInitCreatesProjectStructure(t *testing.T) {
 	// Verify directory structure
 	dirs := []string{
 		projectPath,
-		filepath.Join(projectPath, "agents"),
 		filepath.Join(projectPath, "tools"),
 	}
 
@@ -156,7 +155,6 @@ func TestInitCreatesProjectStructure(t *testing.T) {
 
 	// Verify .gitkeep files
 	gitkeeps := []string{
-		filepath.Join(projectPath, "agents", ".gitkeep"),
 		filepath.Join(projectPath, "tools", ".gitkeep"),
 	}
 
@@ -225,7 +223,6 @@ func runInitWithPath(projectPath, provider string) error {
 
 	dirs := []string{
 		projectPath,
-		filepath.Join(projectPath, "agents"),
 		filepath.Join(projectPath, "tools"),
 	}
 
@@ -236,7 +233,6 @@ func runInitWithPath(projectPath, provider string) error {
 	}
 
 	gitkeepDirs := []string{
-		filepath.Join(projectPath, "agents"),
 		filepath.Join(projectPath, "tools"),
 	}
 

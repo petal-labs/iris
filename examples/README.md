@@ -4,7 +4,7 @@ This directory contains runnable examples demonstrating the Iris SDK features.
 
 ## Module Structure
 
-Examples are in a separate Go module (`github.com/erikhoward/iris/examples`) that depends on the main Iris SDK. The project uses a Go workspace (`go.work`) for seamless local development.
+Examples are in a separate Go module (`github.com/petal-labs/iris/examples`) that depends on the main Iris SDK. The project uses a Go workspace (`go.work`) for seamless local development.
 
 You can run examples from either:
 - **Project root**: Uses the workspace to resolve the local SDK
@@ -68,18 +68,6 @@ cd tools/weather
 go run main.go
 ```
 
-## Agent Examples
-
-### Simple Agent Graph (`agents/simple`)
-
-Shows how to build and execute a simple workflow using the graph framework.
-This example doesn't require an API key.
-
-```bash
-cd agents/simple
-go run main.go
-```
-
 ## Running All Examples
 
 ### From Project Root (Recommended)
@@ -96,7 +84,6 @@ go run ./examples/chat/streaming
 go run ./examples/chat/system-message
 go run ./examples/chat/conversation
 go run ./examples/tools/weather
-go run ./examples/agents/simple
 ```
 
 ### From Examples Directory
@@ -130,21 +117,4 @@ Channels flow with data's stream,
 Concurrency fulfills the dream.
 ---
 Tokens: 30 prompt + 32 completion = 62 total
-```
-
-### Simple Agent Graph
-```
-=== Starting Graph Execution ===
-
-[input] Processing input...
-[input] Original: "  Iris Agent Framework  "
-[transform] Transforming text...
-[transform] Uppercase: IRIS AGENT FRAMEWORK
-[output] Final results:
-  Original:    Iris Agent Framework
-  Uppercase: IRIS AGENT FRAMEWORK
-  Lowercase: iris agent framework
-  Length:    20
-
-=== Execution Complete ===
 ```

@@ -21,7 +21,6 @@ var initCmd = &cobra.Command{
 Creates a project directory with:
   - main.go: A starter Go file using the Iris SDK
   - iris.yaml: Project configuration
-  - agents/: Directory for agent definitions
   - tools/: Directory for custom tools
 
 Example:
@@ -54,7 +53,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Create directory structure
 	dirs := []string{
 		projectPath,
-		filepath.Join(projectPath, "agents"),
 		filepath.Join(projectPath, "tools"),
 	}
 
@@ -66,7 +64,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Create .gitkeep files in empty directories
 	gitkeepDirs := []string{
-		filepath.Join(projectPath, "agents"),
 		filepath.Join(projectPath, "tools"),
 	}
 
