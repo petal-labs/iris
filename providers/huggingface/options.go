@@ -36,6 +36,10 @@ type Config struct {
 	// Defaults to https://router.huggingface.co
 	BaseURL string
 
+	// HubAPIBaseURL is the Hub API base URL for model discovery.
+	// Defaults to https://huggingface.co/api
+	HubAPIBaseURL string
+
 	// HTTPClient is the HTTP client to use. Defaults to http.DefaultClient.
 	HTTPClient *http.Client
 
@@ -93,5 +97,13 @@ func WithTimeout(d time.Duration) Option {
 func WithProviderPolicy(policy string) Option {
 	return func(c *Config) {
 		c.ProviderPolicy = policy
+	}
+}
+
+// WithHubAPIBaseURL sets the Hub API base URL for model discovery.
+// This is primarily useful for testing.
+func WithHubAPIBaseURL(url string) Option {
+	return func(c *Config) {
+		c.HubAPIBaseURL = url
 	}
 }
