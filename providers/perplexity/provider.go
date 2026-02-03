@@ -16,7 +16,7 @@ type Perplexity struct {
 // New creates a new Perplexity provider with the given API key and options.
 func New(apiKey string, opts ...Option) *Perplexity {
 	cfg := Config{
-		APIKey:     apiKey,
+		APIKey:     core.NewSecret(apiKey),
 		BaseURL:    DefaultBaseURL,
 		HTTPClient: http.DefaultClient,
 	}
@@ -56,7 +56,7 @@ func (p *Perplexity) buildHeaders() http.Header {
 	headers := make(http.Header)
 
 	// Required headers
-	headers.Set("Authorization", "Bearer "+p.config.APIKey)
+	headers.Set("Authorization", "Bearer "+p.config.APIKey.Expose())
 	headers.Set("Content-Type", "application/json")
 
 	// Copy any extra headers

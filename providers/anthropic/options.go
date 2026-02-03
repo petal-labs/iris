@@ -3,12 +3,15 @@ package anthropic
 import (
 	"net/http"
 	"time"
+
+	"github.com/petal-labs/iris/core"
 )
 
 // Config holds configuration for the Anthropic provider.
 type Config struct {
 	// APIKey is the Anthropic API key (required).
-	APIKey string
+	// Stored as Secret to prevent accidental logging.
+	APIKey core.Secret
 
 	// BaseURL is the API base URL. Defaults to https://api.anthropic.com
 	BaseURL string

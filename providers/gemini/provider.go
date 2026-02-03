@@ -16,7 +16,7 @@ type Gemini struct {
 // New creates a new Gemini provider with the given API key and options.
 func New(apiKey string, opts ...Option) *Gemini {
 	cfg := Config{
-		APIKey:     apiKey,
+		APIKey:     core.NewSecret(apiKey),
 		BaseURL:    DefaultBaseURL,
 		HTTPClient: http.DefaultClient,
 	}
@@ -56,7 +56,7 @@ func (p *Gemini) buildHeaders() http.Header {
 	headers := make(http.Header)
 
 	// Required headers for Gemini API
-	headers.Set("x-goog-api-key", p.config.APIKey)
+	headers.Set("x-goog-api-key", p.config.APIKey.Expose())
 	headers.Set("Content-Type", "application/json")
 
 	// Copy any extra headers

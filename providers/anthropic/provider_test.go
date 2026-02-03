@@ -11,8 +11,8 @@ import (
 func TestNew(t *testing.T) {
 	p := New("test-key")
 
-	if p.config.APIKey != "test-key" {
-		t.Errorf("APIKey = %q, want 'test-key'", p.config.APIKey)
+	if p.config.APIKey.Expose() != "test-key" {
+		t.Errorf("APIKey = %q, want 'test-key'", p.config.APIKey.Expose())
 	}
 
 	if p.config.BaseURL != DefaultBaseURL {

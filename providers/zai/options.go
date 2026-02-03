@@ -4,6 +4,8 @@ package zai
 import (
 	"net/http"
 	"time"
+
+	"github.com/petal-labs/iris/core"
 )
 
 // DefaultBaseURL is the default base URL for the Z.ai API (coding endpoint).
@@ -12,7 +14,8 @@ const DefaultBaseURL = "https://api.z.ai/api/coding/paas/v4"
 // Config holds the configuration for the Z.ai provider.
 type Config struct {
 	// APIKey is the API key for authentication.
-	APIKey string
+	// Stored as Secret to prevent accidental logging.
+	APIKey core.Secret
 
 	// BaseURL is the base URL for the API. Defaults to DefaultBaseURL.
 	BaseURL string

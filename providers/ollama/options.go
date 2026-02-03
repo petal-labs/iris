@@ -3,6 +3,8 @@ package ollama
 import (
 	"net/http"
 	"time"
+
+	"github.com/petal-labs/iris/core"
 )
 
 // Default base URLs for Ollama API.
@@ -17,7 +19,8 @@ const (
 // Config holds the configuration for the Ollama provider.
 type Config struct {
 	// APIKey is the API key for Ollama Cloud. Optional for local instances.
-	APIKey string
+	// Stored as Secret to prevent accidental logging.
+	APIKey core.Secret
 
 	// BaseURL is the base URL for the Ollama API.
 	// Defaults to DefaultLocalURL.
@@ -41,7 +44,7 @@ type Option func(*Config)
 // This is optional for local Ollama instances.
 func WithAPIKey(key string) Option {
 	return func(c *Config) {
-		c.APIKey = key
+		c.APIKey = core.NewSecret(key)
 	}
 }
 

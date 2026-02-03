@@ -3,6 +3,8 @@ package huggingface
 import (
 	"net/http"
 	"time"
+
+	"github.com/petal-labs/iris/core"
 )
 
 // DefaultBaseURL is the default Hugging Face inference router URL.
@@ -27,7 +29,8 @@ const (
 type Config struct {
 	// APIKey is the Hugging Face token (required).
 	// Must have "Make calls to Inference Providers" permission.
-	APIKey string
+	// Stored as Secret to prevent accidental logging.
+	APIKey core.Secret
 
 	// BaseURL is the inference API base URL.
 	// Defaults to https://router.huggingface.co
