@@ -1,7 +1,6 @@
 package keystore
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -287,29 +286,6 @@ func (f *FileKeystore) decryptV2(ciphertext []byte) ([]byte, error) {
 	return gcm.Open(nil, nonce, encrypted, header)
 }
 
-// encryptV1 encrypts data using AES-256-GCM (legacy v1 format).
-func (f *FileKeystore) encryptV1(plaintext []byte) ([]byte, error) {
-	key := f.deriveKeyFromMasterV1()
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
-	}
-
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, err
-	}
-
-	// Prepend nonce to ciphertext
-	return gcm.Seal(nonce, nonce, plaintext, nil), nil
-}
-
 // decryptV1 decrypts data using AES-256-GCM (legacy v1 format).
 func (f *FileKeystore) decryptV1(ciphertext []byte) ([]byte, error) {
 	key := f.deriveKeyFromMasterV1()
@@ -436,11 +412,3 @@ func (f *FileKeystore) IsV2Format() (bool, error) {
 
 // Ensure FileKeystore implements Keystore
 var _ Keystore = (*FileKeystore)(nil)
-
-// Legacy function alias for backward compatibility
-var deriveKey = deriveKeyV1
-
-// Helper for testing: check if two byte slices have the same prefix
-func hasPrefix(data, prefix []byte) bool {
-	return len(data) >= len(prefix) && bytes.Equal(data[:len(prefix)], prefix)
-}
