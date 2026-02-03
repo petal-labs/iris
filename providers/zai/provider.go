@@ -2,10 +2,34 @@ package zai
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// DefaultAPIKeyEnvVar is the environment variable name for the Z.ai API key.
+const DefaultAPIKeyEnvVar = "ZAI_API_KEY"
+
+// ErrAPIKeyNotFound is returned when the API key environment variable is not set.
+var ErrAPIKeyNotFound = errors.New("zai: ZAI_API_KEY environment variable not set")
+
+// NewFromEnv creates a new Z.ai provider using the ZAI_API_KEY environment variable.
+// This is a convenience factory for quick setup:
+//
+//	provider, err := zai.NewFromEnv()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	client := core.NewClient(provider)
+func NewFromEnv(opts ...Option) (*Zai, error) {
+	apiKey := os.Getenv(DefaultAPIKeyEnvVar)
+	if apiKey == "" {
+		return nil, ErrAPIKeyNotFound
+	}
+	return New(apiKey, opts...), nil
+}
 
 // Zai is an LLM provider implementation for the Z.ai GLM API.
 // Zai is safe for concurrent use.

@@ -2,10 +2,34 @@ package perplexity
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// DefaultAPIKeyEnvVar is the environment variable name for the Perplexity API key.
+const DefaultAPIKeyEnvVar = "PERPLEXITY_API_KEY"
+
+// ErrAPIKeyNotFound is returned when the API key environment variable is not set.
+var ErrAPIKeyNotFound = errors.New("perplexity: PERPLEXITY_API_KEY environment variable not set")
+
+// NewFromEnv creates a new Perplexity provider using the PERPLEXITY_API_KEY environment variable.
+// This is a convenience factory for quick setup:
+//
+//	provider, err := perplexity.NewFromEnv()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	client := core.NewClient(provider)
+func NewFromEnv(opts ...Option) (*Perplexity, error) {
+	apiKey := os.Getenv(DefaultAPIKeyEnvVar)
+	if apiKey == "" {
+		return nil, ErrAPIKeyNotFound
+	}
+	return New(apiKey, opts...), nil
+}
 
 // Perplexity is an LLM provider implementation for the Perplexity Search API.
 // Perplexity is safe for concurrent use.

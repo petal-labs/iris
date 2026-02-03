@@ -914,3 +914,207 @@ func TestValidateEmptyMessage(t *testing.T) {
 		t.Error("validate() should fail for empty message")
 	}
 }
+
+func TestTimeout(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	builder := client.Chat("test-model").
+		User("Hello").
+		Timeout(30 * time.Second)
+
+	if builder.timeout != 30*time.Second {
+		t.Errorf("timeout = %v, want 30s", builder.timeout)
+	}
+}
+
+func TestTimeoutAppliedToGetResponse(t *testing.T) {
+	// Create a provider that blocks until context is cancelled
+	provider := &mockProvider{
+		id: "test",
+		chatFunc: func(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(5 * time.Second):
+				return &ChatResponse{Output: "Should not reach"}, nil
+			}
+		},
+	}
+
+	client := NewClient(provider, WithRetryPolicy(NewRetryPolicy(RetryConfig{MaxRetries: 0})))
+
+	start := time.Now()
+	_, err := client.Chat("test-model").
+		User("Hello").
+		Timeout(50 * time.Millisecond).
+		GetResponse(context.Background())
+	elapsed := time.Since(start)
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("err = %v, want context.DeadlineExceeded", err)
+	}
+
+	// Should complete quickly due to timeout
+	if elapsed > 500*time.Millisecond {
+		t.Errorf("elapsed = %v, expected much less due to timeout", elapsed)
+	}
+}
+
+func TestTimeoutNotAppliedWhenContextHasDeadline(t *testing.T) {
+	callCount := 0
+	provider := &mockProvider{
+		id: "test",
+		chatFunc: func(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+			callCount++
+			deadline, ok := ctx.Deadline()
+			if !ok {
+				t.Error("expected context to have deadline")
+			}
+			// The deadline should be the one from the external context (100ms)
+			// not from the builder's timeout (50ms)
+			timeUntilDeadline := time.Until(deadline)
+			if timeUntilDeadline < 80*time.Millisecond {
+				t.Errorf("deadline too soon (%v), builder timeout may have overridden external context", timeUntilDeadline)
+			}
+			return &ChatResponse{Output: "OK"}, nil
+		},
+	}
+
+	client := NewClient(provider)
+
+	// External context with longer deadline
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	// Builder with shorter timeout (should be ignored since ctx already has deadline)
+	_, err := client.Chat("test-model").
+		User("Hello").
+		Timeout(50 * time.Millisecond).
+		GetResponse(ctx)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if callCount != 1 {
+		t.Errorf("callCount = %d, want 1", callCount)
+	}
+}
+
+func TestClone(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	// Create a builder with various settings
+	tool := &mockTool{name: "test-tool"}
+	original := client.Chat("gpt-4").
+		System("You are helpful").
+		User("Original question").
+		Temperature(0.7).
+		MaxTokens(100).
+		Timeout(30 * time.Second).
+		Tools(tool).
+		WebSearch().
+		FileSearch("vs_abc123")
+
+	// Clone it
+	clone := original.Clone()
+
+	// Verify clone has the same values
+	if clone.req.Model != "gpt-4" {
+		t.Errorf("clone.Model = %v, want gpt-4", clone.req.Model)
+	}
+	if len(clone.req.Messages) != 2 {
+		t.Errorf("len(clone.Messages) = %d, want 2", len(clone.req.Messages))
+	}
+	if clone.req.Messages[0].Content != "You are helpful" {
+		t.Errorf("clone.Messages[0].Content = %v, want 'You are helpful'", clone.req.Messages[0].Content)
+	}
+	if *clone.req.Temperature != 0.7 {
+		t.Errorf("clone.Temperature = %v, want 0.7", *clone.req.Temperature)
+	}
+	if *clone.req.MaxTokens != 100 {
+		t.Errorf("clone.MaxTokens = %v, want 100", *clone.req.MaxTokens)
+	}
+	if clone.timeout != 30*time.Second {
+		t.Errorf("clone.timeout = %v, want 30s", clone.timeout)
+	}
+	if len(clone.req.Tools) != 1 {
+		t.Errorf("len(clone.Tools) = %d, want 1", len(clone.req.Tools))
+	}
+	if len(clone.req.BuiltInTools) != 2 {
+		t.Errorf("len(clone.BuiltInTools) = %d, want 2", len(clone.req.BuiltInTools))
+	}
+	if clone.req.ToolResources == nil || len(clone.req.ToolResources.FileSearch.VectorStoreIDs) != 1 {
+		t.Error("clone.ToolResources not copied correctly")
+	}
+}
+
+func TestCloneIndependence(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	original := client.Chat("gpt-4").
+		System("You are helpful").
+		Temperature(0.7)
+
+	clone := original.Clone()
+
+	// Modify the clone
+	clone.User("Clone question")
+	temp := float32(0.9)
+	clone.req.Temperature = &temp
+
+	// Original should be unchanged
+	if len(original.req.Messages) != 1 {
+		t.Errorf("original.Messages modified after clone modification, len = %d", len(original.req.Messages))
+	}
+	if *original.req.Temperature != 0.7 {
+		t.Errorf("original.Temperature = %v, want 0.7", *original.req.Temperature)
+	}
+
+	// Clone should have modifications
+	if len(clone.req.Messages) != 2 {
+		t.Errorf("clone.Messages len = %d, want 2", len(clone.req.Messages))
+	}
+}
+
+func TestCloneReuse(t *testing.T) {
+	callCount := 0
+	provider := &mockProvider{
+		id: "test",
+		chatFunc: func(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+			callCount++
+			return &ChatResponse{Output: "Response " + string(rune('0'+callCount))}, nil
+		},
+	}
+	client := NewClient(provider)
+
+	// Create a base builder
+	base := client.Chat("gpt-4").
+		System("You are helpful").
+		Temperature(0.7)
+
+	// Use it for multiple different requests
+	resp1, err1 := base.Clone().User("Question 1").GetResponse(context.Background())
+	resp2, err2 := base.Clone().User("Question 2").GetResponse(context.Background())
+
+	if err1 != nil {
+		t.Fatalf("err1 = %v", err1)
+	}
+	if err2 != nil {
+		t.Fatalf("err2 = %v", err2)
+	}
+
+	if resp1.Output != "Response 1" {
+		t.Errorf("resp1.Output = %v, want 'Response 1'", resp1.Output)
+	}
+	if resp2.Output != "Response 2" {
+		t.Errorf("resp2.Output = %v, want 'Response 2'", resp2.Output)
+	}
+
+	// Both calls should have happened
+	if callCount != 2 {
+		t.Errorf("callCount = %d, want 2", callCount)
+	}
+}

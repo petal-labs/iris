@@ -42,8 +42,8 @@ var (
 	ErrNotSupported = errors.New("operation not supported")
 )
 
-// Validation errors.
+// Validation errors with actionable guidance.
 var (
-	ErrModelRequired = errors.New("model required")
-	ErrNoMessages    = errors.New("no messages")
+	ErrModelRequired = errors.New("model required: pass a model ID to Client.Chat(), e.g., client.Chat(\"gpt-4\")")
+	ErrNoMessages    = errors.New("no messages: add at least one message using .System(), .User(), or .Assistant()")
 )

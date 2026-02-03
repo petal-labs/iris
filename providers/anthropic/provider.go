@@ -2,10 +2,36 @@ package anthropic
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// DefaultAPIKeyEnvVar is the environment variable name for the Anthropic API key.
+const DefaultAPIKeyEnvVar = "ANTHROPIC_API_KEY"
+
+// ErrAPIKeyNotFound is returned when the API key environment variable is not set.
+var ErrAPIKeyNotFound = errors.New("anthropic: ANTHROPIC_API_KEY environment variable not set")
+
+// NewFromEnv creates a new Anthropic provider using the ANTHROPIC_API_KEY environment variable.
+// This is a convenience factory for quick setup:
+//
+//	provider, err := anthropic.NewFromEnv()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	client := core.NewClient(provider)
+//
+// Additional options can be passed to customize the provider.
+func NewFromEnv(opts ...Option) (*Anthropic, error) {
+	apiKey := os.Getenv(DefaultAPIKeyEnvVar)
+	if apiKey == "" {
+		return nil, ErrAPIKeyNotFound
+	}
+	return New(apiKey, opts...), nil
+}
 
 // Anthropic is an LLM provider implementation for the Anthropic API.
 // Anthropic is safe for concurrent use.

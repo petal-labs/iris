@@ -2,10 +2,58 @@ package ollama
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// Environment variable names for Ollama configuration.
+const (
+	OllamaAPIKeyEnvVar = "OLLAMA_API_KEY"
+	OllamaHostEnvVar   = "OLLAMA_HOST"
+)
+
+// ErrAPIKeyNotFound is returned when the API key environment variable is not set.
+var ErrAPIKeyNotFound = errors.New("ollama: OLLAMA_API_KEY environment variable not set")
+
+// NewLocal creates a new Ollama provider for a local Ollama instance.
+// This is a convenience factory for quick local setup:
+//
+//	provider := ollama.NewLocal()
+//	client := core.NewClient(provider)
+//
+// If OLLAMA_HOST is set, it uses that URL; otherwise defaults to http://localhost:11434.
+func NewLocal(opts ...Option) *Ollama {
+	baseOpts := make([]Option, 0, len(opts)+1)
+
+	// Check for custom host from environment
+	if host := os.Getenv(OllamaHostEnvVar); host != "" {
+		baseOpts = append(baseOpts, WithBaseURL(host))
+	}
+
+	baseOpts = append(baseOpts, opts...)
+	return New(baseOpts...)
+}
+
+// NewCloudFromEnv creates a new Ollama provider for Ollama Cloud using the OLLAMA_API_KEY environment variable.
+// This is a convenience factory for quick cloud setup:
+//
+//	provider, err := ollama.NewCloudFromEnv()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	client := core.NewClient(provider)
+func NewCloudFromEnv(opts ...Option) (*Ollama, error) {
+	apiKey := os.Getenv(OllamaAPIKeyEnvVar)
+	if apiKey == "" {
+		return nil, ErrAPIKeyNotFound
+	}
+	baseOpts := []Option{WithCloud(), WithAPIKey(apiKey)}
+	baseOpts = append(baseOpts, opts...)
+	return New(baseOpts...), nil
+}
 
 // Ollama is an LLM provider implementation for the Ollama API.
 // Ollama is safe for concurrent use.

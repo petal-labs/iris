@@ -2,10 +2,34 @@ package xai
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// DefaultAPIKeyEnvVar is the environment variable name for the xAI API key.
+const DefaultAPIKeyEnvVar = "XAI_API_KEY"
+
+// ErrAPIKeyNotFound is returned when the API key environment variable is not set.
+var ErrAPIKeyNotFound = errors.New("xai: XAI_API_KEY environment variable not set")
+
+// NewFromEnv creates a new xAI provider using the XAI_API_KEY environment variable.
+// This is a convenience factory for quick setup:
+//
+//	provider, err := xai.NewFromEnv()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	client := core.NewClient(provider)
+func NewFromEnv(opts ...Option) (*Xai, error) {
+	apiKey := os.Getenv(DefaultAPIKeyEnvVar)
+	if apiKey == "" {
+		return nil, ErrAPIKeyNotFound
+	}
+	return New(apiKey, opts...), nil
+}
 
 // Xai is an LLM provider implementation for the xAI Grok API.
 // Xai is safe for concurrent use.

@@ -1,6 +1,8 @@
 package openai
 
 import (
+	"errors"
+	"os"
 	"testing"
 
 	"github.com/petal-labs/iris/core"
@@ -221,5 +223,77 @@ func TestBuildHeadersAllOptions(t *testing.T) {
 		if got != want {
 			t.Errorf("%s = %q, want %q", key, got, want)
 		}
+	}
+}
+
+func TestNewFromEnvSuccess(t *testing.T) {
+	// Set the environment variable
+	originalValue := os.Getenv(DefaultAPIKeyEnvVar)
+	os.Setenv(DefaultAPIKeyEnvVar, "sk-test-from-env-123")
+	defer func() {
+		if originalValue != "" {
+			os.Setenv(DefaultAPIKeyEnvVar, originalValue)
+		} else {
+			os.Unsetenv(DefaultAPIKeyEnvVar)
+		}
+	}()
+
+	p, err := NewFromEnv()
+	if err != nil {
+		t.Fatalf("NewFromEnv() error = %v", err)
+	}
+
+	if p == nil {
+		t.Fatal("NewFromEnv() returned nil provider")
+	}
+
+	// Verify the API key was set correctly
+	headers := p.buildHeaders()
+	auth := headers.Get("Authorization")
+	if auth != "Bearer sk-test-from-env-123" {
+		t.Errorf("Authorization = %q, want %q", auth, "Bearer sk-test-from-env-123")
+	}
+}
+
+func TestNewFromEnvMissingKey(t *testing.T) {
+	// Unset the environment variable
+	originalValue := os.Getenv(DefaultAPIKeyEnvVar)
+	os.Unsetenv(DefaultAPIKeyEnvVar)
+	defer func() {
+		if originalValue != "" {
+			os.Setenv(DefaultAPIKeyEnvVar, originalValue)
+		}
+	}()
+
+	_, err := NewFromEnv()
+	if err == nil {
+		t.Fatal("NewFromEnv() should return error when env var is not set")
+	}
+
+	if !errors.Is(err, ErrAPIKeyNotFound) {
+		t.Errorf("err = %v, want ErrAPIKeyNotFound", err)
+	}
+}
+
+func TestNewFromEnvWithOptions(t *testing.T) {
+	// Set the environment variable
+	originalValue := os.Getenv(DefaultAPIKeyEnvVar)
+	os.Setenv(DefaultAPIKeyEnvVar, "sk-test-from-env-456")
+	defer func() {
+		if originalValue != "" {
+			os.Setenv(DefaultAPIKeyEnvVar, originalValue)
+		} else {
+			os.Unsetenv(DefaultAPIKeyEnvVar)
+		}
+	}()
+
+	p, err := NewFromEnv(WithOrgID("org-from-env"))
+	if err != nil {
+		t.Fatalf("NewFromEnv() error = %v", err)
+	}
+
+	headers := p.buildHeaders()
+	if headers.Get("OpenAI-Organization") != "org-from-env" {
+		t.Errorf("Organization header not set correctly")
 	}
 }

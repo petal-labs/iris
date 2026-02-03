@@ -2,10 +2,42 @@ package huggingface
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// Environment variable names for the Hugging Face API token.
+const (
+	HFTokenEnvVar          = "HF_TOKEN"
+	HuggingFaceTokenEnvVar = "HUGGINGFACE_TOKEN"
+)
+
+// ErrAPIKeyNotFound is returned when no API token environment variable is set.
+var ErrAPIKeyNotFound = errors.New("huggingface: HF_TOKEN or HUGGINGFACE_TOKEN environment variable not set")
+
+// NewFromEnv creates a new Hugging Face provider using the HF_TOKEN or HUGGINGFACE_TOKEN environment variable.
+// HF_TOKEN takes precedence if both are set.
+//
+// This is a convenience factory for quick setup:
+//
+//	provider, err := huggingface.NewFromEnv()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	client := core.NewClient(provider)
+func NewFromEnv(opts ...Option) (*HuggingFace, error) {
+	apiKey := os.Getenv(HFTokenEnvVar)
+	if apiKey == "" {
+		apiKey = os.Getenv(HuggingFaceTokenEnvVar)
+	}
+	if apiKey == "" {
+		return nil, ErrAPIKeyNotFound
+	}
+	return New(apiKey, opts...), nil
+}
 
 // HuggingFace is an LLM provider implementation for Hugging Face Inference Providers.
 // HuggingFace is safe for concurrent use.

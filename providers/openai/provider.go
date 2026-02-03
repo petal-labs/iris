@@ -2,10 +2,38 @@ package openai
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// DefaultAPIKeyEnvVar is the environment variable name for the OpenAI API key.
+const DefaultAPIKeyEnvVar = "OPENAI_API_KEY"
+
+// ErrAPIKeyNotFound is returned when the API key environment variable is not set.
+var ErrAPIKeyNotFound = errors.New("openai: OPENAI_API_KEY environment variable not set")
+
+// NewFromEnv creates a new OpenAI provider using the OPENAI_API_KEY environment variable.
+// This is a convenience factory for quick setup:
+//
+//	provider, err := openai.NewFromEnv()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	client := core.NewClient(provider)
+//
+// Additional options can be passed to customize the provider:
+//
+//	provider, err := openai.NewFromEnv(openai.WithOrgID("org-xxx"))
+func NewFromEnv(opts ...Option) (*OpenAI, error) {
+	apiKey := os.Getenv(DefaultAPIKeyEnvVar)
+	if apiKey == "" {
+		return nil, ErrAPIKeyNotFound
+	}
+	return New(apiKey, opts...), nil
+}
 
 // OpenAI is an LLM provider implementation for the OpenAI API.
 // OpenAI is safe for concurrent use.
