@@ -3,12 +3,15 @@ package perplexity
 import (
 	"net/http"
 	"time"
+
+	"github.com/petal-labs/iris/core"
 )
 
 // Config holds configuration for the Perplexity provider.
 type Config struct {
 	// APIKey is the Perplexity API key (required).
-	APIKey string
+	// Stored as Secret to prevent accidental logging.
+	APIKey core.Secret
 
 	// BaseURL is the API base URL. Defaults to https://api.perplexity.ai
 	BaseURL string

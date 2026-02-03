@@ -16,7 +16,7 @@ type Anthropic struct {
 // New creates a new Anthropic provider with the given API key and options.
 func New(apiKey string, opts ...Option) *Anthropic {
 	cfg := Config{
-		APIKey:       apiKey,
+		APIKey:       core.NewSecret(apiKey),
 		BaseURL:      DefaultBaseURL,
 		HTTPClient:   http.DefaultClient,
 		Version:      DefaultVersion,
@@ -58,7 +58,7 @@ func (p *Anthropic) buildHeaders() http.Header {
 	headers := make(http.Header)
 
 	// Required headers for Anthropic API
-	headers.Set("x-api-key", p.config.APIKey)
+	headers.Set("x-api-key", p.config.APIKey.Expose())
 	headers.Set("anthropic-version", p.config.Version)
 	headers.Set("Content-Type", "application/json")
 

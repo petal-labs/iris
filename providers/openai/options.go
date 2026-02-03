@@ -3,12 +3,15 @@ package openai
 import (
 	"net/http"
 	"time"
+
+	"github.com/petal-labs/iris/core"
 )
 
 // Config holds configuration for the OpenAI provider.
 type Config struct {
 	// APIKey is the OpenAI API key (required).
-	APIKey string
+	// Stored as Secret to prevent accidental logging.
+	APIKey core.Secret
 
 	// BaseURL is the API base URL. Defaults to https://api.openai.com/v1
 	BaseURL string

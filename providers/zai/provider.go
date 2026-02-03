@@ -16,7 +16,7 @@ type Zai struct {
 // New creates a new Z.ai provider with the given API key and options.
 func New(apiKey string, opts ...Option) *Zai {
 	cfg := Config{
-		APIKey:     apiKey,
+		APIKey:     core.NewSecret(apiKey),
 		BaseURL:    DefaultBaseURL,
 		HTTPClient: http.DefaultClient,
 	}
@@ -56,7 +56,7 @@ func (p *Zai) buildHeaders() http.Header {
 	headers := make(http.Header)
 
 	// Required headers
-	headers.Set("Authorization", "Bearer "+p.config.APIKey)
+	headers.Set("Authorization", "Bearer "+p.config.APIKey.Expose())
 	headers.Set("Content-Type", "application/json")
 	headers.Set("Accept-Language", "en-US,en")
 

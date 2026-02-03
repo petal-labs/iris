@@ -69,8 +69,8 @@ func (p *Ollama) buildHeaders() http.Header {
 	headers.Set("Content-Type", "application/json")
 
 	// Authorization header only if API key is provided (for Ollama Cloud)
-	if p.config.APIKey != "" {
-		headers.Set("Authorization", "Bearer "+p.config.APIKey)
+	if !p.config.APIKey.IsEmpty() {
+		headers.Set("Authorization", "Bearer "+p.config.APIKey.Expose())
 	}
 
 	// Copy any extra headers

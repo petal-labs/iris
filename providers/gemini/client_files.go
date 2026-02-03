@@ -50,7 +50,7 @@ func (p *Gemini) initiateResumableUpload(ctx context.Context, req *FileUploadReq
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
-	httpReq.Header.Set("x-goog-api-key", p.config.APIKey)
+	httpReq.Header.Set("x-goog-api-key", p.config.APIKey.Expose())
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("X-Goog-Upload-Protocol", "resumable")
 	httpReq.Header.Set("X-Goog-Upload-Command", "start")
@@ -125,7 +125,7 @@ func (p *Gemini) GetFile(ctx context.Context, name string) (*File, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	httpReq.Header.Set("x-goog-api-key", p.config.APIKey)
+	httpReq.Header.Set("x-goog-api-key", p.config.APIKey.Expose())
 
 	resp, err := p.config.HTTPClient.Do(httpReq)
 	if err != nil {
@@ -172,7 +172,7 @@ func (p *Gemini) ListFiles(ctx context.Context, req *FileListRequest) (*FileList
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	httpReq.Header.Set("x-goog-api-key", p.config.APIKey)
+	httpReq.Header.Set("x-goog-api-key", p.config.APIKey.Expose())
 
 	resp, err := p.config.HTTPClient.Do(httpReq)
 	if err != nil {
@@ -233,7 +233,7 @@ func (p *Gemini) DeleteFile(ctx context.Context, name string) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	httpReq.Header.Set("x-goog-api-key", p.config.APIKey)
+	httpReq.Header.Set("x-goog-api-key", p.config.APIKey.Expose())
 
 	resp, err := p.config.HTTPClient.Do(httpReq)
 	if err != nil {

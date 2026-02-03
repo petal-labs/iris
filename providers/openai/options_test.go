@@ -82,8 +82,8 @@ func TestWithTimeout(t *testing.T) {
 func TestDefaultValues(t *testing.T) {
 	p := New("test-key")
 
-	if p.config.APIKey != "test-key" {
-		t.Errorf("APIKey = %q, want %q", p.config.APIKey, "test-key")
+	if p.config.APIKey.Expose() != "test-key" {
+		t.Errorf("APIKey = %q, want %q", p.config.APIKey.Expose(), "test-key")
 	}
 
 	if p.config.BaseURL != DefaultBaseURL {

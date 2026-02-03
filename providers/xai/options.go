@@ -3,12 +3,15 @@ package xai
 import (
 	"net/http"
 	"time"
+
+	"github.com/petal-labs/iris/core"
 )
 
 // Config holds configuration for the xAI provider.
 type Config struct {
 	// APIKey is the xAI API key (required).
-	APIKey string
+	// Stored as Secret to prevent accidental logging.
+	APIKey core.Secret
 
 	// BaseURL is the API base URL. Defaults to https://api.x.ai/v1
 	BaseURL string

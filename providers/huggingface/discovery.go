@@ -100,8 +100,8 @@ func (p *HuggingFace) GetModelStatus(ctx context.Context, modelID string) (Model
 	}
 
 	// Set authorization header
-	if p.config.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+p.config.APIKey)
+	if !p.config.APIKey.IsEmpty() {
+		req.Header.Set("Authorization", "Bearer "+p.config.APIKey.Expose())
 	}
 
 	resp, err := p.config.HTTPClient.Do(req)
@@ -138,8 +138,8 @@ func (p *HuggingFace) GetModelProviders(ctx context.Context, modelID string) ([]
 	}
 
 	// Set authorization header
-	if p.config.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+p.config.APIKey)
+	if !p.config.APIKey.IsEmpty() {
+		req.Header.Set("Authorization", "Bearer "+p.config.APIKey.Expose())
 	}
 
 	resp, err := p.config.HTTPClient.Do(req)
@@ -199,8 +199,8 @@ func (p *HuggingFace) ListModels(ctx context.Context, opts ListModelsOptions) ([
 	}
 
 	// Set authorization header
-	if p.config.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+p.config.APIKey)
+	if !p.config.APIKey.IsEmpty() {
+		req.Header.Set("Authorization", "Bearer "+p.config.APIKey.Expose())
 	}
 
 	resp, err := p.config.HTTPClient.Do(req)

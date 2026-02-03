@@ -20,8 +20,8 @@ func TestNew(t *testing.T) {
 		if p.config.BaseURL != DefaultLocalURL {
 			t.Errorf("BaseURL = %q, want %q", p.config.BaseURL, DefaultLocalURL)
 		}
-		if p.config.APIKey != "" {
-			t.Errorf("APIKey = %q, want empty", p.config.APIKey)
+		if !p.config.APIKey.IsEmpty() {
+			t.Errorf("APIKey should be empty")
 		}
 		if p.config.HTTPClient != http.DefaultClient {
 			t.Error("HTTPClient should be http.DefaultClient")
@@ -40,8 +40,8 @@ func TestNew(t *testing.T) {
 			WithTimeout(60*time.Second),
 		)
 
-		if p.config.APIKey != "test-key" {
-			t.Errorf("APIKey = %q, want %q", p.config.APIKey, "test-key")
+		if p.config.APIKey.Expose() != "test-key" {
+			t.Errorf("APIKey = %q, want %q", p.config.APIKey.Expose(), "test-key")
 		}
 		if p.config.BaseURL != "http://custom:11434" {
 			t.Errorf("BaseURL = %q, want %q", p.config.BaseURL, "http://custom:11434")
@@ -62,8 +62,8 @@ func TestNew(t *testing.T) {
 		if p.config.BaseURL != DefaultCloudURL {
 			t.Errorf("BaseURL = %q, want %q", p.config.BaseURL, DefaultCloudURL)
 		}
-		if p.config.APIKey != "cloud-key" {
-			t.Errorf("APIKey = %q, want %q", p.config.APIKey, "cloud-key")
+		if p.config.APIKey.Expose() != "cloud-key" {
+			t.Errorf("APIKey = %q, want %q", p.config.APIKey.Expose(), "cloud-key")
 		}
 	})
 }
