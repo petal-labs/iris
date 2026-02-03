@@ -225,7 +225,7 @@ func TestOllama_NewLocalWithOptions(t *testing.T) {
 
 	// Test that we can create with custom timeout option
 	provider := ollama.NewLocal(
-		ollama.WithTimeout(60*time.Second),
+		ollama.WithTimeout(60 * time.Second),
 	)
 
 	if provider.ID() != "ollama" {
@@ -265,8 +265,8 @@ func TestOllama_SupportsFeatures(t *testing.T) {
 		{core.FeatureChatStreaming, true},
 		{core.FeatureToolCalling, true},
 		{core.FeatureReasoning, true},
-		{core.FeatureEmbeddings, false},       // Not supported
-		{core.FeatureImageGeneration, false},  // Not supported
+		{core.FeatureEmbeddings, false},      // Not supported
+		{core.FeatureImageGeneration, false}, // Not supported
 	}
 
 	for _, tt := range tests {
