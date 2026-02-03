@@ -7,10 +7,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/petal-labs/iris/tools"
 )
@@ -320,4 +322,45 @@ func tempDir(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	return dir
+}
+
+// skipIfNoOllama skips the test if local Ollama is not available.
+// This checks by making a simple request to the Ollama API.
+func skipIfNoOllama(t *testing.T) {
+	t.Helper()
+	// Check if OLLAMA_HOST is set, otherwise use default
+	host := os.Getenv("OLLAMA_HOST")
+	if host == "" {
+		host = "http://localhost:11434"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", host+"/api/tags", nil)
+	if err != nil {
+		t.Skipf("Ollama not available: %v", err)
+		return
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Skipf("Ollama not available at %s: %v", host, err)
+		return
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Skipf("Ollama returned status %d", resp.StatusCode)
+	}
+}
+
+// getOllamaHost returns the Ollama host URL from environment or default.
+func getOllamaHost(t *testing.T) string {
+	t.Helper()
+	host := os.Getenv("OLLAMA_HOST")
+	if host == "" {
+		host = "http://localhost:11434"
+	}
+	return host
 }

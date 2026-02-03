@@ -49,9 +49,10 @@ type HuggingFace struct {
 // The API key should be a Hugging Face token with "Make calls to Inference Providers" permission.
 func New(apiKey string, opts ...Option) *HuggingFace {
 	cfg := Config{
-		APIKey:     core.NewSecret(apiKey),
-		BaseURL:    DefaultBaseURL,
-		HTTPClient: http.DefaultClient,
+		APIKey:        core.NewSecret(apiKey),
+		BaseURL:       DefaultBaseURL,
+		HubAPIBaseURL: HubAPIBaseURL,
+		HTTPClient:    http.DefaultClient,
 	}
 
 	for _, opt := range opts {

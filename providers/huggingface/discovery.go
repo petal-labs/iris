@@ -85,7 +85,7 @@ type hubInferenceProviderInfo struct {
 
 // hubAPIURL constructs a URL for the Hub API.
 func (p *HuggingFace) hubAPIURL(path string) string {
-	return HubAPIBaseURL + path
+	return p.config.HubAPIBaseURL + path
 }
 
 // GetModelStatus checks if a model has available inference providers.

@@ -45,14 +45,33 @@ func TestExitCodes(t *testing.T) {
 	}
 }
 
-func TestCreateProviderOpenAI(t *testing.T) {
-	provider, err := createProvider("openai", "test-key")
-	if err != nil {
-		t.Fatalf("createProvider() error = %v", err)
+func TestCreateProviderAllProviders(t *testing.T) {
+	tests := []struct {
+		providerID string
+		apiKey     string
+		wantID     string
+	}{
+		{"openai", "test-key", "openai"},
+		{"anthropic", "test-key", "anthropic"},
+		{"gemini", "test-key", "gemini"},
+		{"xai", "test-key", "xai"},
+		{"zai", "test-key", "zai"},
+		{"ollama", "", "ollama"},         // ollama works without API key
+		{"ollama", "test-key", "ollama"}, // ollama also works with API key
+		{"huggingface", "test-key", "huggingface"},
 	}
 
-	if provider.ID() != "openai" {
-		t.Errorf("provider.ID() = %q, want 'openai'", provider.ID())
+	for _, tt := range tests {
+		t.Run(tt.providerID, func(t *testing.T) {
+			provider, err := createProvider(tt.providerID, tt.apiKey)
+			if err != nil {
+				t.Fatalf("createProvider(%q, %q) error = %v", tt.providerID, tt.apiKey, err)
+			}
+
+			if provider.ID() != tt.wantID {
+				t.Errorf("provider.ID() = %q, want %q", provider.ID(), tt.wantID)
+			}
+		})
 	}
 }
 
@@ -61,6 +80,33 @@ func TestCreateProviderUnsupported(t *testing.T) {
 	if err == nil {
 		t.Fatal("createProvider() should return error for unsupported provider")
 	}
+}
+
+func TestCreateProviderErrorMessage(t *testing.T) {
+	_, err := createProvider("nonexistent", "test-key")
+	if err == nil {
+		t.Fatal("createProvider() should return error")
+	}
+
+	// Error should mention unsupported provider
+	errMsg := err.Error()
+	if !contains(errMsg, "unsupported provider") {
+		t.Errorf("Error message should contain 'unsupported provider', got: %q", errMsg)
+	}
+}
+
+// contains checks if s contains substr (simple helper for tests)
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }
 
 func TestHandleChatErrorValidation(t *testing.T) {
