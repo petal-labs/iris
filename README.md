@@ -1,8 +1,8 @@
 # Iris
-[![Build Status](https://github.com//erikhoward/iris/actions/workflows/ci.yml/badge.svg)](https://github.com/erikhoward/iris/actions/workflows/ci.yml)&nbsp;
-[![Go Report Card](https://goreportcard.com/badge/github.com/erikhoward/iris?style=flat)](https://goreportcard.com/report/github.com/erikhoward/iris)&nbsp;
-[![GoDoc](https://godoc.org/github.com/erikhoward/iris?status.svg)](https://godoc.org/github.com/erikhoward/iris)&nbsp;
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/erikhoward/iris/blob/main/LICENSE)
+[![Build Status](https://github.com/petal-labs/iris/actions/workflows/ci.yml/badge.svg)](https://github.com/petal-labs/iris/actions/workflows/ci.yml)&nbsp;
+[![Go Report Card](https://goreportcard.com/badge/github.com/petal-labs/iris?style=flat)](https://goreportcard.com/report/github.com/petal-labs/iris)&nbsp;
+[![GoDoc](https://godoc.org/github.com/petal-labs/iris?status.svg)](https://godoc.org/github.com/petal-labs/iris)&nbsp;
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/petal-labs/iris/blob/main/LICENSE)
 
 Iris is a Go SDK and CLI for building AI-powered applications and agent workflows. It provides a unified interface for working with large language models (LLMs), making it easy to integrate AI capabilities into your Go projects.
 
@@ -36,26 +36,18 @@ Iris solves these problems by providing:
 - `iris chat` - Send chat completions from the terminal
 - `iris keys` - Securely manage API keys with AES-256-GCM encryption
 - `iris init` - Scaffold new Iris projects
-- `iris graph export` - Export agent graphs to Mermaid or JSON
-
-### Agent Framework
-- Directed graph-based workflow execution
-- Stateful execution with shared state across nodes
-- YAML-based graph definitions
-- Visual export to Mermaid diagrams
-
 ## Installation
 
 ### SDK
 
 ```bash
-go get github.com/erikhoward/iris
+go get github.com/petal-labs/iris
 ```
 
 ### CLI
 
 ```bash
-go install github.com/erikhoward/iris/cli/cmd/iris@v0.1.0
+go install github.com/petal-labs/iris/cli/cmd/iris@v0.1.0
 ```
 
 ## Quick Start
@@ -70,8 +62,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/erikhoward/iris/core"
-    "github.com/erikhoward/iris/providers/openai"
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/openai"
 )
 
 func main() {
@@ -108,8 +100,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/erikhoward/iris/core"
-    "github.com/erikhoward/iris/providers/anthropic"
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/anthropic"
 )
 
 func main() {
@@ -144,8 +136,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/erikhoward/iris/core"
-    "github.com/erikhoward/iris/providers/gemini"
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/gemini"
 )
 
 func main() {
@@ -195,8 +187,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/erikhoward/iris/core"
-    "github.com/erikhoward/iris/providers/xai"
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/xai"
 )
 
 func main() {
@@ -246,8 +238,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/erikhoward/iris/core"
-    "github.com/erikhoward/iris/providers/zai"
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/zai"
 )
 
 func main() {
@@ -297,8 +289,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/erikhoward/iris/core"
-    "github.com/erikhoward/iris/providers/perplexity"
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/perplexity"
 )
 
 func main() {
@@ -333,8 +325,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/erikhoward/iris/core"
-    "github.com/erikhoward/iris/providers/ollama"
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/ollama"
 )
 
 func main() {
@@ -560,9 +552,6 @@ iris chat --provider openai --model gpt-4o --prompt "Hello" --json
 
 # Initialize a new project
 iris init myproject
-
-# Export an agent graph to Mermaid
-iris graph export agent.yaml --format mermaid
 ```
 
 ## Project Structure
@@ -579,8 +568,6 @@ iris/
 │   ├── perplexity/ # Perplexity Search provider
 │   └── ollama/     # Ollama provider (local and cloud)
 ├── tools/          # Tool/function calling framework
-├── agents/         # Agent graph framework
-│   └── graph/      # Graph execution engine
 ├── cli/            # Command-line interface
 │   ├── cmd/iris/   # CLI entry point
 │   ├── commands/   # CLI commands
@@ -704,7 +691,7 @@ See https://ollama.com/library for all available models.
 
 ```bash
 # Clone the repository
-git clone https://github.com/erikhoward/iris.git
+git clone https://github.com/petal-labs/iris.git
 cd iris
 
 # Install git hooks (recommended - prevents formatting issues)
@@ -764,9 +751,9 @@ gofmt -w .
 VERSION=$(git describe --tags --always --dirty)
 COMMIT=$(git rev-parse --short HEAD)
 DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-go build -ldflags "-X github.com/erikhoward/iris/cli/commands.Version=$VERSION \
-  -X github.com/erikhoward/iris/cli/commands.Commit=$COMMIT \
-  -X github.com/erikhoward/iris/cli/commands.BuildDate=$DATE" \
+go build -ldflags "-X github.com/petal-labs/iris/cli/commands.Version=$VERSION \
+  -X github.com/petal-labs/iris/cli/commands.Commit=$COMMIT \
+  -X github.com/petal-labs/iris/cli/commands.BuildDate=$DATE" \
   -o bin/iris ./cli/cmd/iris
 ```
 
@@ -821,10 +808,10 @@ Iris uses a Go workspace with two modules:
 
 ```
 iris/
-├── go.mod        # Main SDK module (github.com/erikhoward/iris)
+├── go.mod        # Main SDK module (github.com/petal-labs/iris)
 ├── go.work       # Workspace file for local development
 └── examples/
-    └── go.mod    # Examples module (github.com/erikhoward/iris/examples)
+    └── go.mod    # Examples module (github.com/petal-labs/iris/examples)
 ```
 
 The workspace allows you to develop on both modules simultaneously. When you run `go build ./...` or `go test ./...` from the root, it builds/tests both modules.
@@ -833,15 +820,15 @@ The workspace allows you to develop on both modules simultaneously. When you run
 
 ```go
 import (
-    "github.com/erikhoward/iris/core"
-    "github.com/erikhoward/iris/providers/openai"
-    "github.com/erikhoward/iris/providers/anthropic"
-    "github.com/erikhoward/iris/providers/gemini"
-    "github.com/erikhoward/iris/providers/xai"
-    "github.com/erikhoward/iris/providers/zai"
-    "github.com/erikhoward/iris/providers/perplexity"
-    "github.com/erikhoward/iris/providers/ollama"
-    "github.com/erikhoward/iris/tools"
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/openai"
+    "github.com/petal-labs/iris/providers/anthropic"
+    "github.com/petal-labs/iris/providers/gemini"
+    "github.com/petal-labs/iris/providers/xai"
+    "github.com/petal-labs/iris/providers/zai"
+    "github.com/petal-labs/iris/providers/perplexity"
+    "github.com/petal-labs/iris/providers/ollama"
+    "github.com/petal-labs/iris/tools"
 )
 ```
 
@@ -877,7 +864,7 @@ func init() {
 
 List registered providers:
 ```go
-import "github.com/erikhoward/iris/providers"
+import "github.com/petal-labs/iris/providers"
 
 fmt.Println(providers.List()) // [anthropic gemini huggingface ollama openai perplexity xai zai]
 ```

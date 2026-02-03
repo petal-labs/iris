@@ -218,36 +218,6 @@ func TestCLI_Keys(t *testing.T) {
 	}
 }
 
-func TestCLI_GraphExport(t *testing.T) {
-	testDataDir := findTestDataDir(t)
-	agentPath := filepath.Join(testDataDir, "agent.yaml")
-
-	// Test mermaid output
-	result := runCLI(t, "graph", "export", agentPath)
-	if result.ExitCode != 0 {
-		t.Errorf("graph export exit code = %d, want 0\nStderr: %s", result.ExitCode, result.Stderr)
-	}
-
-	if !strings.Contains(result.Stdout, "graph TD") {
-		t.Error("Mermaid output should contain 'graph TD'")
-	}
-
-	// Test JSON output
-	result = runCLI(t, "graph", "export", agentPath, "--format", "json")
-	if result.ExitCode != 0 {
-		t.Errorf("graph export --format json exit code = %d, want 0\nStderr: %s", result.ExitCode, result.Stderr)
-	}
-
-	var graphJSON map[string]any
-	if err := json.Unmarshal([]byte(result.Stdout), &graphJSON); err != nil {
-		t.Fatalf("JSON output is not valid: %v", err)
-	}
-
-	if _, ok := graphJSON["name"]; !ok {
-		t.Error("JSON should contain 'name' field")
-	}
-}
-
 func TestCLI_Help(t *testing.T) {
 	result := runCLI(t, "--help")
 
@@ -260,7 +230,7 @@ func TestCLI_Help(t *testing.T) {
 	}
 
 	// Check for main commands
-	commands := []string{"chat", "keys", "init", "graph"}
+	commands := []string{"chat", "keys", "init"}
 	for _, cmd := range commands {
 		if !strings.Contains(result.Stdout, cmd) {
 			t.Errorf("Help should mention '%s' command", cmd)
