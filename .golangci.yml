@@ -10,6 +10,8 @@ linters:
     - errcheck
     - ineffassign
     - unused
+    - gosec
+    - misspell
 
   settings:
     errcheck:
@@ -35,6 +37,12 @@ linters:
         - "-SA4023"
         - "-SA4031"
         - "-QF1011"
+    gosec:
+      excludes:
+        - G104  # Audit errors not checked (covered by errcheck)
+        - G304  # File path from variable (necessary for config loading)
+        - G101  # False positive: env var names, not credentials
+        - G404  # Retry jitter doesn't need cryptographic randomness
 
   exclusions:
     rules:
@@ -42,3 +50,21 @@ linters:
       - path: _test\.go
         linters:
           - errcheck
+      # Allow relaxed permissions in tests (test data files)
+      - path: _test\.go
+        linters:
+          - gosec
+        text: "G301|G306"
+      # Project scaffolding needs standard permissions (0755 dirs, 0644 files)
+      - path: cli/commands/init\.go
+        linters:
+          - gosec
+        text: "G301|G306"
+
+formatters:
+  enable:
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/petal-labs/iris
