@@ -2,8 +2,9 @@
 package commands
 
 import (
-	"github.com/petal-labs/iris/cli/config"
 	"github.com/spf13/cobra"
+
+	"github.com/petal-labs/iris/cli/config"
 )
 
 var (

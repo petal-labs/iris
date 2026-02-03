@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/petal-labs/iris/cli/keystore"
 	"github.com/petal-labs/iris/core"
 	"github.com/petal-labs/iris/providers"
@@ -17,7 +19,6 @@ import (
 	"github.com/petal-labs/iris/providers/openai"
 	"github.com/petal-labs/iris/providers/xai"
 	"github.com/petal-labs/iris/providers/zai"
-	"github.com/spf13/cobra"
 )
 
 // Exit codes

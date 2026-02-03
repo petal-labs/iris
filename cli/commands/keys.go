@@ -6,9 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/petal-labs/iris/cli/keystore"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
+
+	"github.com/petal-labs/iris/cli/keystore"
 )
 
 var keysCmd = &cobra.Command{
