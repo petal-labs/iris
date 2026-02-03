@@ -161,6 +161,29 @@ type ChatResponse struct {
 	Status    string           `json:"status,omitempty"`
 }
 
+// HasToolCalls reports whether the response contains any tool calls.
+func (r *ChatResponse) HasToolCalls() bool {
+	return len(r.ToolCalls) > 0
+}
+
+// FirstToolCall returns the first tool call, or nil if there are none.
+// This is convenient for single-tool scenarios:
+//
+//	if tc := resp.FirstToolCall(); tc != nil {
+//	    // handle tool call
+//	}
+func (r *ChatResponse) FirstToolCall() *ToolCall {
+	if len(r.ToolCalls) > 0 {
+		return &r.ToolCalls[0]
+	}
+	return nil
+}
+
+// HasReasoning reports whether the response contains reasoning output.
+func (r *ChatResponse) HasReasoning() bool {
+	return r.Reasoning != nil && len(r.Reasoning.Summary) > 0
+}
+
 // ChatChunk represents an incremental streaming response.
 // Delta contains incremental assistant text.
 type ChatChunk struct {

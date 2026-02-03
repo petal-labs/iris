@@ -355,3 +355,169 @@ func TestChatRequestWithToolResources(t *testing.T) {
 		t.Errorf("expected 1 vector store ID, got %d", len(req.ToolResources.FileSearch.VectorStoreIDs))
 	}
 }
+
+func TestChatResponseHasToolCalls(t *testing.T) {
+	tests := []struct {
+		name      string
+		response  *ChatResponse
+		wantValue bool
+	}{
+		{
+			name:      "no tool calls",
+			response:  &ChatResponse{Output: "Hello"},
+			wantValue: false,
+		},
+		{
+			name:      "empty tool calls slice",
+			response:  &ChatResponse{Output: "Hello", ToolCalls: []ToolCall{}},
+			wantValue: false,
+		},
+		{
+			name: "with tool calls",
+			response: &ChatResponse{
+				Output: "Let me check that",
+				ToolCalls: []ToolCall{
+					{ID: "call_1", Name: "get_weather", Arguments: json.RawMessage(`{}`)},
+				},
+			},
+			wantValue: true,
+		},
+		{
+			name: "multiple tool calls",
+			response: &ChatResponse{
+				Output: "Let me check both",
+				ToolCalls: []ToolCall{
+					{ID: "call_1", Name: "get_weather", Arguments: json.RawMessage(`{}`)},
+					{ID: "call_2", Name: "get_time", Arguments: json.RawMessage(`{}`)},
+				},
+			},
+			wantValue: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.response.HasToolCalls()
+			if got != tt.wantValue {
+				t.Errorf("HasToolCalls() = %v, want %v", got, tt.wantValue)
+			}
+		})
+	}
+}
+
+func TestChatResponseFirstToolCall(t *testing.T) {
+	tests := []struct {
+		name     string
+		response *ChatResponse
+		wantNil  bool
+		wantName string
+	}{
+		{
+			name:     "no tool calls",
+			response: &ChatResponse{Output: "Hello"},
+			wantNil:  true,
+		},
+		{
+			name:     "empty tool calls slice",
+			response: &ChatResponse{Output: "Hello", ToolCalls: []ToolCall{}},
+			wantNil:  true,
+		},
+		{
+			name: "single tool call",
+			response: &ChatResponse{
+				ToolCalls: []ToolCall{
+					{ID: "call_1", Name: "get_weather", Arguments: json.RawMessage(`{}`)},
+				},
+			},
+			wantNil:  false,
+			wantName: "get_weather",
+		},
+		{
+			name: "multiple tool calls returns first",
+			response: &ChatResponse{
+				ToolCalls: []ToolCall{
+					{ID: "call_1", Name: "first_tool", Arguments: json.RawMessage(`{}`)},
+					{ID: "call_2", Name: "second_tool", Arguments: json.RawMessage(`{}`)},
+				},
+			},
+			wantNil:  false,
+			wantName: "first_tool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.response.FirstToolCall()
+			if tt.wantNil {
+				if got != nil {
+					t.Errorf("FirstToolCall() = %v, want nil", got)
+				}
+			} else {
+				if got == nil {
+					t.Fatal("FirstToolCall() = nil, want non-nil")
+				}
+				if got.Name != tt.wantName {
+					t.Errorf("FirstToolCall().Name = %v, want %v", got.Name, tt.wantName)
+				}
+			}
+		})
+	}
+}
+
+func TestChatResponseHasReasoning(t *testing.T) {
+	tests := []struct {
+		name      string
+		response  *ChatResponse
+		wantValue bool
+	}{
+		{
+			name:      "no reasoning",
+			response:  &ChatResponse{Output: "Hello"},
+			wantValue: false,
+		},
+		{
+			name:      "nil reasoning",
+			response:  &ChatResponse{Output: "Hello", Reasoning: nil},
+			wantValue: false,
+		},
+		{
+			name: "empty reasoning summary",
+			response: &ChatResponse{
+				Output:    "Hello",
+				Reasoning: &ReasoningOutput{ID: "r1", Summary: []string{}},
+			},
+			wantValue: false,
+		},
+		{
+			name: "with reasoning summary",
+			response: &ChatResponse{
+				Output: "Hello",
+				Reasoning: &ReasoningOutput{
+					ID:      "r1",
+					Summary: []string{"Thinking about the question..."},
+				},
+			},
+			wantValue: true,
+		},
+		{
+			name: "multiple reasoning summaries",
+			response: &ChatResponse{
+				Output: "Hello",
+				Reasoning: &ReasoningOutput{
+					ID:      "r1",
+					Summary: []string{"Step 1", "Step 2", "Conclusion"},
+				},
+			},
+			wantValue: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.response.HasReasoning()
+			if got != tt.wantValue {
+				t.Errorf("HasReasoning() = %v, want %v", got, tt.wantValue)
+			}
+		})
+	}
+}

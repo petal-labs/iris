@@ -181,8 +181,8 @@ func TestSentinelErrorsAreDifferent(t *testing.T) {
 
 func TestSentinelErrorMessages(t *testing.T) {
 	tests := []struct {
-		err  error
-		want string
+		err          error
+		wantContains string
 	}{
 		{ErrUnauthorized, "unauthorized"},
 		{ErrRateLimited, "rate limited"},
@@ -196,11 +196,24 @@ func TestSentinelErrorMessages(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.want, func(t *testing.T) {
-			if tt.err.Error() != tt.want {
-				t.Errorf("Error() = %q, want %q", tt.err.Error(), tt.want)
+		t.Run(tt.wantContains, func(t *testing.T) {
+			if !contains(tt.err.Error(), tt.wantContains) {
+				t.Errorf("Error() = %q, should contain %q", tt.err.Error(), tt.wantContains)
 			}
 		})
+	}
+}
+
+func TestValidationErrorMessagesHaveGuidance(t *testing.T) {
+	// Verify the validation errors contain actionable guidance
+	modelErr := ErrModelRequired.Error()
+	if !contains(modelErr, "Client.Chat") {
+		t.Errorf("ErrModelRequired should contain guidance mentioning Client.Chat(), got: %q", modelErr)
+	}
+
+	messagesErr := ErrNoMessages.Error()
+	if !contains(messagesErr, ".User()") || !contains(messagesErr, ".System()") {
+		t.Errorf("ErrNoMessages should contain guidance mentioning builder methods, got: %q", messagesErr)
 	}
 }
 

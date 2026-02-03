@@ -98,8 +98,9 @@ func (c *Client) Chat(model ModelID) *ChatBuilder {
 // ChatBuilder provides a fluent API for building chat requests.
 // ChatBuilder is NOT thread-safe and should not be shared across goroutines.
 type ChatBuilder struct {
-	client *Client
-	req    ChatRequest
+	client  *Client
+	req     ChatRequest
+	timeout time.Duration // optional timeout for GetResponse/Stream
 }
 
 // System appends a system message.
@@ -191,6 +192,93 @@ func (b *ChatBuilder) ContinueFrom(responseID string) *ChatBuilder {
 	return b
 }
 
+// Timeout sets an optional timeout for the request.
+// When set, GetResponse and Stream will create a context with this timeout
+// if a context.Background() or context without deadline is passed.
+// This provides a convenient alternative to manually creating contexts:
+//
+//	// Instead of:
+//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+//	defer cancel()
+//	resp, err := client.Chat(model).User("Hello").GetResponse(ctx)
+//
+//	// You can write:
+//	resp, err := client.Chat(model).User("Hello").Timeout(30*time.Second).GetResponse(context.Background())
+func (b *ChatBuilder) Timeout(d time.Duration) *ChatBuilder {
+	b.timeout = d
+	return b
+}
+
+// Clone creates a deep copy of the ChatBuilder.
+// This is useful for reusing a base configuration across multiple requests:
+//
+//	base := client.Chat(model).System("You are a helpful assistant").Temperature(0.7)
+//	resp1, _ := base.Clone().User("Question 1").GetResponse(ctx)
+//	resp2, _ := base.Clone().User("Question 2").GetResponse(ctx)
+//
+// The original builder remains unchanged after cloning.
+func (b *ChatBuilder) Clone() *ChatBuilder {
+	clone := &ChatBuilder{
+		client:  b.client,
+		timeout: b.timeout,
+		req: ChatRequest{
+			Model:              b.req.Model,
+			Instructions:       b.req.Instructions,
+			ReasoningEffort:    b.req.ReasoningEffort,
+			PreviousResponseID: b.req.PreviousResponseID,
+			Truncation:         b.req.Truncation,
+		},
+	}
+
+	// Deep copy pointer values
+	if b.req.Temperature != nil {
+		t := *b.req.Temperature
+		clone.req.Temperature = &t
+	}
+	if b.req.MaxTokens != nil {
+		m := *b.req.MaxTokens
+		clone.req.MaxTokens = &m
+	}
+
+	// Deep copy slices
+	if len(b.req.Messages) > 0 {
+		clone.req.Messages = make([]Message, len(b.req.Messages))
+		for i, msg := range b.req.Messages {
+			clone.req.Messages[i] = Message{
+				Role:    msg.Role,
+				Content: msg.Content,
+			}
+			if len(msg.Parts) > 0 {
+				clone.req.Messages[i].Parts = make([]ContentPart, len(msg.Parts))
+				copy(clone.req.Messages[i].Parts, msg.Parts)
+			}
+		}
+	}
+
+	if len(b.req.Tools) > 0 {
+		clone.req.Tools = make([]Tool, len(b.req.Tools))
+		copy(clone.req.Tools, b.req.Tools)
+	}
+
+	if len(b.req.BuiltInTools) > 0 {
+		clone.req.BuiltInTools = make([]BuiltInTool, len(b.req.BuiltInTools))
+		copy(clone.req.BuiltInTools, b.req.BuiltInTools)
+	}
+
+	// Deep copy ToolResources
+	if b.req.ToolResources != nil {
+		clone.req.ToolResources = &ToolResources{}
+		if b.req.ToolResources.FileSearch != nil {
+			clone.req.ToolResources.FileSearch = &FileSearchResources{
+				VectorStoreIDs: make([]string, len(b.req.ToolResources.FileSearch.VectorStoreIDs)),
+			}
+			copy(clone.req.ToolResources.FileSearch.VectorStoreIDs, b.req.ToolResources.FileSearch.VectorStoreIDs)
+		}
+	}
+
+	return clone
+}
+
 // Truncation sets the truncation mode for the request.
 func (b *ChatBuilder) Truncation(mode string) *ChatBuilder {
 	b.req.Truncation = mode
@@ -218,9 +306,19 @@ func (b *ChatBuilder) validate() error {
 
 // GetResponse executes the chat request and returns the response.
 // It applies validation, telemetry, and retry logic.
+// If Timeout was set and ctx has no deadline, a timeout context is created internally.
 func (b *ChatBuilder) GetResponse(ctx context.Context) (*ChatResponse, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
+	}
+
+	// Apply timeout if set and context has no deadline
+	if b.timeout > 0 {
+		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, b.timeout)
+			defer cancel()
+		}
 	}
 
 	start := time.Now()
@@ -280,6 +378,14 @@ retryLoop:
 
 // Stream executes the chat request and returns a streaming response.
 // It applies validation and telemetry.
+//
+// Note: The Timeout() setting is NOT applied to streaming requests because
+// the context must outlive this method call. For streaming with timeouts,
+// create the context externally:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+//	defer cancel()
+//	stream, err := client.Chat(model).User("...").Stream(ctx)
 func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 	if err := b.validate(); err != nil {
 		return nil, err

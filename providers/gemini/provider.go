@@ -2,10 +2,42 @@ package gemini
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// Environment variable names for the Gemini API key.
+const (
+	GeminiAPIKeyEnvVar = "GEMINI_API_KEY"
+	GoogleAPIKeyEnvVar = "GOOGLE_API_KEY"
+)
+
+// ErrAPIKeyNotFound is returned when no API key environment variable is set.
+var ErrAPIKeyNotFound = errors.New("gemini: GEMINI_API_KEY or GOOGLE_API_KEY environment variable not set")
+
+// NewFromEnv creates a new Gemini provider using the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.
+// GEMINI_API_KEY takes precedence if both are set.
+//
+// This is a convenience factory for quick setup:
+//
+//	provider, err := gemini.NewFromEnv()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	client := core.NewClient(provider)
+func NewFromEnv(opts ...Option) (*Gemini, error) {
+	apiKey := os.Getenv(GeminiAPIKeyEnvVar)
+	if apiKey == "" {
+		apiKey = os.Getenv(GoogleAPIKeyEnvVar)
+	}
+	if apiKey == "" {
+		return nil, ErrAPIKeyNotFound
+	}
+	return New(apiKey, opts...), nil
+}
 
 // Gemini is an LLM provider implementation for the Google Gemini API.
 // Gemini is safe for concurrent use.
