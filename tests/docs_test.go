@@ -90,6 +90,56 @@ func TestArchitectureDocExists(t *testing.T) {
 	}
 }
 
+// TestSecurityDocExists verifies SECURITY.md exists and contains required sections.
+func TestSecurityDocExists(t *testing.T) {
+	content := readDocFile(t, "SECURITY.md")
+
+	requiredSections := []string{
+		"# Security Guide",
+		"## Keystore Encryption",
+		"### Creating an Encryption Key",
+		"### How It Works",
+		"### Storing API Keys",
+		"## Secret Type",
+		"## Telemetry Security",
+		"## CI/CD Best Practices",
+		"## Security Checklist",
+		"## Cryptographic Details",
+	}
+
+	for _, section := range requiredSections {
+		if !strings.Contains(content, section) {
+			t.Errorf("SECURITY.md missing required section: %q", section)
+		}
+	}
+
+	// Verify key technical details are documented
+	technicalTerms := []string{
+		"IRIS_KEYSTORE_KEY",
+		"Argon2id",
+		"AES-256-GCM",
+		"core.Secret",
+	}
+	for _, term := range technicalTerms {
+		if !strings.Contains(content, term) {
+			t.Errorf("SECURITY.md should document %s", term)
+		}
+	}
+
+	// Verify code examples are included
+	if !strings.Contains(content, "```bash") {
+		t.Error("SECURITY.md should include bash examples for key setup")
+	}
+	if !strings.Contains(content, "```go") {
+		t.Error("SECURITY.md should include Go code examples")
+	}
+
+	// Verify V1 vs V2 is explained
+	if !strings.Contains(content, "V1") || !strings.Contains(content, "V2") {
+		t.Error("SECURITY.md should explain V1 vs V2 keystore formats")
+	}
+}
+
 // TestCoreDocGoExists verifies core/doc.go has comprehensive package documentation.
 func TestCoreDocGoExists(t *testing.T) {
 	content := readCoreDocFile(t)
