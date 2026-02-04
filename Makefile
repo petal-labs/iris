@@ -1,6 +1,6 @@
 # Iris SDK Makefile
 
-.PHONY: all build test lint fmt vet clean install-hooks help
+.PHONY: all build test lint fmt vet clean install-hooks help coverage
 
 # Version information
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -25,9 +25,19 @@ test:
 test-v:
 	go test -v ./...
 
-# Run tests with coverage
+# Run tests with coverage summary
 test-cover:
 	go test -cover ./...
+
+# Generate coverage profile for CI/Codecov
+coverage:
+	go test -race -coverprofile=coverage.out -covermode=atomic ./...
+	@echo "Coverage report generated: coverage.out"
+
+# Generate and view HTML coverage report
+coverage-html: coverage
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "HTML report generated: coverage.html"
 
 # Lint: format check and vet
 lint: fmt-check vet
@@ -84,7 +94,9 @@ help:
 	@echo "  build          Build all packages"
 	@echo "  test           Run all tests"
 	@echo "  test-v         Run tests with verbose output"
-	@echo "  test-cover     Run tests with coverage"
+	@echo "  test-cover     Run tests with coverage summary"
+	@echo "  coverage       Generate coverage.out profile for Codecov"
+	@echo "  coverage-html  Generate HTML coverage report"
 	@echo "  lint           Run fmt-check and vet"
 	@echo "  fmt-check      Check if files are formatted"
 	@echo "  fmt            Format all Go files"
