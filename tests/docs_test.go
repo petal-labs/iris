@@ -1,4 +1,4 @@
-package docs_test
+package tests
 
 import (
 	"os"
@@ -152,13 +152,7 @@ func TestCoreDocGoExists(t *testing.T) {
 func readDocFile(t *testing.T, filename string) string {
 	t.Helper()
 
-	// Get the directory of the test file
-	_, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Failed to get working directory: %v", err)
-	}
-
-	path := filepath.Join(filename)
+	path := filepath.Join("..", "docs", filename)
 	content, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("Failed to read %s: %v", filename, err)
