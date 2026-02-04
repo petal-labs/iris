@@ -65,3 +65,24 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.1.6
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+          cache: true
+
+      - name: Run gosec
+        uses: securego/gosec@v2.22.11
+        with:
+          # G101: env var names (not actual secrets)
+          # G104: unhandled errors on non-critical JSON encoding
+          # G301/G306: standard CLI permissions (0755 dirs, 0644 files)
+          # G304: CLI intentionally handles user-specified paths
+          # G404: math/rand for retry jitter (not security-critical)
+          args: -exclude=G101,G104,G301,G304,G306,G404 -exclude-dir=examples ./...
