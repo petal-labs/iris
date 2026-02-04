@@ -34,7 +34,7 @@ Iris solves these problems by providing:
 
 ### CLI Features
 - `iris chat` - Send chat completions from the terminal
-- `iris keys` - Securely manage API keys with AES-256-GCM encryption
+- `iris keys` - Securely manage API keys with AES-256-GCM encryption and Argon2id key derivation
 - `iris init` - Scaffold new Iris projects
 ## Installation
 
@@ -600,6 +600,39 @@ providers:
     # For Ollama Cloud, set api_key_env: OLLAMA_API_KEY
     # Custom base URL: base_url: http://localhost:11434
 ```
+
+## Security
+
+### Setting Up Keystore Encryption
+
+For production use, set a master encryption key for the keystore:
+
+```bash
+# Generate a strong random key
+export IRIS_KEYSTORE_KEY=$(openssl rand -base64 32)
+
+# Add to your shell profile for persistence
+echo 'export IRIS_KEYSTORE_KEY="your-key-here"' >> ~/.bashrc
+```
+
+When `IRIS_KEYSTORE_KEY` is set, Iris uses the V2 keystore format with:
+- **Argon2id** key derivation (OWASP recommended parameters)
+- **AES-256-GCM** authenticated encryption
+- Per-file random salt and nonce
+
+Without `IRIS_KEYSTORE_KEY`, Iris falls back to V1 mode which derives keys from machine-specific data. This is convenient for development but less secure for production.
+
+### API Key Protection
+
+Iris uses a `Secret` type that prevents accidental logging of API keys:
+
+```go
+secret := core.NewSecret(os.Getenv("OPENAI_API_KEY"))
+fmt.Println(secret)        // Prints: [REDACTED]
+apiKey := secret.Expose()  // Access actual value when needed
+```
+
+See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentation.
 
 ## Supported Providers
 
