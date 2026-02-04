@@ -1,6 +1,7 @@
 # Iris
 [![Build Status](https://github.com/petal-labs/iris/actions/workflows/ci.yml/badge.svg)](https://github.com/petal-labs/iris/actions/workflows/ci.yml)&nbsp;
 [![Go Report Card](https://goreportcard.com/badge/github.com/petal-labs/iris?style=flat)](https://goreportcard.com/report/github.com/petal-labs/iris)&nbsp;
+[![codecov](https://codecov.io/gh/petal-labs/iris/graph/badge.svg?token=OJP9V6R441)](https://codecov.io/gh/petal-labs/iris)&nbsp;
 [![GoDoc](https://godoc.org/github.com/petal-labs/iris?status.svg)](https://godoc.org/github.com/petal-labs/iris)&nbsp;
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/petal-labs/iris/blob/main/LICENSE)
 
