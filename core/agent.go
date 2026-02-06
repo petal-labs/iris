@@ -644,6 +644,15 @@ func (r *AgentRunner) execute(ctx context.Context, streaming bool) (*AgentResult
 		r.mu.Lock()
 		r.state.messages = builder.req.Messages
 		r.mu.Unlock()
+
+		// Check if we need to summarize the conversation (best-effort, errors are ignored)
+		_ = r.maybeSummarize(ctx)
+		if r.config.Memory != nil {
+			// Update builder with potentially summarized messages
+			r.mu.RLock()
+			builder.req.Messages = r.state.messages
+			r.mu.RUnlock()
+		}
 	}
 
 	r.mu.RLock()
@@ -1001,4 +1010,198 @@ func addTokenUsage(a, b TokenUsage) TokenUsage {
 		CompletionTokens: a.CompletionTokens + b.CompletionTokens,
 		TotalTokens:      a.TotalTokens + b.TotalTokens,
 	}
+}
+
+// -----------------------------------------------------------------------------
+// Memory Management / Auto-Summarization
+// -----------------------------------------------------------------------------
+
+// estimateTokens estimates the total token count for the current conversation.
+// Uses a simple heuristic of ~4 characters per token, which works reasonably
+// well across models. For production precision, inject a TokenCounter interface.
+func (r *AgentRunner) estimateTokens() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if r.state == nil || len(r.state.messages) == 0 {
+		return 0
+	}
+
+	totalChars := 0
+	for _, msg := range r.state.messages {
+		// Count message content
+		totalChars += len(msg.Content)
+
+		// Count tool calls (JSON serialization)
+		for _, tc := range msg.ToolCalls {
+			totalChars += len(tc.Name) + len(tc.Arguments) + 50 // overhead for structure
+		}
+
+		// Count tool results
+		for _, tr := range msg.ToolResults {
+			if content, ok := tr.Content.(string); ok {
+				totalChars += len(content)
+			} else {
+				// Estimate JSON-serialized size
+				data, _ := json.Marshal(tr.Content)
+				totalChars += len(data)
+			}
+		}
+
+		// Count content parts for multimodal
+		for _, part := range msg.Parts {
+			switch p := part.(type) {
+			case InputText:
+				totalChars += len(p.Text)
+			case InputImage:
+				// Images contribute significant tokens, estimate based on URL/data size
+				totalChars += len(p.ImageURL) + 500 // images are ~500-1000 tokens depending on detail
+			case InputFile:
+				totalChars += len(p.FileData)/4 + len(p.FileURL)
+			}
+		}
+	}
+
+	// Rough estimate: 4 characters per token
+	return totalChars / 4
+}
+
+// maybeSummarize checks if the conversation exceeds the token threshold
+// and triggers auto-summarization if needed.
+func (r *AgentRunner) maybeSummarize(ctx context.Context) error {
+	if r.config.Memory == nil || r.config.Memory.MaxTokens == 0 {
+		return nil
+	}
+
+	tokens := r.estimateTokens()
+	threshold := int(float64(r.config.Memory.MaxTokens) * r.config.Memory.SummarizationThreshold)
+
+	if tokens < threshold {
+		return nil
+	}
+
+	r.mu.Lock()
+	messages := r.state.messages
+	r.mu.Unlock()
+
+	// Need at least some messages to summarize
+	preserveN := r.config.Memory.PreserveLastN
+	if preserveN < 1 {
+		preserveN = 4
+	}
+
+	if len(messages) <= preserveN {
+		// Not enough messages to summarize
+		return nil
+	}
+
+	// Split messages into those to summarize and those to preserve
+	toSummarize := messages[:len(messages)-preserveN]
+	preserved := messages[len(messages)-preserveN:]
+
+	// Generate summary using the configured model
+	summary, err := r.generateSummary(ctx, toSummarize)
+	if err != nil {
+		return fmt.Errorf("summarization failed: %w", err)
+	}
+
+	// Build new message list with summary
+	summaryPrefix := "Previous conversation summary:\n"
+	if r.config.Memory.SummarizationPrompt != "" {
+		// If there's a custom prompt, the summary should be self-contained
+		summaryPrefix = ""
+	}
+
+	newMessages := []Message{
+		{Role: RoleSystem, Content: summaryPrefix + summary},
+	}
+	newMessages = append(newMessages, preserved...)
+
+	// Update state
+	r.mu.Lock()
+	r.state.messages = newMessages
+	r.mu.Unlock()
+
+	// Calculate new token count
+	newTokens := r.estimateTokens()
+
+	// Call OnSummarize hook
+	if r.config.Memory.OnSummarize != nil {
+		r.config.Memory.OnSummarize(ctx, SummarizationEvent{
+			OriginalTokens:   tokens,
+			SummarizedTokens: newTokens,
+			MessagesRemoved:  len(toSummarize),
+			Summary:          summary,
+		})
+	}
+
+	return nil
+}
+
+// generateSummary creates a summary of the given messages using the LLM.
+func (r *AgentRunner) generateSummary(ctx context.Context, messages []Message) (string, error) {
+	// Build a prompt for summarization
+	prompt := r.config.Memory.SummarizationPrompt
+	if prompt == "" {
+		prompt = defaultSummarizationPrompt
+	}
+
+	// Format the messages to summarize as a conversation transcript
+	var transcript strings.Builder
+	for _, msg := range messages {
+		switch msg.Role {
+		case RoleSystem:
+			transcript.WriteString("System: ")
+		case RoleUser:
+			transcript.WriteString("User: ")
+		case RoleAssistant:
+			transcript.WriteString("Assistant: ")
+		case RoleTool:
+			transcript.WriteString("Tool Result: ")
+		}
+		transcript.WriteString(msg.Content)
+		transcript.WriteString("\n\n")
+
+		// Include tool calls
+		for _, tc := range msg.ToolCalls {
+			transcript.WriteString(fmt.Sprintf("  [Tool Call: %s(%s)]\n", tc.Name, string(tc.Arguments)))
+		}
+
+		// Include tool results
+		for _, tr := range msg.ToolResults {
+			var content string
+			if s, ok := tr.Content.(string); ok {
+				content = s
+			} else {
+				data, _ := json.Marshal(tr.Content)
+				content = string(data)
+			}
+			if tr.IsError {
+				transcript.WriteString(fmt.Sprintf("  [Tool Error: %s]\n", content))
+			} else {
+				// Truncate very long results
+				if len(content) > 500 {
+					content = content[:500] + "..."
+				}
+				transcript.WriteString(fmt.Sprintf("  [Tool Result: %s]\n", content))
+			}
+		}
+	}
+
+	// Create a summarization request using the same provider
+	summaryReq := &ChatRequest{
+		Model: r.builder.req.Model,
+		Messages: []Message{
+			{Role: RoleSystem, Content: prompt},
+			{Role: RoleUser, Content: "Here is the conversation to summarize:\n\n" + transcript.String()},
+		},
+	}
+
+	// Use the client's provider to generate the summary
+	resp, err := r.builder.client.provider.Chat(ctx, summaryReq)
+	if err != nil {
+		return "", fmt.Errorf("summary generation failed: %w", err)
+	}
+
+	return resp.Output, nil
 }
