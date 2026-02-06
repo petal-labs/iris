@@ -24,9 +24,14 @@ type anthropicMessage struct {
 type anthropicContentBlock struct {
 	Type string `json:"type"`
 	Text string `json:"text,omitempty"`
-	// For tool_result blocks
+	// For tool_use blocks (assistant requesting tool)
+	ID    string          `json:"id,omitempty"`
+	Name  string          `json:"name,omitempty"`
+	Input json.RawMessage `json:"input,omitempty"`
+	// For tool_result blocks (user providing result)
 	ToolUseID string `json:"tool_use_id,omitempty"`
 	Content   string `json:"content,omitempty"`
+	IsError   bool   `json:"is_error,omitempty"`
 }
 
 // anthropicTool represents a tool definition in the Anthropic format.

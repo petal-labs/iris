@@ -15,8 +15,10 @@ type openAIRequest struct {
 
 // openAIMessage represents a message in the OpenAI format.
 type openAIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role       string           `json:"role"`
+	Content    string           `json:"content,omitempty"`
+	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`   // For assistant messages requesting tools
+	ToolCallID string           `json:"tool_call_id,omitempty"` // For tool result messages
 }
 
 // openAITool represents a tool definition in the OpenAI format.

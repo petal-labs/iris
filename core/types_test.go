@@ -521,3 +521,252 @@ func TestChatResponseHasReasoning(t *testing.T) {
 		})
 	}
 }
+
+// Tool Result Tests
+
+func TestToolResultJSONMarshal(t *testing.T) {
+	tests := []struct {
+		name string
+		tr   ToolResult
+	}{
+		{
+			name: "string content",
+			tr:   ToolResult{CallID: "call_1", Content: "sunny, 72F", IsError: false},
+		},
+		{
+			name: "error result",
+			tr:   ToolResult{CallID: "call_2", Content: "connection timeout", IsError: true},
+		},
+		{
+			name: "struct content",
+			tr: ToolResult{
+				CallID:  "call_3",
+				Content: map[string]any{"temp": 72, "conditions": "sunny"},
+				IsError: false,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := json.Marshal(tt.tr)
+			if err != nil {
+				t.Fatalf("Marshal() error = %v", err)
+			}
+
+			var result ToolResult
+			if err := json.Unmarshal(data, &result); err != nil {
+				t.Fatalf("Unmarshal() error = %v", err)
+			}
+
+			if result.CallID != tt.tr.CallID {
+				t.Errorf("CallID = %v, want %v", result.CallID, tt.tr.CallID)
+			}
+			if result.IsError != tt.tr.IsError {
+				t.Errorf("IsError = %v, want %v", result.IsError, tt.tr.IsError)
+			}
+		})
+	}
+}
+
+func TestToolResultBuilderSuccess(t *testing.T) {
+	builder := NewToolResults()
+	results := builder.
+		Success("call_1", "result 1").
+		Success("call_2", map[string]any{"key": "value"}).
+		Build()
+
+	if len(results) != 2 {
+		t.Fatalf("len(results) = %d, want 2", len(results))
+	}
+
+	if results[0].CallID != "call_1" {
+		t.Errorf("results[0].CallID = %v, want call_1", results[0].CallID)
+	}
+	if results[0].IsError {
+		t.Error("results[0].IsError = true, want false")
+	}
+	if results[0].Content != "result 1" {
+		t.Errorf("results[0].Content = %v, want 'result 1'", results[0].Content)
+	}
+
+	if results[1].CallID != "call_2" {
+		t.Errorf("results[1].CallID = %v, want call_2", results[1].CallID)
+	}
+}
+
+func TestToolResultBuilderError(t *testing.T) {
+	builder := NewToolResults()
+	testErr := errForTest("connection failed")
+
+	results := builder.
+		Error("call_1", testErr).
+		Build()
+
+	if len(results) != 1 {
+		t.Fatalf("len(results) = %d, want 1", len(results))
+	}
+
+	if results[0].CallID != "call_1" {
+		t.Errorf("CallID = %v, want call_1", results[0].CallID)
+	}
+	if !results[0].IsError {
+		t.Error("IsError = false, want true")
+	}
+	if results[0].Content != "connection failed" {
+		t.Errorf("Content = %v, want 'connection failed'", results[0].Content)
+	}
+}
+
+func TestToolResultBuilderFromExecution(t *testing.T) {
+	builder := NewToolResults()
+	testErr := errForTest("tool failed")
+
+	results := builder.
+		FromExecution("call_1", "success result", nil).
+		FromExecution("call_2", nil, testErr).
+		Build()
+
+	if len(results) != 2 {
+		t.Fatalf("len(results) = %d, want 2", len(results))
+	}
+
+	// First result: success
+	if results[0].IsError {
+		t.Error("results[0].IsError = true, want false")
+	}
+	if results[0].Content != "success result" {
+		t.Errorf("results[0].Content = %v, want 'success result'", results[0].Content)
+	}
+
+	// Second result: error
+	if !results[1].IsError {
+		t.Error("results[1].IsError = false, want true")
+	}
+}
+
+func TestTypedToolResultBuilder(t *testing.T) {
+	type WeatherResult struct {
+		Temp       float64 `json:"temp"`
+		Conditions string  `json:"conditions"`
+	}
+
+	builder := NewTypedToolResults[WeatherResult]()
+	results := builder.
+		Success("call_1", WeatherResult{Temp: 72.5, Conditions: "sunny"}).
+		Success("call_2", WeatherResult{Temp: 65.0, Conditions: "cloudy"}).
+		Build()
+
+	if len(results) != 2 {
+		t.Fatalf("len(results) = %d, want 2", len(results))
+	}
+
+	// Verify the results are untyped ToolResult
+	if results[0].CallID != "call_1" {
+		t.Errorf("results[0].CallID = %v, want call_1", results[0].CallID)
+	}
+
+	// Verify the content is the struct
+	weather, ok := results[0].Content.(WeatherResult)
+	if !ok {
+		t.Fatalf("results[0].Content is not WeatherResult, got %T", results[0].Content)
+	}
+	if weather.Temp != 72.5 {
+		t.Errorf("weather.Temp = %v, want 72.5", weather.Temp)
+	}
+}
+
+func TestTypedToolResultToUntyped(t *testing.T) {
+	type Result struct {
+		Value int `json:"value"`
+	}
+
+	typed := TypedToolResult[Result]{
+		CallID:  "call_1",
+		Content: Result{Value: 42},
+		IsError: false,
+	}
+
+	untyped := typed.ToUntyped()
+
+	if untyped.CallID != "call_1" {
+		t.Errorf("CallID = %v, want call_1", untyped.CallID)
+	}
+	if untyped.IsError {
+		t.Error("IsError = true, want false")
+	}
+
+	result, ok := untyped.Content.(Result)
+	if !ok {
+		t.Fatalf("Content is not Result, got %T", untyped.Content)
+	}
+	if result.Value != 42 {
+		t.Errorf("Value = %d, want 42", result.Value)
+	}
+}
+
+func TestRoleToolConstant(t *testing.T) {
+	if RoleTool != "tool" {
+		t.Errorf("RoleTool = %v, want 'tool'", RoleTool)
+	}
+}
+
+func TestMessageWithToolCalls(t *testing.T) {
+	msg := Message{
+		Role: RoleAssistant,
+		ToolCalls: []ToolCall{
+			{ID: "call_1", Name: "get_weather", Arguments: json.RawMessage(`{"city":"NYC"}`)},
+		},
+	}
+
+	data, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+
+	var result Message
+	if err := json.Unmarshal(data, &result); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+
+	if len(result.ToolCalls) != 1 {
+		t.Fatalf("len(ToolCalls) = %d, want 1", len(result.ToolCalls))
+	}
+	if result.ToolCalls[0].Name != "get_weather" {
+		t.Errorf("ToolCalls[0].Name = %v, want get_weather", result.ToolCalls[0].Name)
+	}
+}
+
+func TestMessageWithToolResults(t *testing.T) {
+	msg := Message{
+		Role: RoleTool,
+		ToolResults: []ToolResult{
+			{CallID: "call_1", Content: "sunny, 72F", IsError: false},
+		},
+	}
+
+	data, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+
+	var result Message
+	if err := json.Unmarshal(data, &result); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+
+	if result.Role != RoleTool {
+		t.Errorf("Role = %v, want %v", result.Role, RoleTool)
+	}
+	if len(result.ToolResults) != 1 {
+		t.Fatalf("len(ToolResults) = %d, want 1", len(result.ToolResults))
+	}
+	if result.ToolResults[0].CallID != "call_1" {
+		t.Errorf("ToolResults[0].CallID = %v, want call_1", result.ToolResults[0].CallID)
+	}
+}
+
+// errForTest is a simple error type for testing
+type errForTest string
+
+func (e errForTest) Error() string { return string(e) }
