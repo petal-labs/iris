@@ -39,15 +39,69 @@ func mapMessages(messages []core.Message) []ollamaMessage {
 	result := make([]ollamaMessage, 0, len(messages))
 
 	for _, msg := range messages {
-		ollamaMsg := ollamaMessage{
-			Role:    string(msg.Role),
-			Content: msg.Content,
-		}
+		switch msg.Role {
+		case core.RoleTool:
+			// Tool result messages: create individual tool messages for each result
+			for _, tr := range msg.ToolResults {
+				result = append(result, ollamaMessage{
+					Role:    "tool",
+					Content: marshalToolResultContent(tr.Content),
+				})
+			}
 
-		result = append(result, ollamaMsg)
+		case core.RoleAssistant:
+			// Assistant messages may include tool calls
+			ollamaMsg := ollamaMessage{
+				Role:    "assistant",
+				Content: msg.Content,
+			}
+			if len(msg.ToolCalls) > 0 {
+				ollamaMsg.ToolCalls = mapCoreToolCallsToOllama(msg.ToolCalls)
+			}
+			result = append(result, ollamaMsg)
+
+		default:
+			// System, User messages
+			result = append(result, ollamaMessage{
+				Role:    string(msg.Role),
+				Content: msg.Content,
+			})
+		}
 	}
 
 	return result
+}
+
+// mapCoreToolCallsToOllama converts core.ToolCall to ollamaToolCall format.
+func mapCoreToolCallsToOllama(calls []core.ToolCall) []ollamaToolCall {
+	result := make([]ollamaToolCall, len(calls))
+	for i, tc := range calls {
+		var args map[string]interface{}
+		if err := json.Unmarshal(tc.Arguments, &args); err != nil {
+			args = map[string]interface{}{}
+		}
+		result[i] = ollamaToolCall{
+			Function: ollamaFunctionCall{
+				Name:      tc.Name,
+				Arguments: args,
+			},
+		}
+	}
+	return result
+}
+
+// marshalToolResultContent converts tool result content to a string.
+func marshalToolResultContent(content any) string {
+	switch v := content.(type) {
+	case string:
+		return v
+	default:
+		data, err := json.Marshal(v)
+		if err != nil {
+			return "{\"error\": \"failed to marshal tool result\"}"
+		}
+		return string(data)
+	}
 }
 
 // schemaProvider is an interface for tools that provide a JSON schema.

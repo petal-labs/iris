@@ -252,6 +252,14 @@ func (b *ChatBuilder) Clone() *ChatBuilder {
 				clone.req.Messages[i].Parts = make([]ContentPart, len(msg.Parts))
 				copy(clone.req.Messages[i].Parts, msg.Parts)
 			}
+			if len(msg.ToolCalls) > 0 {
+				clone.req.Messages[i].ToolCalls = make([]ToolCall, len(msg.ToolCalls))
+				copy(clone.req.Messages[i].ToolCalls, msg.ToolCalls)
+			}
+			if len(msg.ToolResults) > 0 {
+				clone.req.Messages[i].ToolResults = make([]ToolResult, len(msg.ToolResults))
+				copy(clone.req.Messages[i].ToolResults, msg.ToolResults)
+			}
 		}
 	}
 
@@ -285,6 +293,81 @@ func (b *ChatBuilder) Truncation(mode string) *ChatBuilder {
 	return b
 }
 
+// ToolResults returns a new ChatBuilder with tool execution results appended.
+// This automatically formats results according to the provider's expected format.
+// The assistant message containing the original tool calls is automatically included.
+//
+// IMPORTANT: This method returns a NEW builder (immutable). The original builder is unchanged.
+//
+// If fewer results are provided than tool calls, a warning is logged but execution continues.
+// If result IDs don't match any tool calls, a warning is logged.
+func (b *ChatBuilder) ToolResults(assistantResp *ChatResponse, results []ToolResult) *ChatBuilder {
+	// Always clone to maintain immutability
+	newBuilder := b.Clone()
+
+	if assistantResp == nil || !assistantResp.HasToolCalls() {
+		return newBuilder
+	}
+
+	// Build lookup maps for validation
+	callIDs := make(map[string]string) // callID -> toolName
+	for _, tc := range assistantResp.ToolCalls {
+		callIDs[tc.ID] = tc.Name
+	}
+
+	providedIDs := make(map[string]bool)
+	for _, r := range results {
+		providedIDs[r.CallID] = true
+		// Warn about results that don't match any tool call
+		if _, ok := callIDs[r.CallID]; !ok {
+			// Log warning - using standard library to avoid adding dependencies
+			// In production, users can configure proper logging via middleware
+			println("warning: tool result ID", r.CallID, "does not match any tool call")
+		}
+	}
+
+	// Warn about tool calls without results
+	for id, name := range callIDs {
+		if !providedIDs[id] {
+			println("warning: no result provided for tool call", id, "(tool:", name+")")
+		}
+	}
+
+	// Add assistant message with tool calls (required by all providers)
+	newBuilder.req.Messages = append(newBuilder.req.Messages, Message{
+		Role:      RoleAssistant,
+		ToolCalls: assistantResp.ToolCalls,
+	})
+
+	// Add tool results - actual formatting happens in provider mapping
+	newBuilder.req.Messages = append(newBuilder.req.Messages, Message{
+		Role:        RoleTool,
+		ToolResults: results,
+	})
+
+	return newBuilder
+}
+
+// ToolResult is a convenience method for adding a single successful tool result.
+// Returns a new builder (immutable).
+func (b *ChatBuilder) ToolResult(assistantResp *ChatResponse, callID string, content any) *ChatBuilder {
+	return b.ToolResults(assistantResp, []ToolResult{{
+		CallID:  callID,
+		Content: content,
+		IsError: false,
+	}})
+}
+
+// ToolError is a convenience method for adding a single tool error result.
+// Returns a new builder (immutable).
+func (b *ChatBuilder) ToolError(assistantResp *ChatResponse, callID string, err error) *ChatBuilder {
+	return b.ToolResults(assistantResp, []ToolResult{{
+		CallID:  callID,
+		Content: err.Error(),
+		IsError: true,
+	}})
+}
+
 // validate checks that the request is valid.
 func (b *ChatBuilder) validate() error {
 	if b.req.Model == "" {
@@ -294,9 +377,10 @@ func (b *ChatBuilder) validate() error {
 		return ErrNoMessages
 	}
 
-	// Validate each message has content (either Content string or Parts)
+	// Validate each message has content (Content, Parts, ToolCalls, or ToolResults)
 	for _, msg := range b.req.Messages {
-		if msg.Content == "" && len(msg.Parts) == 0 {
+		hasContent := msg.Content != "" || len(msg.Parts) > 0 || len(msg.ToolCalls) > 0 || len(msg.ToolResults) > 0
+		if !hasContent {
 			return ErrNoMessages
 		}
 	}

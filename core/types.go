@@ -87,15 +87,18 @@ const (
 	RoleSystem    Role = "system"
 	RoleUser      Role = "user"
 	RoleAssistant Role = "assistant"
+	RoleTool      Role = "tool" // For tool result messages
 )
 
 // Message represents a single message in a conversation.
 // For simple text messages, use Content. For multimodal messages, use Parts.
 // If Parts is non-empty, Content is ignored.
 type Message struct {
-	Role    Role          `json:"role"`
-	Content string        `json:"content,omitempty"`
-	Parts   []ContentPart `json:"-"` // Multimodal content parts (Responses API only)
+	Role        Role          `json:"role"`
+	Content     string        `json:"content,omitempty"`
+	Parts       []ContentPart `json:"-"`                      // Multimodal content parts (Responses API only)
+	ToolCalls   []ToolCall    `json:"tool_calls,omitempty"`   // For assistant messages requesting tools
+	ToolResults []ToolResult  `json:"tool_results,omitempty"` // For tool result messages (RoleTool)
 }
 
 // TokenUsage tracks token consumption for a request.
@@ -111,6 +114,107 @@ type ToolCall struct {
 	ID        string          `json:"id"`
 	Name      string          `json:"name"`
 	Arguments json.RawMessage `json:"arguments"`
+}
+
+// ToolResult represents the outcome of executing a tool.
+// Use this for untyped tool results where the Content can be any JSON-serializable value.
+type ToolResult struct {
+	CallID  string `json:"call_id"` // Must match ToolCall.ID from the response
+	Content any    `json:"content"` // Result data (will be JSON marshaled)
+	IsError bool   `json:"is_error"` // True if this represents an error
+}
+
+// TypedToolResult is a type-safe tool result with compile-time type checking.
+// Use this when you want type safety for tool results.
+type TypedToolResult[T any] struct {
+	CallID  string `json:"call_id"`
+	Content T      `json:"content"`
+	IsError bool   `json:"is_error"`
+}
+
+// ToUntyped converts a typed result to the untyped ToolResult for use with ChatBuilder.
+func (r TypedToolResult[T]) ToUntyped() ToolResult {
+	return ToolResult{
+		CallID:  r.CallID,
+		Content: r.Content,
+		IsError: r.IsError,
+	}
+}
+
+// ToolResultBuilder provides a fluent API for constructing tool results.
+type ToolResultBuilder struct {
+	results []ToolResult
+}
+
+// NewToolResults creates a new builder for tool results.
+func NewToolResults() *ToolResultBuilder {
+	return &ToolResultBuilder{
+		results: make([]ToolResult, 0),
+	}
+}
+
+// Success adds a successful tool result.
+func (b *ToolResultBuilder) Success(callID string, content any) *ToolResultBuilder {
+	b.results = append(b.results, ToolResult{
+		CallID:  callID,
+		Content: content,
+		IsError: false,
+	})
+	return b
+}
+
+// Error adds a failed tool result.
+func (b *ToolResultBuilder) Error(callID string, err error) *ToolResultBuilder {
+	b.results = append(b.results, ToolResult{
+		CallID:  callID,
+		Content: err.Error(),
+		IsError: true,
+	})
+	return b
+}
+
+// FromExecution adds a result from a tool execution, handling both success and error cases.
+func (b *ToolResultBuilder) FromExecution(callID string, result any, err error) *ToolResultBuilder {
+	if err != nil {
+		return b.Error(callID, err)
+	}
+	return b.Success(callID, result)
+}
+
+// Build returns the accumulated results.
+func (b *ToolResultBuilder) Build() []ToolResult {
+	return b.results
+}
+
+// TypedToolResultBuilder provides a type-safe fluent API for constructing tool results.
+type TypedToolResultBuilder[T any] struct {
+	results []TypedToolResult[T]
+}
+
+// NewTypedToolResults creates a new type-safe builder for tool results.
+func NewTypedToolResults[T any]() *TypedToolResultBuilder[T] {
+	return &TypedToolResultBuilder[T]{
+		results: make([]TypedToolResult[T], 0),
+	}
+}
+
+// Success adds a successful typed tool result.
+func (b *TypedToolResultBuilder[T]) Success(callID string, content T) *TypedToolResultBuilder[T] {
+	b.results = append(b.results, TypedToolResult[T]{
+		CallID:  callID,
+		Content: content,
+		IsError: false,
+	})
+	return b
+}
+
+// Build returns the accumulated results as untyped ToolResults for use with ChatBuilder.
+func (b *TypedToolResultBuilder[T]) Build() []ToolResult {
+	out := make([]ToolResult, len(b.results))
+	for i, r := range b.results {
+		out[i] = r.ToUntyped()
+	}
+	return out
 }
 
 // Tool is a placeholder interface for tool definitions.

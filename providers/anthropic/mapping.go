@@ -59,9 +59,56 @@ func mapMessages(msgs []core.Message) (system string, messages []anthropicMessag
 		switch msg.Role {
 		case core.RoleSystem:
 			systemParts = append(systemParts, msg.Content)
-		case core.RoleUser, core.RoleAssistant:
+
+		case core.RoleTool:
+			// Tool result messages: create a user message with tool_result content blocks
+			content := make([]anthropicContentBlock, 0, len(msg.ToolResults))
+			for _, tr := range msg.ToolResults {
+				content = append(content, anthropicContentBlock{
+					Type:      "tool_result",
+					ToolUseID: tr.CallID,
+					Content:   marshalToolResultContent(tr.Content),
+					IsError:   tr.IsError,
+				})
+			}
 			messages = append(messages, anthropicMessage{
-				Role: string(msg.Role),
+				Role:    "user",
+				Content: content,
+			})
+
+		case core.RoleAssistant:
+			// Assistant messages may include tool calls (tool_use blocks)
+			var content []anthropicContentBlock
+
+			// Add text content if present
+			if msg.Content != "" {
+				content = append(content, anthropicContentBlock{
+					Type: "text",
+					Text: msg.Content,
+				})
+			}
+
+			// Add tool_use blocks for tool calls
+			for _, tc := range msg.ToolCalls {
+				content = append(content, anthropicContentBlock{
+					Type:  "tool_use",
+					ID:    tc.ID,
+					Name:  tc.Name,
+					Input: tc.Arguments,
+				})
+			}
+
+			// Only add message if there's content
+			if len(content) > 0 {
+				messages = append(messages, anthropicMessage{
+					Role:    "assistant",
+					Content: content,
+				})
+			}
+
+		case core.RoleUser:
+			messages = append(messages, anthropicMessage{
+				Role: "user",
 				Content: []anthropicContentBlock{
 					{
 						Type: "text",
@@ -78,6 +125,20 @@ func mapMessages(msgs []core.Message) (system string, messages []anthropicMessag
 	}
 
 	return system, messages
+}
+
+// marshalToolResultContent converts tool result content to a string.
+func marshalToolResultContent(content any) string {
+	switch v := content.(type) {
+	case string:
+		return v
+	default:
+		data, err := json.Marshal(v)
+		if err != nil {
+			return "{\"error\": \"failed to marshal tool result\"}"
+		}
+		return string(data)
+	}
 }
 
 // mapTools converts Iris tools to Anthropic tool format.

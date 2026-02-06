@@ -1118,3 +1118,270 @@ func TestCloneReuse(t *testing.T) {
 		t.Errorf("callCount = %d, want 2", callCount)
 	}
 }
+
+func TestToolResultsWithValidResponse(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	// Create a response with tool calls
+	assistantResp := &ChatResponse{
+		ID:     "resp-1",
+		Output: "",
+		ToolCalls: []ToolCall{
+			{ID: "call_1", Name: "get_weather", Arguments: []byte(`{"city":"Tokyo"}`)},
+			{ID: "call_2", Name: "get_time", Arguments: []byte(`{"timezone":"JST"}`)},
+		},
+	}
+
+	// Create tool results
+	results := []ToolResult{
+		{CallID: "call_1", Content: "Sunny, 25°C", IsError: false},
+		{CallID: "call_2", Content: "15:30 JST", IsError: false},
+	}
+
+	// Build the request with tool results
+	original := client.Chat("gpt-4").User("What's the weather and time in Tokyo?")
+	builder := original.ToolResults(assistantResp, results)
+
+	// Should have 3 messages: user, assistant (with tool calls), tool results
+	if len(builder.req.Messages) != 3 {
+		t.Fatalf("len(Messages) = %d, want 3", len(builder.req.Messages))
+	}
+
+	// Verify user message
+	if builder.req.Messages[0].Role != RoleUser {
+		t.Errorf("Messages[0].Role = %v, want user", builder.req.Messages[0].Role)
+	}
+
+	// Verify assistant message with tool calls
+	if builder.req.Messages[1].Role != RoleAssistant {
+		t.Errorf("Messages[1].Role = %v, want assistant", builder.req.Messages[1].Role)
+	}
+	if len(builder.req.Messages[1].ToolCalls) != 2 {
+		t.Errorf("len(Messages[1].ToolCalls) = %d, want 2", len(builder.req.Messages[1].ToolCalls))
+	}
+
+	// Verify tool results message
+	if builder.req.Messages[2].Role != RoleTool {
+		t.Errorf("Messages[2].Role = %v, want tool", builder.req.Messages[2].Role)
+	}
+	if len(builder.req.Messages[2].ToolResults) != 2 {
+		t.Errorf("len(Messages[2].ToolResults) = %d, want 2", len(builder.req.Messages[2].ToolResults))
+	}
+}
+
+func TestToolResultsImmutability(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	assistantResp := &ChatResponse{
+		ToolCalls: []ToolCall{{ID: "call_1", Name: "test_tool"}},
+	}
+	results := []ToolResult{{CallID: "call_1", Content: "result"}}
+
+	original := client.Chat("gpt-4").User("Test")
+	originalMsgCount := len(original.req.Messages)
+
+	// ToolResults should return a new builder
+	newBuilder := original.ToolResults(assistantResp, results)
+
+	// Original should be unchanged
+	if len(original.req.Messages) != originalMsgCount {
+		t.Errorf("original modified: len(Messages) = %d, want %d", len(original.req.Messages), originalMsgCount)
+	}
+
+	// New builder should have additional messages
+	if len(newBuilder.req.Messages) != originalMsgCount+2 {
+		t.Errorf("newBuilder len(Messages) = %d, want %d", len(newBuilder.req.Messages), originalMsgCount+2)
+	}
+
+	// Verify they are different instances
+	if &original.req.Messages == &newBuilder.req.Messages {
+		t.Error("original and newBuilder share the same Messages slice")
+	}
+}
+
+func TestToolResultsWithNilResponse(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	original := client.Chat("gpt-4").User("Test")
+	results := []ToolResult{{CallID: "call_1", Content: "result"}}
+
+	builder := original.ToolResults(nil, results)
+
+	// Should just clone, not add any messages
+	if len(builder.req.Messages) != 1 {
+		t.Errorf("len(Messages) = %d, want 1", len(builder.req.Messages))
+	}
+}
+
+func TestToolResultsWithNoToolCalls(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	// Response without tool calls
+	assistantResp := &ChatResponse{
+		ID:     "resp-1",
+		Output: "Just a text response",
+	}
+
+	original := client.Chat("gpt-4").User("Test")
+	results := []ToolResult{{CallID: "call_1", Content: "result"}}
+
+	builder := original.ToolResults(assistantResp, results)
+
+	// Should just clone, not add any messages
+	if len(builder.req.Messages) != 1 {
+		t.Errorf("len(Messages) = %d, want 1", len(builder.req.Messages))
+	}
+}
+
+func TestToolResultSingleResult(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	assistantResp := &ChatResponse{
+		ToolCalls: []ToolCall{{ID: "call_1", Name: "get_weather"}},
+	}
+
+	builder := client.Chat("gpt-4").
+		User("What's the weather?").
+		ToolResult(assistantResp, "call_1", "Sunny, 25°C")
+
+	// Should have 3 messages
+	if len(builder.req.Messages) != 3 {
+		t.Fatalf("len(Messages) = %d, want 3", len(builder.req.Messages))
+	}
+
+	// Verify the tool result
+	toolMsg := builder.req.Messages[2]
+	if toolMsg.Role != RoleTool {
+		t.Errorf("Messages[2].Role = %v, want tool", toolMsg.Role)
+	}
+	if len(toolMsg.ToolResults) != 1 {
+		t.Fatalf("len(ToolResults) = %d, want 1", len(toolMsg.ToolResults))
+	}
+	if toolMsg.ToolResults[0].CallID != "call_1" {
+		t.Errorf("CallID = %v, want call_1", toolMsg.ToolResults[0].CallID)
+	}
+	if toolMsg.ToolResults[0].Content != "Sunny, 25°C" {
+		t.Errorf("Content = %v, want 'Sunny, 25°C'", toolMsg.ToolResults[0].Content)
+	}
+	if toolMsg.ToolResults[0].IsError {
+		t.Error("IsError = true, want false")
+	}
+}
+
+func TestToolError(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	assistantResp := &ChatResponse{
+		ToolCalls: []ToolCall{{ID: "call_1", Name: "get_weather"}},
+	}
+
+	testErr := errors.New("API rate limit exceeded")
+	builder := client.Chat("gpt-4").
+		User("What's the weather?").
+		ToolError(assistantResp, "call_1", testErr)
+
+	// Verify the error result
+	toolMsg := builder.req.Messages[2]
+	if !toolMsg.ToolResults[0].IsError {
+		t.Error("IsError = false, want true")
+	}
+	if toolMsg.ToolResults[0].Content != "API rate limit exceeded" {
+		t.Errorf("Content = %v, want 'API rate limit exceeded'", toolMsg.ToolResults[0].Content)
+	}
+}
+
+func TestToolResultsWithStructuredContent(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	assistantResp := &ChatResponse{
+		ToolCalls: []ToolCall{{ID: "call_1", Name: "get_weather"}},
+	}
+
+	// Use structured content (will be JSON marshaled by providers)
+	structuredResult := map[string]interface{}{
+		"temperature": 25,
+		"condition":   "sunny",
+		"humidity":    60,
+	}
+
+	builder := client.Chat("gpt-4").
+		User("What's the weather?").
+		ToolResult(assistantResp, "call_1", structuredResult)
+
+	toolMsg := builder.req.Messages[2]
+	content, ok := toolMsg.ToolResults[0].Content.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Content type = %T, want map[string]interface{}", toolMsg.ToolResults[0].Content)
+	}
+	if content["temperature"] != 25 {
+		t.Errorf("temperature = %v, want 25", content["temperature"])
+	}
+}
+
+func TestCloneWithToolCallsAndResults(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	assistantResp := &ChatResponse{
+		ToolCalls: []ToolCall{{ID: "call_1", Name: "test_tool"}},
+	}
+	results := []ToolResult{{CallID: "call_1", Content: "result"}}
+
+	original := client.Chat("gpt-4").
+		User("Test").
+		ToolResults(assistantResp, results)
+
+	clone := original.Clone()
+
+	// Verify clone has the tool calls and results
+	if len(clone.req.Messages) != 3 {
+		t.Fatalf("clone len(Messages) = %d, want 3", len(clone.req.Messages))
+	}
+
+	// Verify assistant message with tool calls is cloned
+	if len(clone.req.Messages[1].ToolCalls) != 1 {
+		t.Errorf("clone Messages[1].ToolCalls len = %d, want 1", len(clone.req.Messages[1].ToolCalls))
+	}
+
+	// Verify tool results message is cloned
+	if len(clone.req.Messages[2].ToolResults) != 1 {
+		t.Errorf("clone Messages[2].ToolResults len = %d, want 1", len(clone.req.Messages[2].ToolResults))
+	}
+
+	// Modify clone and verify original is unchanged
+	clone.req.Messages[1].ToolCalls[0].Name = "modified_tool"
+	if original.req.Messages[1].ToolCalls[0].Name == "modified_tool" {
+		t.Error("modifying clone's ToolCalls affected original")
+	}
+
+	clone.req.Messages[2].ToolResults[0].CallID = "modified_call"
+	if original.req.Messages[2].ToolResults[0].CallID == "modified_call" {
+		t.Error("modifying clone's ToolResults affected original")
+	}
+}
+
+func TestValidateWithToolResultMessage(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	assistantResp := &ChatResponse{
+		ToolCalls: []ToolCall{{ID: "call_1", Name: "test_tool"}},
+	}
+
+	builder := client.Chat("gpt-4").
+		User("Test").
+		ToolResults(assistantResp, []ToolResult{{CallID: "call_1", Content: "result"}})
+
+	// Should validate successfully - tool result messages have ToolResults, not Content
+	err := builder.validate()
+	if err != nil {
+		t.Errorf("validate() = %v, want nil", err)
+	}
+}
