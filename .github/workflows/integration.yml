@@ -37,5 +37,6 @@ jobs:
           XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
           ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
           VOYAGEAI_API_KEY: ${{ secrets.VOYAGEAI_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: go test -tags=integration ./tests/integration/... -count=1 -v
