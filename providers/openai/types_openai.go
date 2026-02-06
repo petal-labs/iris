@@ -17,7 +17,7 @@ type openAIRequest struct {
 type openAIMessage struct {
 	Role       string           `json:"role"`
 	Content    string           `json:"content,omitempty"`
-	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`  // For assistant messages requesting tools
+	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`   // For assistant messages requesting tools
 	ToolCallID string           `json:"tool_call_id,omitempty"` // For tool result messages
 }
 

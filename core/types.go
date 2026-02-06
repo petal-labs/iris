@@ -119,8 +119,8 @@ type ToolCall struct {
 // ToolResult represents the outcome of executing a tool.
 // Use this for untyped tool results where the Content can be any JSON-serializable value.
 type ToolResult struct {
-	CallID  string `json:"call_id"` // Must match ToolCall.ID from the response
-	Content any    `json:"content"` // Result data (will be JSON marshaled)
+	CallID  string `json:"call_id"`  // Must match ToolCall.ID from the response
+	Content any    `json:"content"`  // Result data (will be JSON marshaled)
 	IsError bool   `json:"is_error"` // True if this represents an error
 }
 
