@@ -1,7 +1,10 @@
 package tools
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -64,4 +67,14 @@ func (r *Registry) List() []Tool {
 		result = append(result, t)
 	}
 	return result
+}
+
+// Execute finds a tool by name and calls it with the given arguments.
+// Returns an error if the tool is not found or if execution fails.
+func (r *Registry) Execute(ctx context.Context, name string, args json.RawMessage) (any, error) {
+	tool, ok := r.Get(name)
+	if !ok {
+		return nil, fmt.Errorf("tool %q not found", name)
+	}
+	return tool.Call(ctx, args)
 }
