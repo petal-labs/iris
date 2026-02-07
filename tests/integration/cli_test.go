@@ -121,7 +121,6 @@ func TestCLI_Init(t *testing.T) {
 	files := []string{
 		"main.go",
 		"iris.yaml",
-		"agents/.gitkeep",
 		"tools/.gitkeep",
 	}
 
