@@ -33,14 +33,7 @@ func OpenAIStyleProviderError(provider string, status int, body []byte, requestI
 		code = errResp.Error.Type
 	}
 
-	return &core.ProviderError{
-		Provider:  provider,
-		Status:    status,
-		RequestID: requestID,
-		Code:      code,
-		Message:   message,
-		Err:       sentinelForStatus(status),
-	}
+	return ProviderError(provider, status, requestID, code, message, SentinelForStatus(status))
 }
 
 // NetworkError wraps transport failures as provider-specific network errors.
@@ -61,7 +54,40 @@ func DecodeError(provider string, err error) error {
 	}
 }
 
-func sentinelForStatus(status int) error {
+// ProviderError constructs a normalized ProviderError.
+// If message is empty, HTTP status text is used.
+// If sentinel is nil, default status-based mapping is applied.
+func ProviderError(provider string, status int, requestID, code, message string, sentinel error) error {
+	if message == "" {
+		message = http.StatusText(status)
+	}
+	if sentinel == nil {
+		sentinel = SentinelForStatus(status)
+	}
+	return &core.ProviderError{
+		Provider:  provider,
+		Status:    status,
+		RequestID: requestID,
+		Code:      code,
+		Message:   message,
+		Err:       sentinel,
+	}
+}
+
+// SentinelForStatus maps an HTTP status code to a core sentinel error.
+func SentinelForStatus(status int) error {
+	return SentinelForStatusWithOverrides(status, nil)
+}
+
+// SentinelForStatusWithOverrides maps an HTTP status code to a core sentinel error,
+// then applies any exact status overrides from the provided map.
+func SentinelForStatusWithOverrides(status int, overrides map[int]error) error {
+	if overrides != nil {
+		if override, ok := overrides[status]; ok && override != nil {
+			return override
+		}
+	}
+
 	switch {
 	case status == http.StatusBadRequest:
 		return core.ErrBadRequest

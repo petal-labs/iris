@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 // ErrToolArgsInvalidJSON is returned when tool call arguments contain invalid JSON.
@@ -30,47 +31,19 @@ func normalizeError(status int, body []byte, requestID string) error {
 		code = "unknown_error"
 	}
 
-	// Determine sentinel error based on status
-	var sentinel error
-	switch {
-	case status == http.StatusBadRequest:
-		sentinel = core.ErrBadRequest
-	case status == http.StatusUnauthorized || status == http.StatusForbidden:
-		sentinel = core.ErrUnauthorized
-	case status == http.StatusNotFound:
-		sentinel = core.ErrNotFound
-	case status == http.StatusTooManyRequests:
-		sentinel = core.ErrRateLimited
-	case status >= 500:
-		sentinel = core.ErrServer
-	default:
-		sentinel = core.ErrServer
-	}
+	sentinel := normalize.SentinelForStatusWithOverrides(status, map[int]error{
+		http.StatusNotFound: core.ErrNotFound,
+	})
 
-	return &core.ProviderError{
-		Provider:  "anthropic",
-		Status:    status,
-		RequestID: requestID,
-		Code:      code,
-		Message:   message,
-		Err:       sentinel,
-	}
+	return normalize.ProviderError("anthropic", status, requestID, code, message, sentinel)
 }
 
 // newNetworkError creates a ProviderError for network-related failures.
 func newNetworkError(err error) error {
-	return &core.ProviderError{
-		Provider: "anthropic",
-		Message:  err.Error(),
-		Err:      core.ErrNetwork,
-	}
+	return normalize.NetworkError("anthropic", err)
 }
 
 // newDecodeError creates a ProviderError for JSON decode failures.
 func newDecodeError(err error) error {
-	return &core.ProviderError{
-		Provider: "anthropic",
-		Message:  err.Error(),
-		Err:      core.ErrDecode,
-	}
+	return normalize.DecodeError("anthropic", err)
 }

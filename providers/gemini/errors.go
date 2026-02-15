@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 // File-specific error sentinels.
@@ -33,44 +34,19 @@ func normalizeError(status int, body []byte) error {
 		code = "unknown_error"
 	}
 
-	// Determine sentinel error based on status
-	var sentinel error
-	switch {
-	case status == http.StatusBadRequest || status == http.StatusNotFound:
-		sentinel = core.ErrBadRequest
-	case status == http.StatusUnauthorized || status == http.StatusForbidden:
-		sentinel = core.ErrUnauthorized
-	case status == http.StatusTooManyRequests:
-		sentinel = core.ErrRateLimited
-	case status >= 500:
-		sentinel = core.ErrServer
-	default:
-		sentinel = core.ErrServer
-	}
+	sentinel := normalize.SentinelForStatusWithOverrides(status, map[int]error{
+		http.StatusNotFound: core.ErrBadRequest,
+	})
 
-	return &core.ProviderError{
-		Provider: "gemini",
-		Status:   status,
-		Code:     code,
-		Message:  message,
-		Err:      sentinel,
-	}
+	return normalize.ProviderError("gemini", status, "", code, message, sentinel)
 }
 
 // newNetworkError creates a ProviderError for network-related failures.
 func newNetworkError(err error) error {
-	return &core.ProviderError{
-		Provider: "gemini",
-		Message:  err.Error(),
-		Err:      core.ErrNetwork,
-	}
+	return normalize.NetworkError("gemini", err)
 }
 
 // newDecodeError creates a ProviderError for JSON decode failures.
 func newDecodeError(err error) error {
-	return &core.ProviderError{
-		Provider: "gemini",
-		Message:  err.Error(),
-		Err:      core.ErrDecode,
-	}
+	return normalize.DecodeError("gemini", err)
 }
