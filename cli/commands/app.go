@@ -1,3 +1,4 @@
+// Package commands implements the CLI command tree and runtime wiring.
 package commands
 
 import (
