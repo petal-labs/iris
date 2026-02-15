@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -108,16 +109,23 @@ func TestNewClient(t *testing.T) {
 	if c.provider != p {
 		t.Error("provider not set correctly")
 	}
+	if c.warningHandler == nil {
+		t.Error("warning handler should default to no-op")
+	}
 }
 
 func TestNewClientWithOptions(t *testing.T) {
 	p := &mockProvider{id: "test"}
 	hook := &mockTelemetryHook{}
 	retry := NewRetryPolicy(RetryConfig{MaxRetries: 5})
+	var warned bool
 
 	c := NewClient(p,
 		WithTelemetry(hook),
 		WithRetryPolicy(retry),
+		WithWarningHandler(func(string) {
+			warned = true
+		}),
 	)
 
 	if c.telemetry != hook {
@@ -125,6 +133,18 @@ func TestNewClientWithOptions(t *testing.T) {
 	}
 	if c.retry != retry {
 		t.Error("retry policy not set")
+	}
+	c.warningHandler("test warning")
+	if !warned {
+		t.Error("warning handler not set")
+	}
+}
+
+func TestWithWarningHandlerNilPreservesDefault(t *testing.T) {
+	p := &mockProvider{id: "test"}
+	c := NewClient(p, WithWarningHandler(nil))
+	if c.warningHandler == nil {
+		t.Fatal("warning handler should not be nil")
 	}
 }
 
@@ -1167,6 +1187,37 @@ func TestToolResultsWithValidResponse(t *testing.T) {
 	}
 	if len(builder.req.Messages[2].ToolResults) != 2 {
 		t.Errorf("len(Messages[2].ToolResults) = %d, want 2", len(builder.req.Messages[2].ToolResults))
+	}
+}
+
+func TestToolResultsWarningHandler(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	var warnings []string
+	client := NewClient(provider, WithWarningHandler(func(msg string) {
+		warnings = append(warnings, msg)
+	}))
+
+	assistantResp := &ChatResponse{
+		ToolCalls: []ToolCall{
+			{ID: "call_1", Name: "get_weather"},
+			{ID: "call_2", Name: "get_time"},
+		},
+	}
+	results := []ToolResult{
+		{CallID: "call_1", Content: "Sunny, 25C"},
+		{CallID: "unknown_call", Content: "unused"},
+	}
+
+	_ = client.Chat("gpt-4").User("Test").ToolResults(assistantResp, results)
+
+	if len(warnings) != 2 {
+		t.Fatalf("len(warnings) = %d, want 2", len(warnings))
+	}
+	if !strings.Contains(warnings[0], "unknown_call") {
+		t.Errorf("warnings[0] = %q, want mention of unknown_call", warnings[0])
+	}
+	if !strings.Contains(warnings[1], "call_2") {
+		t.Errorf("warnings[1] = %q, want mention of call_2", warnings[1])
 	}
 }
 

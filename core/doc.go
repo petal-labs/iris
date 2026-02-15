@@ -13,6 +13,7 @@
 //	client := core.NewClient(provider,
 //	    core.WithTelemetry(myTelemetryHook),
 //	    core.WithRetryPolicy(core.DefaultRetryPolicy()),
+//	    core.WithWarningHandler(func(msg string) { log.Printf("iris warning: %s", msg) }),
 //	)
 //
 // # ChatBuilder
@@ -130,6 +131,11 @@
 //
 // The default policy retries transient errors (rate limits, server errors) with
 // exponential backoff.
+//
+// # Warnings
+//
+// Non-fatal SDK warnings (for example, mismatched tool result IDs) can be routed
+// through [WithWarningHandler]. The default warning handler is a no-op.
 //
 // # Multimodal Messages
 //

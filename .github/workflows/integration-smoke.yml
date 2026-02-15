@@ -1,0 +1,39 @@
+name: PR Integration Smoke
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+          cache: true
+
+      - name: Check OpenAI secret
+        id: keycheck
+        env:
+          HAS_OPENAI: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: |
+          if [ "$HAS_OPENAI" = "true" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "OPENAI_API_KEY is not configured for this run; skipping smoke test."
+          fi
+
+      - name: Run OpenAI integration smoke test
+        if: steps.keycheck.outputs.available == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: go test -tags=integration ./tests/integration/... -run '^TestOpenAI_ChatCompletion$' -count=1 -v

@@ -909,4 +909,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues and pull requests.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, test tiers, and PR expectations.
