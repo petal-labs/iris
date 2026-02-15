@@ -29,7 +29,7 @@ type ToolContext struct {
 	// CallID is a unique identifier for this invocation (if available).
 	CallID string
 
-	// Iteration is the agent loop iteration (if running in agent context).
+	// Iteration is the current workflow loop iteration (if provided by caller).
 	Iteration int
 
 	// Metadata allows middleware to share data with each other.

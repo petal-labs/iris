@@ -15,7 +15,7 @@ Streaming is not an afterthought in Iris. The `ChatStream` type with its three-c
 
 **Cancellation Support**: Users may want to stop generation early. Streaming with context cancellation allows graceful termination without wasting API calls or compute.
 
-**Tool Call Handling**: Modern LLMs interleave text output with tool calls. Streaming surfaces tool calls as they occur, enabling faster agentic workflows.
+**Tool Call Handling**: Modern LLMs interleave text output with tool calls. Streaming surfaces tool calls as they occur, enabling faster tool-driven workflows.
 
 ### Design Details
 

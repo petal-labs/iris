@@ -22,10 +22,10 @@ var (
 // rootCmd is the base command for the CLI.
 var rootCmd = &cobra.Command{
 	Use:   "iris",
-	Short: "Iris - AI agent development CLI",
-	Long: `Iris is a command-line interface for AI agent development.
+	Short: "Iris - Go SDK and CLI for LLM providers",
+	Long: `Iris is a command-line interface for working with LLM providers.
 
-Use Iris to manage API keys, chat with models, and build agent workflows.`,
+Use Iris to manage API keys, chat with models, and scaffold projects.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return initConfig()
 	},
