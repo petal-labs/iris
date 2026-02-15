@@ -5,87 +5,50 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/toolcalls"
 )
 
 // Streaming types for tool call assembly.
 
 // toolCallAssembler accumulates streaming tool call fragments.
 type toolCallAssembler struct {
-	calls map[int]*assemblingToolCall
-}
-
-type assemblingToolCall struct {
-	ID        string
-	Name      string
-	Arguments strings.Builder
+	asm *toolcalls.Assembler
 }
 
 func newToolCallAssembler() *toolCallAssembler {
 	return &toolCallAssembler{
-		calls: make(map[int]*assemblingToolCall),
+		asm: toolcalls.NewAssembler(toolcalls.Config{
+			EmptyArgumentsJSON: "{}",
+		}),
 	}
 }
 
 // startToolUse begins tracking a new tool use block.
 func (a *toolCallAssembler) startToolUse(index int, id, name string) {
-	a.calls[index] = &assemblingToolCall{
-		ID:   id,
-		Name: name,
-	}
+	a.asm.StartCall(index, id, name)
 }
 
 // addFragment processes a streaming tool call fragment.
 func (a *toolCallAssembler) addFragment(index int, partialJSON string) {
-	call, exists := a.calls[index]
-	if !exists {
-		return
-	}
-	call.Arguments.WriteString(partialJSON)
+	a.asm.AddArguments(index, partialJSON)
 }
 
 // finalize validates and returns the assembled tool calls.
 func (a *toolCallAssembler) finalize() ([]core.ToolCall, error) {
-	if len(a.calls) == 0 {
-		return nil, nil
-	}
-
-	// Find max index to determine slice size
-	maxIndex := 0
-	for idx := range a.calls {
-		if idx > maxIndex {
-			maxIndex = idx
-		}
-	}
-
-	result := make([]core.ToolCall, 0, len(a.calls))
-	for i := 0; i <= maxIndex; i++ {
-		call, exists := a.calls[i]
-		if !exists {
-			continue
-		}
-
-		args := call.Arguments.String()
-		if args == "" {
-			args = "{}"
-		}
-
-		if !json.Valid([]byte(args)) {
+	calls, err := a.asm.Finalize()
+	if err != nil {
+		if errors.Is(err, toolcalls.ErrInvalidJSON) {
 			return nil, ErrToolArgsInvalidJSON
 		}
-
-		result = append(result, core.ToolCall{
-			ID:        call.ID,
-			Name:      call.Name,
-			Arguments: json.RawMessage(args),
-		})
+		return nil, err
 	}
-
-	return result, nil
+	return calls, nil
 }
 
 // doStreamChat performs a streaming chat request.

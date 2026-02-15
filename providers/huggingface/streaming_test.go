@@ -385,8 +385,8 @@ func TestNewToolCallAssembler(t *testing.T) {
 	if asm == nil {
 		t.Fatal("newToolCallAssembler() returned nil")
 	}
-	if asm.calls == nil {
-		t.Fatal("newToolCallAssembler().calls should not be nil")
+	if asm.asm == nil {
+		t.Fatal("newToolCallAssembler().asm should not be nil")
 	}
 }
 
