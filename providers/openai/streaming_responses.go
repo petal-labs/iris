@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/toolcalls"
 )
 
 // doResponsesStreamChat performs a streaming request to the Responses API.
@@ -74,13 +76,15 @@ type responsesStreamState struct {
 	responseModel string
 	status        string
 	usage         *responsesUsage
-	toolCalls     map[int]*assemblingToolCall // index -> tool call being assembled
-	reasoning     []string                    // reasoning summaries
+	toolCalls     *toolcalls.Assembler
+	toolCallDelta map[int]bool // index -> whether argument deltas were seen
+	reasoning     []string     // reasoning summaries
 }
 
 func newResponsesStreamState() *responsesStreamState {
 	return &responsesStreamState{
-		toolCalls: make(map[int]*assemblingToolCall),
+		toolCalls:     toolcalls.NewAssembler(toolcalls.Config{EmptyArgumentsJSON: "{}"}),
+		toolCallDelta: make(map[int]bool),
 	}
 }
 
@@ -175,12 +179,16 @@ func (p *OpenAI) processResponsesStream(
 	}
 
 	// Finalize tool calls
-	if len(state.toolCalls) > 0 {
-		toolCalls, err := finalizeToolCalls(state.toolCalls)
-		if err != nil {
-			errCh <- err
+	toolCalls, err := state.toolCalls.Finalize()
+	if err != nil {
+		if errors.Is(err, toolcalls.ErrInvalidJSON) {
+			errCh <- ErrToolArgsInvalidJSON
 			return
 		}
+		errCh <- err
+		return
+	}
+	if len(toolCalls) > 0 {
 		finalResp.ToolCalls = toolCalls
 	}
 
@@ -260,14 +268,12 @@ func (p *OpenAI) handleResponsesStreamEvent(
 		if len(event.Delta) > 0 {
 			var delta responsesFunctionCallDelta
 			if err := json.Unmarshal(event.Delta, &delta); err == nil {
-				// Get or create tool call state
 				idx := event.OutputIndex
-				call, exists := state.toolCalls[idx]
-				if !exists {
-					call = &assemblingToolCall{}
-					state.toolCalls[idx] = call
-				}
-				call.Arguments.WriteString(delta.Arguments)
+				state.toolCalls.AddFragment(toolcalls.Fragment{
+					Index:     idx,
+					Arguments: delta.Arguments,
+				})
+				state.toolCallDelta[idx] = true
 			}
 		}
 
@@ -278,19 +284,17 @@ func (p *OpenAI) handleResponsesStreamEvent(
 			if err := json.Unmarshal(event.Item, &item); err == nil {
 				switch item.Type {
 				case "function_call":
-					// Store the completed function call info
 					idx := event.OutputIndex
-					call, exists := state.toolCalls[idx]
-					if !exists {
-						call = &assemblingToolCall{}
-						state.toolCalls[idx] = call
+					fragment := toolcalls.Fragment{
+						Index: idx,
+						ID:    item.CallID,
+						Name:  item.Name,
 					}
-					call.ID = item.CallID
-					call.Name = item.Name
-					// Arguments may already be populated from deltas
-					if item.Arguments != "" && call.Arguments.Len() == 0 {
-						call.Arguments.WriteString(item.Arguments)
+					// Avoid duplicating arguments when delta events already carried them.
+					if item.Arguments != "" && !state.toolCallDelta[idx] {
+						fragment.Arguments = item.Arguments
 					}
+					state.toolCalls.AddFragment(fragment)
 
 				case "reasoning":
 					// Extract reasoning summary
@@ -305,43 +309,4 @@ func (p *OpenAI) handleResponsesStreamEvent(
 	}
 
 	return nil
-}
-
-// finalizeToolCalls converts the assembled tool calls map to a slice.
-func finalizeToolCalls(calls map[int]*assemblingToolCall) ([]core.ToolCall, error) {
-	if len(calls) == 0 {
-		return nil, nil
-	}
-
-	// Find max index
-	maxIndex := 0
-	for idx := range calls {
-		if idx > maxIndex {
-			maxIndex = idx
-		}
-	}
-
-	result := make([]core.ToolCall, 0, len(calls))
-	for i := 0; i <= maxIndex; i++ {
-		call, exists := calls[i]
-		if !exists {
-			continue
-		}
-
-		args := call.Arguments.String()
-		if args == "" {
-			args = "{}"
-		}
-		if !json.Valid([]byte(args)) {
-			return nil, ErrToolArgsInvalidJSON
-		}
-
-		result = append(result, core.ToolCall{
-			ID:        call.ID,
-			Name:      call.Name,
-			Arguments: json.RawMessage(args),
-		})
-	}
-
-	return result, nil
 }

@@ -17,12 +17,18 @@ import (
 type mockTool struct {
 	name        string
 	description string
+	schema      ToolSchema
 	callFn      func(ctx context.Context, args json.RawMessage) (any, error)
 }
 
 func (t *mockTool) Name() string        { return t.name }
 func (t *mockTool) Description() string { return t.description }
-func (t *mockTool) Schema() ToolSchema  { return ToolSchema{JSONSchema: json.RawMessage(`{}`)} }
+func (t *mockTool) Schema() ToolSchema {
+	if len(t.schema.JSONSchema) > 0 {
+		return t.schema
+	}
+	return ToolSchema{JSONSchema: json.RawMessage(`{}`)}
+}
 func (t *mockTool) Call(ctx context.Context, args json.RawMessage) (any, error) {
 	if t.callFn != nil {
 		return t.callFn(ctx, args)
@@ -181,6 +187,18 @@ func TestWrappedToolSetsToolContext(t *testing.T) {
 	}
 	if capturedTC.ToolName != "my_tool" {
 		t.Errorf("ToolName = %q, want %q", capturedTC.ToolName, "my_tool")
+	}
+
+	if string(capturedTC.Schema) != "{}" {
+		t.Errorf("Schema = %s, want {}", capturedTC.Schema)
+	}
+
+	rawSchema, ok := capturedTC.Metadata[ToolContextSchemaMetadataKey].(json.RawMessage)
+	if !ok {
+		t.Fatalf("expected metadata[%q] to be json.RawMessage", ToolContextSchemaMetadataKey)
+	}
+	if string(rawSchema) != "{}" {
+		t.Errorf("metadata schema = %s, want {}", rawSchema)
 	}
 }
 
@@ -489,6 +507,63 @@ func TestWithBasicValidation(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "invalid JSON") {
 		t.Errorf("expected invalid JSON error, got: %v", err)
+	}
+}
+
+type mockSchemaValidator struct {
+	calls      int
+	lastSchema json.RawMessage
+	lastData   json.RawMessage
+	err        error
+}
+
+func (m *mockSchemaValidator) Validate(schema json.RawMessage, data json.RawMessage) error {
+	m.calls++
+	m.lastSchema = append(json.RawMessage(nil), schema...)
+	m.lastData = append(json.RawMessage(nil), data...)
+	return m.err
+}
+
+func TestWithValidationUsesPropagatedSchema(t *testing.T) {
+	validator := &mockSchemaValidator{}
+	tool := &mockTool{
+		name:   "validated_tool",
+		schema: ToolSchema{JSONSchema: json.RawMessage(`{"type":"object","properties":{"city":{"type":"string"}}}`)},
+	}
+
+	wrapped := ApplyMiddleware(tool, WithValidation(validator))
+	args := json.RawMessage(`{"city":"SF"}`)
+
+	_, err := wrapped.Call(context.Background(), args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if validator.calls != 1 {
+		t.Fatalf("validator calls = %d, want 1", validator.calls)
+	}
+	if string(validator.lastSchema) != `{"type":"object","properties":{"city":{"type":"string"}}}` {
+		t.Errorf("validator schema = %s", validator.lastSchema)
+	}
+	if string(validator.lastData) != `{"city":"SF"}` {
+		t.Errorf("validator data = %s", validator.lastData)
+	}
+}
+
+func TestWithValidationReturnsValidationError(t *testing.T) {
+	validator := &mockSchemaValidator{err: errors.New("schema mismatch")}
+	tool := &mockTool{
+		name:   "validated_tool",
+		schema: ToolSchema{JSONSchema: json.RawMessage(`{"type":"object"}`)},
+	}
+
+	wrapped := ApplyMiddleware(tool, WithValidation(validator))
+	_, err := wrapped.Call(context.Background(), json.RawMessage(`{"x":1}`))
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+	if !strings.Contains(err.Error(), "argument validation failed") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 
