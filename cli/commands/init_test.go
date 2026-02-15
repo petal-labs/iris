@@ -127,9 +127,6 @@ func TestInitCreatesProjectStructure(t *testing.T) {
 	tmpDir := t.TempDir()
 	projectPath := filepath.Join(tmpDir, "testproject")
 
-	// Set up for runInit
-	initProvider = "openai"
-
 	// Simulate running the init command
 	err := runInitWithPath(projectPath, "openai")
 	if err != nil {

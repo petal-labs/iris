@@ -46,6 +46,8 @@ func TestExitCodes(t *testing.T) {
 }
 
 func TestCreateProviderAllProviders(t *testing.T) {
+	app := NewApp()
+
 	tests := []struct {
 		providerID string
 		apiKey     string
@@ -63,7 +65,7 @@ func TestCreateProviderAllProviders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.providerID, func(t *testing.T) {
-			provider, err := createProvider(tt.providerID, tt.apiKey)
+			provider, err := app.createProvider(tt.providerID, tt.apiKey, nil)
 			if err != nil {
 				t.Fatalf("createProvider(%q, %q) error = %v", tt.providerID, tt.apiKey, err)
 			}
@@ -76,14 +78,16 @@ func TestCreateProviderAllProviders(t *testing.T) {
 }
 
 func TestCreateProviderUnsupported(t *testing.T) {
-	_, err := createProvider("unsupported", "test-key")
+	app := NewApp()
+	_, err := app.createProvider("unsupported", "test-key", nil)
 	if err == nil {
 		t.Fatal("createProvider() should return error for unsupported provider")
 	}
 }
 
 func TestCreateProviderErrorMessage(t *testing.T) {
-	_, err := createProvider("nonexistent", "test-key")
+	app := NewApp()
+	_, err := app.createProvider("nonexistent", "test-key", nil)
 	if err == nil {
 		t.Fatal("createProvider() should return error")
 	}
@@ -110,8 +114,9 @@ func containsHelper(s, substr string) bool {
 }
 
 func TestHandleChatErrorValidation(t *testing.T) {
+	app := NewApp()
 	// Test with validation error
-	err := handleChatError(core.ErrModelRequired)
+	err := app.handleChatError(core.ErrModelRequired)
 
 	exitErr, ok := err.(*exitError)
 	if !ok {
@@ -124,7 +129,8 @@ func TestHandleChatErrorValidation(t *testing.T) {
 }
 
 func TestHandleChatErrorNetwork(t *testing.T) {
-	err := handleChatError(core.ErrNetwork)
+	app := NewApp()
+	err := app.handleChatError(core.ErrNetwork)
 
 	exitErr, ok := err.(*exitError)
 	if !ok {
@@ -137,6 +143,7 @@ func TestHandleChatErrorNetwork(t *testing.T) {
 }
 
 func TestHandleChatErrorProvider(t *testing.T) {
+	app := NewApp()
 	provErr := &core.ProviderError{
 		Provider:  "openai",
 		Status:    429,
@@ -146,7 +153,7 @@ func TestHandleChatErrorProvider(t *testing.T) {
 		Err:       core.ErrRateLimited,
 	}
 
-	err := handleChatError(provErr)
+	err := app.handleChatError(provErr)
 
 	exitErr, ok := err.(*exitError)
 	if !ok {
