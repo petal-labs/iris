@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-02-15
+
+### Added
+
+- Shared provider error normalization package (`providers/internal/normalize`) and migration across providers
+- Internal tool-call assembler to unify streaming tool-call reconstruction (`providers/internal/toolcalls/assembler`)
+- Provider chat conformance integration suite (`tests/integration/chat_conformance_test.go`)
+- Integration smoke test workflow for a fast OpenAI chat check in CI
+
+### Changed
+
+- Refactored CLI command wiring and provider setup (`cli/commands/app.go`, `cli/commands/provider_factory.go`)
+- Restructured tool middleware implementation into focused middleware modules under `tools/`
+- Updated README, examples, and contributor documentation to match hardening and refactor changes
+
+### Removed
+
+- Minimal agent execution implementation from `core/agent.go` and related tests
+
+### Fixed
+
+- Perplexity integration test model selection
+- Outdated CLI init test expectation that referenced removed agents behavior
+- CI coverage upload configuration to pass Codecov token correctly
+
 ## [0.11.0] - 2026-02-06
 
 ### Added
@@ -78,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telemetry hooks and retry policies
 - Typed error handling
 
-[Unreleased]: https://github.com/petal-labs/iris/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/petal-labs/iris/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/petal-labs/iris/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/petal-labs/iris/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/petal-labs/iris/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/petal-labs/iris/releases/tag/v0.9.0
