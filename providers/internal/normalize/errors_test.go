@@ -113,3 +113,27 @@ func TestDecodeError(t *testing.T) {
 		t.Error("error should wrap core.ErrDecode")
 	}
 }
+
+func TestProviderErrorDefaults(t *testing.T) {
+	err := ProviderError("test-provider", http.StatusBadGateway, "req-1", "", "", nil)
+
+	var provErr *core.ProviderError
+	if !errors.As(err, &provErr) {
+		t.Fatal("expected *core.ProviderError")
+	}
+	if provErr.Message != "Bad Gateway" {
+		t.Errorf("Message = %q, want Bad Gateway", provErr.Message)
+	}
+	if !errors.Is(err, core.ErrServer) {
+		t.Error("error should wrap core.ErrServer")
+	}
+}
+
+func TestSentinelForStatusWithOverrides(t *testing.T) {
+	sentinel := SentinelForStatusWithOverrides(http.StatusNotFound, map[int]error{
+		http.StatusNotFound: core.ErrNotFound,
+	})
+	if !errors.Is(sentinel, core.ErrNotFound) {
+		t.Errorf("sentinel = %v, want ErrNotFound", sentinel)
+	}
+}

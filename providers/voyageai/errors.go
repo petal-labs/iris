@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 // voyageErrorResponse represents an error response from the Voyage AI API.
@@ -23,44 +23,15 @@ func normalizeError(status int, body []byte, requestID string) error {
 		message = http.StatusText(status)
 	}
 
-	// Determine sentinel error based on status
-	var sentinel error
-	switch {
-	case status == http.StatusBadRequest:
-		sentinel = core.ErrBadRequest
-	case status == http.StatusUnauthorized || status == http.StatusForbidden:
-		sentinel = core.ErrUnauthorized
-	case status == http.StatusTooManyRequests:
-		sentinel = core.ErrRateLimited
-	case status >= 500:
-		sentinel = core.ErrServer
-	default:
-		sentinel = core.ErrServer
-	}
-
-	return &core.ProviderError{
-		Provider:  "voyageai",
-		Status:    status,
-		RequestID: requestID,
-		Message:   message,
-		Err:       sentinel,
-	}
+	return normalize.ProviderError("voyageai", status, requestID, "", message, normalize.SentinelForStatus(status))
 }
 
 // newNetworkError creates a ProviderError for network-related failures.
 func newNetworkError(err error) error {
-	return &core.ProviderError{
-		Provider: "voyageai",
-		Message:  err.Error(),
-		Err:      core.ErrNetwork,
-	}
+	return normalize.NetworkError("voyageai", err)
 }
 
 // newDecodeError creates a ProviderError for JSON decode failures.
 func newDecodeError(err error) error {
-	return &core.ProviderError{
-		Provider: "voyageai",
-		Message:  err.Error(),
-		Err:      core.ErrDecode,
-	}
+	return normalize.DecodeError("voyageai", err)
 }
