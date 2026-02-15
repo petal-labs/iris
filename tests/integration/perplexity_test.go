@@ -121,7 +121,7 @@ func TestPerplexity_ChatCompletion_WithTools(t *testing.T) {
 
 	tool := createTestTool()
 
-	resp, err := client.Chat(perplexity.ModelSonar).
+	resp, err := client.Chat(perplexity.ModelSonarPro).
 		User("What's the weather like in San Francisco?").
 		Tools(tool).
 		GetResponse(ctx)
