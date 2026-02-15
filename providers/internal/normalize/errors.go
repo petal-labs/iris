@@ -1,3 +1,4 @@
+// Package normalize provides shared provider error normalization helpers.
 package normalize
 
 import (
