@@ -1,120 +1,80 @@
 # Iris SDK Examples
 
-This directory contains runnable examples demonstrating the Iris SDK features.
+This directory contains runnable examples for the Iris SDK across chat, streaming, tools, and image workflows.
 
 ## Module Structure
 
-Examples are in a separate Go module (`github.com/petal-labs/iris/examples`) that depends on the main Iris SDK. The project uses a Go workspace (`go.work`) for seamless local development.
+Examples live in a separate module (`github.com/petal-labs/iris/examples`) and are wired into the root `go.work` for local development.
 
-You can run examples from either:
-- **Project root**: Uses the workspace to resolve the local SDK
-- **Examples directory**: Uses the `replace` directive in `go.mod`
+You can run examples from:
+- Project root (recommended)
+- `examples/` directory
 
 ## Prerequisites
 
-- Go 1.24 or later
-- Most examples require an OpenAI API key:
+- Go 1.24+
+- Provider credentials for the examples you run:
 
 ```bash
-export OPENAI_API_KEY=your-api-key-here
+export OPENAI_API_KEY=your-key      # OpenAI chat + tools + image + Responses API examples
+export GEMINI_API_KEY=your-key      # Gemini image example
+export XAI_API_KEY=your-key         # xAI examples
+export ZAI_API_KEY=your-key         # Z.ai examples
+export HF_TOKEN=your-key            # Hugging Face examples
 ```
 
-## Chat Examples
+## Running Examples
 
-### Basic Chat (`chat/basic`)
-
-The simplest example showing how to send a chat message and receive a response.
+### From Project Root
 
 ```bash
-cd chat/basic
-go run main.go
-```
-
-### Streaming (`chat/streaming`)
-
-Demonstrates streaming responses, printing text as it's generated.
-
-```bash
-cd chat/streaming
-go run main.go
-```
-
-### System Messages (`chat/system-message`)
-
-Shows how to use system messages to control the assistant's behavior and personality.
-
-```bash
-cd chat/system-message
-go run main.go
-```
-
-### Multi-turn Conversation (`chat/conversation`)
-
-Interactive example showing how to maintain context across multiple turns.
-
-```bash
-cd chat/conversation
-go run main.go
-```
-
-## Tool Examples
-
-### Weather Tool (`tools/weather`)
-
-Demonstrates tool/function calling with a simulated weather API.
-
-```bash
-cd tools/weather
-go run main.go
-```
-
-## Running All Examples
-
-### From Project Root (Recommended)
-
-The Go workspace (`go.work`) allows running examples directly:
-
-```bash
-# Build all examples to check for compilation errors
+# Build all examples
 go build ./examples/...
 
-# Run a specific example
+# OpenAI examples
 go run ./examples/chat/basic
 go run ./examples/chat/streaming
 go run ./examples/chat/system-message
 go run ./examples/chat/conversation
+go run ./examples/chat/responses-api
+
+# Provider-specific chat examples
+go run ./examples/chat/ollama-basic
+go run ./examples/chat/ollama-streaming
+go run ./examples/chat/ollama-reasoning
+go run ./examples/chat/huggingface-basic
+go run ./examples/chat/huggingface-streaming
+go run ./examples/chat/huggingface-discovery
+go run ./examples/chat/xai-basic
+go run ./examples/chat/xai-streaming
+go run ./examples/chat/xai-reasoning
+go run ./examples/chat/zai-basic
+go run ./examples/chat/zai-streaming
+go run ./examples/chat/zai-reasoning
+
+# Tools + middleware example
 go run ./examples/tools/weather
+
+# Image examples
+go run ./examples/image/basic
+go run ./examples/image/streaming
+go run ./examples/image/edit
+go run ./examples/image/gemini
 ```
 
-### From Examples Directory
-
-You can also run from within the examples directory:
+### From `examples/` Directory
 
 ```bash
 cd examples
-
-# Run examples
 go run ./chat/basic
-go run ./chat/streaming
+go run ./chat/responses-api
 go run ./tools/weather
+go run ./image/basic
 ```
 
-## Example Output
+## Highlights
 
-### Basic Chat
-```
-Response: The capital of France is Paris.
-Tokens: 25 prompt + 8 completion = 33 total
-```
-
-### Streaming
-```
-Streaming response:
----
-In the realm of code so bright,
-Go routines dance through the night,
-Channels flow with data's stream,
-Concurrency fulfills the dream.
----
-Tokens: 30 prompt + 32 completion = 62 total
-```
+- `chat/responses-api`: GPT-5 Responses API usage (reasoning, web search, response chaining).
+- `tools/weather`: tool calling with middleware (`WithBasicValidation`, `WithTimeout`, `WithLogging`) and warning routing (`WithWarningHandler`).
+- `chat/huggingface-discovery`: model discovery helpers (`GetModelStatus`, `GetModelProviders`, `ListModels`).
+- `image/gemini`: Gemini image generation path.
