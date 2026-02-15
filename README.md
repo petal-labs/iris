@@ -5,7 +5,7 @@
 [![GoDoc](https://godoc.org/github.com/petal-labs/iris?status.svg)](https://godoc.org/github.com/petal-labs/iris)&nbsp;
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/petal-labs/iris/blob/main/LICENSE)
 
-Iris is a Go SDK and CLI for building AI-powered applications and agent workflows. It provides a unified interface for working with large language models (LLMs), making it easy to integrate AI capabilities into your Go projects.
+Iris is a Go SDK and CLI for building AI-powered applications. It provides a unified interface for working with large language models (LLMs), making it easy to integrate AI capabilities into your Go projects.
 
 ## Why Iris?
 
@@ -13,7 +13,7 @@ Building AI applications often requires:
 - Managing multiple LLM provider APIs with different interfaces
 - Handling streaming responses, retries, and error normalization
 - Securely storing and managing API keys
-- Creating reusable agent workflows
+- Building reusable chat and tool-driven workflows
 
 Iris solves these problems by providing:
 - **Unified SDK**: A consistent Go API across providers (OpenAI, Anthropic, Google Gemini, xAI Grok, Z.ai GLM, Perplexity, Ollama)

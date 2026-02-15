@@ -1,7 +1,7 @@
 // Package core provides the Iris SDK client and types for interacting with AI providers.
 //
-// Iris is a Go-native framework for building, orchestrating, and deploying AI agents
-// and multimodal workflows. The core package defines the fundamental abstractions
+// Iris is a Go-native framework for building chat and multimodal workflows.
+// The core package defines the fundamental abstractions
 // that all providers implement.
 //
 // # Client and Provider

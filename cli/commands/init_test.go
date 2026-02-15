@@ -13,15 +13,15 @@ func TestValidateProjectName(t *testing.T) {
 		input   string
 		wantErr bool
 	}{
-		{"valid simple", "myagent", false},
-		{"valid with numbers", "agent123", false},
-		{"valid with underscore", "my_agent", false},
-		{"valid with hyphen", "my-agent", false},
+		{"valid simple", "myapp", false},
+		{"valid with numbers", "app123", false},
+		{"valid with underscore", "my_app", false},
+		{"valid with hyphen", "my-app", false},
 		{"empty", "", true},
-		{"starts with number", "123agent", true},
-		{"starts with hyphen", "-agent", true},
-		{"contains space", "my agent", true},
-		{"contains dot", "my.agent", true},
+		{"starts with number", "123app", true},
+		{"starts with hyphen", "-app", true},
+		{"contains space", "my app", true},
+		{"contains dot", "my.app", true},
 		{"reserved dot", ".", true},
 		{"reserved dotdot", "..", true},
 		{"reserved iris", "iris", true},

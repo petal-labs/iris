@@ -24,8 +24,8 @@ Creates a project directory with:
   - tools/: Directory for custom tools
 
 Example:
-  iris init myagent
-  iris init myagent --provider openai`,
+  iris init myapp
+  iris init myapp --provider openai`,
 	Args: cobra.ExactArgs(1),
 	RunE: runInit,
 }

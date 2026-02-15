@@ -1,4 +1,4 @@
-// Iris CLI - AI agent development command-line interface.
+// Iris CLI - command-line interface for the Iris SDK.
 package main
 
 import (
