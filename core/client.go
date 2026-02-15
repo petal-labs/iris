@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -41,20 +42,26 @@ type ImageGenerator interface {
 // Client is the main entry point for interacting with LLM providers.
 // Client is safe for concurrent use.
 type Client struct {
-	provider  Provider
-	telemetry TelemetryHook
-	retry     RetryPolicy
+	provider       Provider
+	telemetry      TelemetryHook
+	retry          RetryPolicy
+	warningHandler WarningHandler
 }
 
 // ClientOption configures a Client.
 type ClientOption func(*Client)
 
+// WarningHandler receives non-fatal warnings emitted by the SDK.
+// Implementations should be safe for concurrent use.
+type WarningHandler func(message string)
+
 // NewClient creates a new Client with the given provider and options.
 func NewClient(p Provider, opts ...ClientOption) *Client {
 	c := &Client{
-		provider:  p,
-		telemetry: NoopTelemetryHook{},
-		retry:     DefaultRetryPolicy(),
+		provider:       p,
+		telemetry:      NoopTelemetryHook{},
+		retry:          DefaultRetryPolicy(),
+		warningHandler: func(string) {},
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -76,6 +83,16 @@ func WithRetryPolicy(r RetryPolicy) ClientOption {
 	return func(c *Client) {
 		if r != nil {
 			c.retry = r
+		}
+	}
+}
+
+// WithWarningHandler sets a handler for non-fatal SDK warnings.
+// Pass nil to keep the default no-op handler.
+func WithWarningHandler(h WarningHandler) ClientOption {
+	return func(c *Client) {
+		if h != nil {
+			c.warningHandler = h
 		}
 	}
 }
@@ -299,8 +316,8 @@ func (b *ChatBuilder) Truncation(mode string) *ChatBuilder {
 //
 // IMPORTANT: This method returns a NEW builder (immutable). The original builder is unchanged.
 //
-// If fewer results are provided than tool calls, a warning is logged but execution continues.
-// If result IDs don't match any tool calls, a warning is logged.
+// If fewer results are provided than tool calls, a warning is emitted via the client warning handler.
+// If result IDs don't match any tool calls, a warning is emitted via the client warning handler.
 func (b *ChatBuilder) ToolResults(assistantResp *ChatResponse, results []ToolResult) *ChatBuilder {
 	// Always clone to maintain immutability
 	newBuilder := b.Clone()
@@ -320,16 +337,14 @@ func (b *ChatBuilder) ToolResults(assistantResp *ChatResponse, results []ToolRes
 		providedIDs[r.CallID] = true
 		// Warn about results that don't match any tool call
 		if _, ok := callIDs[r.CallID]; !ok {
-			// Log warning - using standard library to avoid adding dependencies
-			// In production, users can configure proper logging via middleware
-			println("warning: tool result ID", r.CallID, "does not match any tool call")
+			b.client.warnf("tool result ID %q does not match any tool call", r.CallID)
 		}
 	}
 
 	// Warn about tool calls without results
 	for id, name := range callIDs {
 		if !providedIDs[id] {
-			println("warning: no result provided for tool call", id, "(tool:", name+")")
+			b.client.warnf("no result provided for tool call %q (tool: %s)", id, name)
 		}
 	}
 
@@ -666,4 +681,8 @@ func wrapStreamWithTelemetry(
 		Err:   errCh,
 		Final: finalCh,
 	}
+}
+
+func (c *Client) warnf(format string, args ...any) {
+	c.warningHandler(fmt.Sprintf(format, args...))
 }
