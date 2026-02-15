@@ -1,7 +1,8 @@
 // Example: Tool/Function Calling
 //
 // This example demonstrates how to define tools that the model
-// can call to perform actions or retrieve information.
+// can call to perform actions or retrieve information, and how to
+// apply tool middleware (validation, timeout, logging).
 //
 // Run with:
 //
@@ -13,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -91,19 +93,28 @@ func main() {
 	}
 
 	provider := openai.New(apiKey)
-	client := core.NewClient(provider)
+	client := core.NewClient(provider, core.WithWarningHandler(func(msg string) {
+		log.Printf("iris warning: %s", msg)
+	}))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Create tool
 	weatherTool := &WeatherTool{}
+	logger := log.New(os.Stdout, "tool-middleware ", log.LstdFlags)
+	wrappedWeatherTool := tools.ApplyMiddleware(
+		weatherTool,
+		tools.WithBasicValidation(),
+		tools.WithTimeout(5*time.Second),
+		tools.WithLogging(logger),
+	)
 
 	// Send request with tool
 	fmt.Println("Asking about weather...")
 	resp, err := client.Chat("gpt-4o-mini").
 		User("What's the weather like in San Francisco and New York?").
-		Tools(weatherTool).
+		Tools(wrappedWeatherTool).
 		GetResponse(ctx)
 
 	if err != nil {
@@ -121,7 +132,7 @@ func main() {
 			fmt.Printf("Arguments: %s\n", string(call.Arguments))
 
 			// Execute the tool
-			result, err := weatherTool.Call(ctx, call.Arguments)
+			result, err := wrappedWeatherTool.Call(ctx, call.Arguments)
 			if err != nil {
 				fmt.Printf("Error calling tool: %v\n", err)
 				continue

@@ -28,9 +28,11 @@ Iris solves these problems by providing:
 - Fluent chat builder with `System()`, `User()`, `Assistant()`, `Temperature()`, `MaxTokens()`, and `Tools()`
 - Non-streaming and streaming response modes
 - Tool/function calling support
+- Tool middleware stack for logging, timeout, rate limiting, cache, validation, retry, and circuit breaking
 - **Responses API support** for GPT-5+ models with reasoning, built-in tools (web search, code interpreter), and response chaining
 - Automatic retry with exponential backoff
 - Telemetry hooks for observability
+- Configurable non-fatal warning routing with `core.WithWarningHandler(...)`
 - Normalized error types across providers
 
 ### CLI Features
@@ -397,6 +399,18 @@ fmt.Println()
 resp, err := core.DrainStream(ctx, stream)
 ```
 
+### Warning Hooks
+
+Route non-fatal SDK warnings (for example, mismatched tool result IDs) into your application logger:
+
+```go
+client := core.NewClient(provider,
+    core.WithWarningHandler(func(msg string) {
+        log.Printf("iris warning: %s", msg)
+    }),
+)
+```
+
 ### Using Tools
 
 ```go
@@ -415,6 +429,29 @@ if len(resp.ToolCalls) > 0 {
     }
 }
 ```
+
+### Tool Middleware and Validation
+
+Wrap tools with middleware before passing them to `Tools(...)` or invoking them directly:
+
+```go
+logger := log.New(os.Stdout, "tool ", 0)
+weatherTool := mytools.NewWeatherTool()
+
+wrappedTool := tools.ApplyMiddleware(
+    weatherTool,
+    tools.WithBasicValidation(),
+    tools.WithTimeout(5*time.Second),
+    tools.WithLogging(logger),
+)
+
+resp, err := client.Chat("gpt-4o").
+    User("What's the weather in San Francisco?").
+    Tools(wrappedTool).
+    GetResponse(ctx)
+```
+
+Use `tools.WithValidation(...)` with a custom schema validator when you want JSON-schema enforcement. Tool schemas are propagated automatically through `ToolContext`.
 
 ### Image Generation
 
@@ -561,6 +598,7 @@ iris init myproject
 iris/
 ├── core/           # Core SDK types and client
 ├── providers/      # LLM provider implementations
+│   ├── internal/   # Shared provider internals (normalize, toolcalls, etc.)
 │   ├── openai/     # OpenAI provider
 │   ├── anthropic/  # Anthropic Claude provider
 │   ├── gemini/     # Google Gemini provider
@@ -568,13 +606,14 @@ iris/
 │   ├── zai/        # Z.ai GLM provider
 │   ├── perplexity/ # Perplexity Search provider
 │   └── ollama/     # Ollama provider (local and cloud)
-├── tools/          # Tool/function calling framework
+├── tools/          # Tool/function calling framework + middleware
 ├── cli/            # Command-line interface
 │   ├── cmd/iris/   # CLI entry point
 │   ├── commands/   # CLI commands
 │   ├── config/     # Configuration loading
 │   └── keystore/   # Encrypted key storage
-└── tests/          # Integration tests
+└── tests/
+    └── integration/ # Provider integration + conformance harness
 ```
 
 ## Configuration
@@ -823,6 +862,8 @@ go test -tags=integration ./tests/integration/...
 
 **CI Behavior**: In CI environments, integration tests fail loudly if required secrets are missing (instead of silently skipping). Set `IRIS_SKIP_INTEGRATION=1` to explicitly skip integration tests in CI.
 
+Provider chat conformance scenarios are centralized in `tests/integration/chat_conformance_test.go` and reused by provider-specific integration files.
+
 ### Git Hooks
 
 The repository includes a pre-commit hook that automatically checks:
@@ -874,11 +915,18 @@ Examples are in a separate module but can be run from the project root thanks to
 # Run from project root
 go run ./examples/chat/basic
 go run ./examples/chat/streaming
+go run ./examples/chat/responses-api
+go run ./examples/chat/ollama-basic
+go run ./examples/chat/huggingface-basic
+go run ./examples/chat/xai-basic
+go run ./examples/chat/zai-basic
 go run ./examples/tools/weather
 
 # Or from the examples directory
 cd examples
 go run ./chat/basic
+go run ./chat/responses-api
+go run ./chat/ollama-basic
 ```
 
 See [examples/README.md](examples/README.md) for detailed documentation on each example.
