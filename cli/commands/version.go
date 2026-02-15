@@ -18,24 +18,23 @@ var (
 	BuildDate = "unknown"
 )
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print version information",
-	Long:  `Print detailed version information including version, commit, build date, and Go runtime.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if jsonOutput {
-			fmt.Printf(`{"version":"%s","commit":"%s","buildDate":"%s","goVersion":"%s","platform":"%s/%s"}`+"\n",
-				Version, Commit, BuildDate, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-			return
-		}
-		fmt.Printf("iris %s\n", Version)
-		fmt.Printf("  commit:     %s\n", Commit)
-		fmt.Printf("  built:      %s\n", BuildDate)
-		fmt.Printf("  go version: %s\n", runtime.Version())
-		fmt.Printf("  platform:   %s/%s\n", runtime.GOOS, runtime.GOARCH)
-	},
-}
+func (a *App) newVersionCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print version information",
+		Long:  `Print detailed version information including version, commit, build date, and Go runtime.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if a.jsonOutput {
+				fmt.Fprintf(a.stdout, `{"version":"%s","commit":"%s","buildDate":"%s","goVersion":"%s","platform":"%s/%s"}`+"\n",
+					Version, Commit, BuildDate, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+				return
+			}
 
-func init() {
-	rootCmd.AddCommand(versionCmd)
+			fmt.Fprintf(a.stdout, "iris %s\n", Version)
+			fmt.Fprintf(a.stdout, "  commit:     %s\n", Commit)
+			fmt.Fprintf(a.stdout, "  built:      %s\n", BuildDate)
+			fmt.Fprintf(a.stdout, "  go version: %s\n", runtime.Version())
+			fmt.Fprintf(a.stdout, "  platform:   %s/%s\n", runtime.GOOS, runtime.GOARCH)
+		},
+	}
 }

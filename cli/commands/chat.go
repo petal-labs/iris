@@ -5,23 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/petal-labs/iris/cli/keystore"
 	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers"
-	"github.com/petal-labs/iris/providers/anthropic"
-	"github.com/petal-labs/iris/providers/gemini"
-	"github.com/petal-labs/iris/providers/huggingface"
-	"github.com/petal-labs/iris/providers/ollama"
-	"github.com/petal-labs/iris/providers/openai"
-	"github.com/petal-labs/iris/providers/xai"
-	"github.com/petal-labs/iris/providers/zai"
 )
 
-// Exit codes
+// Exit codes.
 const (
 	ExitSuccess    = 0
 	ExitValidation = 1
@@ -29,53 +20,44 @@ const (
 	ExitNetwork    = 3
 )
 
-var (
-	prompt      string
-	system      string
-	temperature float32
-	maxTokens   int
-	stream      bool
-)
-
-var chatCmd = &cobra.Command{
-	Use:   "chat",
-	Short: "Send a chat completion request",
-	Long: `Send a chat completion request to an LLM provider.
+func (a *App) newChatCommand() *cobra.Command {
+	chatCmd := &cobra.Command{
+		Use:   "chat",
+		Short: "Send a chat completion request",
+		Long: `Send a chat completion request to an LLM provider.
 
 Examples:
   iris chat --provider openai --model gpt-4o --prompt "Hello"
   iris chat --prompt "Hello" --stream
   iris chat --prompt "Hello" --json`,
-	RunE: runChat,
-}
+		RunE: a.runChat,
+	}
 
-func init() {
-	rootCmd.AddCommand(chatCmd)
-
-	chatCmd.Flags().StringVar(&prompt, "prompt", "", "User message (required)")
-	chatCmd.Flags().StringVar(&system, "system", "", "System message")
-	chatCmd.Flags().Float32Var(&temperature, "temperature", 0, "Temperature (0 = use default)")
-	chatCmd.Flags().IntVar(&maxTokens, "max-tokens", 0, "Max tokens (0 = use default)")
-	chatCmd.Flags().BoolVar(&stream, "stream", false, "Enable streaming output")
+	chatCmd.Flags().StringVar(&a.chatPrompt, "prompt", "", "User message (required)")
+	chatCmd.Flags().StringVar(&a.chatSystem, "system", "", "System message")
+	chatCmd.Flags().Float32Var(&a.chatTemperature, "temperature", 0, "Temperature (0 = use default)")
+	chatCmd.Flags().IntVar(&a.chatMaxTokens, "max-tokens", 0, "Max tokens (0 = use default)")
+	chatCmd.Flags().BoolVar(&a.chatStream, "stream", false, "Enable streaming output")
 
 	_ = chatCmd.MarkFlagRequired("prompt")
+	return chatCmd
 }
 
-func runChat(cmd *cobra.Command, args []string) error {
-	// Validate provider
-	providerID := GetProvider()
+func (a *App) runChat(cmd *cobra.Command, args []string) error {
+	// Validate provider.
+	providerID := a.provider
 	if providerID == "" {
 		return exitWithCode(ExitValidation, fmt.Errorf("provider required: use --provider flag or set default_provider in config"))
 	}
 
-	// Validate model
-	modelID := GetModel()
+	// Validate model.
+	modelID := a.model
 	if modelID == "" {
 		return exitWithCode(ExitValidation, fmt.Errorf("model required: use --model flag or set default_model in config"))
 	}
 
-	// Get API key from keystore
-	ks, err := keystore.NewKeystore()
+	// Get API key from keystore.
+	ks, err := a.newKeystore()
 	if err != nil {
 		return exitWithCode(ExitValidation, fmt.Errorf("failed to open keystore: %w", err))
 	}
@@ -88,80 +70,76 @@ func runChat(cmd *cobra.Command, args []string) error {
 		return exitWithCode(ExitValidation, fmt.Errorf("failed to get API key: %w", err))
 	}
 
-	// Create provider
-	provider, err := createProvider(providerID, apiKey)
+	// Create provider.
+	provider, err := a.createProvider(providerID, apiKey, a.cfg)
 	if err != nil {
 		return exitWithCode(ExitValidation, err)
 	}
 
-	// Create client and build request
+	// Create client and build request.
 	client := core.NewClient(provider)
-	builder := client.Chat(core.ModelID(modelID)).User(prompt)
+	builder := client.Chat(core.ModelID(modelID)).User(a.chatPrompt)
 
-	if system != "" {
-		// System message should come before user message
-		builder = client.Chat(core.ModelID(modelID)).System(system).User(prompt)
+	if a.chatSystem != "" {
+		// System message should come before user message.
+		builder = client.Chat(core.ModelID(modelID)).System(a.chatSystem).User(a.chatPrompt)
 	}
-
-	if temperature > 0 {
-		builder = builder.Temperature(temperature)
+	if a.chatTemperature > 0 {
+		builder = builder.Temperature(a.chatTemperature)
 	}
-
-	if maxTokens > 0 {
-		builder = builder.MaxTokens(maxTokens)
+	if a.chatMaxTokens > 0 {
+		builder = builder.MaxTokens(a.chatMaxTokens)
 	}
 
 	ctx := context.Background()
-
-	if stream {
-		return runStreamingChat(ctx, builder)
+	if a.chatStream {
+		return a.runStreamingChat(ctx, builder)
 	}
-	return runNonStreamingChat(ctx, builder)
+	return a.runNonStreamingChat(ctx, builder)
 }
 
-func runNonStreamingChat(ctx context.Context, builder *core.ChatBuilder) error {
+func (a *App) runNonStreamingChat(ctx context.Context, builder *core.ChatBuilder) error {
 	resp, err := builder.GetResponse(ctx)
 	if err != nil {
-		return handleChatError(err)
+		return a.handleChatError(err)
 	}
 
-	if IsJSONOutput() {
-		return outputJSON(resp)
+	if a.jsonOutput {
+		return a.outputJSON(resp)
 	}
 
-	// Text output
-	fmt.Printf("> %s\n", prompt)
-	fmt.Println(resp.Output)
+	// Text output.
+	fmt.Fprintf(a.stdout, "> %s\n", a.chatPrompt)
+	fmt.Fprintln(a.stdout, resp.Output)
 	return nil
 }
 
-func runStreamingChat(ctx context.Context, builder *core.ChatBuilder) error {
+func (a *App) runStreamingChat(ctx context.Context, builder *core.ChatBuilder) error {
 	chatStream, err := builder.Stream(ctx)
 	if err != nil {
-		return handleChatError(err)
+		return a.handleChatError(err)
 	}
 
-	if IsJSONOutput() {
-		// Accumulate for JSON output
+	if a.jsonOutput {
 		resp, err := core.DrainStream(ctx, chatStream)
 		if err != nil {
-			return handleChatError(err)
+			return a.handleChatError(err)
 		}
-		return outputJSON(resp)
+		return a.outputJSON(resp)
 	}
 
-	// Stream text output
-	fmt.Printf("> %s\n", prompt)
+	// Stream text output.
+	fmt.Fprintf(a.stdout, "> %s\n", a.chatPrompt)
 
 	var finalResp *core.ChatResponse
 	var streamErr error
 
-	// Read chunks as they arrive
+	// Read chunks as they arrive.
 	for chunk := range chatStream.Ch {
-		fmt.Print(chunk.Delta)
+		fmt.Fprint(a.stdout, chunk.Delta)
 	}
 
-	// Check for errors
+	// Check for errors.
 	select {
 	case err := <-chatStream.Err:
 		if err != nil {
@@ -170,23 +148,23 @@ func runStreamingChat(ctx context.Context, builder *core.ChatBuilder) error {
 	default:
 	}
 
-	// Get final response
+	// Get final response.
 	select {
 	case resp := <-chatStream.Final:
 		finalResp = resp
 	default:
 	}
 
-	// Print final newline
-	fmt.Println()
+	// Print final newline.
+	fmt.Fprintln(a.stdout)
 
 	if streamErr != nil {
-		return handleChatError(streamErr)
+		return a.handleChatError(streamErr)
 	}
 
-	// Log usage if verbose
-	if IsVerbose() && finalResp != nil {
-		fmt.Fprintf(os.Stderr, "Usage: %d prompt + %d completion = %d total tokens\n",
+	// Log usage if verbose.
+	if a.verbose && finalResp != nil {
+		fmt.Fprintf(a.stderr, "Usage: %d prompt + %d completion = %d total tokens\n",
 			finalResp.Usage.PromptTokens,
 			finalResp.Usage.CompletionTokens,
 			finalResp.Usage.TotalTokens)
@@ -195,97 +173,19 @@ func runStreamingChat(ctx context.Context, builder *core.ChatBuilder) error {
 	return nil
 }
 
-func createProvider(providerID, apiKey string) (core.Provider, error) {
-	switch providerID {
-	case "openai":
-		// Check for custom base URL in config
-		var opts []openai.Option
-		if cfg := GetConfig(); cfg != nil {
-			if pc := cfg.GetProvider(providerID); pc != nil && pc.BaseURL != "" {
-				opts = append(opts, openai.WithBaseURL(pc.BaseURL))
-			}
-		}
-		return openai.New(apiKey, opts...), nil
-	case "anthropic":
-		// Check for custom base URL in config
-		var opts []anthropic.Option
-		if cfg := GetConfig(); cfg != nil {
-			if pc := cfg.GetProvider(providerID); pc != nil && pc.BaseURL != "" {
-				opts = append(opts, anthropic.WithBaseURL(pc.BaseURL))
-			}
-		}
-		return anthropic.New(apiKey, opts...), nil
-	case "gemini":
-		// Check for custom base URL in config
-		var opts []gemini.Option
-		if cfg := GetConfig(); cfg != nil {
-			if pc := cfg.GetProvider(providerID); pc != nil && pc.BaseURL != "" {
-				opts = append(opts, gemini.WithBaseURL(pc.BaseURL))
-			}
-		}
-		return gemini.New(apiKey, opts...), nil
-	case "xai":
-		// Check for custom base URL in config
-		var opts []xai.Option
-		if cfg := GetConfig(); cfg != nil {
-			if pc := cfg.GetProvider(providerID); pc != nil && pc.BaseURL != "" {
-				opts = append(opts, xai.WithBaseURL(pc.BaseURL))
-			}
-		}
-		return xai.New(apiKey, opts...), nil
-	case "zai":
-		// Check for custom base URL in config
-		var opts []zai.Option
-		if cfg := GetConfig(); cfg != nil {
-			if pc := cfg.GetProvider(providerID); pc != nil && pc.BaseURL != "" {
-				opts = append(opts, zai.WithBaseURL(pc.BaseURL))
-			}
-		}
-		return zai.New(apiKey, opts...), nil
-	case "ollama":
-		// Check for custom base URL in config
-		var opts []ollama.Option
-		if cfg := GetConfig(); cfg != nil {
-			if pc := cfg.GetProvider(providerID); pc != nil && pc.BaseURL != "" {
-				opts = append(opts, ollama.WithBaseURL(pc.BaseURL))
-			}
-		}
-		// API key is optional for local Ollama
-		if apiKey != "" {
-			opts = append(opts, ollama.WithAPIKey(apiKey))
-		}
-		return ollama.New(opts...), nil
-	case "huggingface":
-		// Check for custom base URL in config
-		var opts []huggingface.Option
-		if cfg := GetConfig(); cfg != nil {
-			if pc := cfg.GetProvider(providerID); pc != nil && pc.BaseURL != "" {
-				opts = append(opts, huggingface.WithBaseURL(pc.BaseURL))
-			}
-		}
-		return huggingface.New(apiKey, opts...), nil
-	default:
-		// Try the registry for any additional providers
-		if providers.IsRegistered(providerID) {
-			return providers.Create(providerID, apiKey)
-		}
-		return nil, fmt.Errorf("unsupported provider: %s (available: %v)", providerID, providers.List())
-	}
-}
-
-func handleChatError(err error) error {
+func (a *App) handleChatError(err error) error {
 	var provErr *core.ProviderError
 	if errors.As(err, &provErr) {
-		if IsJSONOutput() {
-			outputErrorJSON(provErr)
+		if a.jsonOutput {
+			a.outputErrorJSON(provErr)
 		} else {
-			fmt.Fprintf(os.Stderr, "Error: %s\n", provErr.Message)
+			fmt.Fprintf(a.stderr, "Error: %s\n", provErr.Message)
 			if provErr.RequestID != "" {
-				fmt.Fprintf(os.Stderr, "  Provider: %s, Request ID: %s\n", provErr.Provider, provErr.RequestID)
+				fmt.Fprintf(a.stderr, "  Provider: %s, Request ID: %s\n", provErr.Provider, provErr.RequestID)
 			}
 		}
 
-		// Determine exit code based on error type
+		// Determine exit code based on error type.
 		switch {
 		case errors.Is(err, core.ErrNetwork):
 			return exitWithCode(ExitNetwork, err)
@@ -294,36 +194,36 @@ func handleChatError(err error) error {
 		}
 	}
 
-	// Network errors
+	// Network errors.
 	if errors.Is(err, core.ErrNetwork) {
-		if IsJSONOutput() {
-			outputSimpleErrorJSON("network_error", err.Error())
+		if a.jsonOutput {
+			a.outputSimpleErrorJSON("network_error", err.Error())
 		} else {
-			fmt.Fprintf(os.Stderr, "Error: network error: %v\n", err)
+			fmt.Fprintf(a.stderr, "Error: network error: %v\n", err)
 		}
 		return exitWithCode(ExitNetwork, err)
 	}
 
-	// Validation errors
+	// Validation errors.
 	if errors.Is(err, core.ErrModelRequired) || errors.Is(err, core.ErrNoMessages) {
-		if IsJSONOutput() {
-			outputSimpleErrorJSON("validation_error", err.Error())
+		if a.jsonOutput {
+			a.outputSimpleErrorJSON("validation_error", err.Error())
 		} else {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			fmt.Fprintf(a.stderr, "Error: %v\n", err)
 		}
 		return exitWithCode(ExitValidation, err)
 	}
 
-	// Generic error
-	if IsJSONOutput() {
-		outputSimpleErrorJSON("error", err.Error())
+	// Generic error.
+	if a.jsonOutput {
+		a.outputSimpleErrorJSON("error", err.Error())
 	} else {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		fmt.Fprintf(a.stderr, "Error: %v\n", err)
 	}
 	return exitWithCode(ExitProvider, err)
 }
 
-func outputJSON(resp *core.ChatResponse) error {
+func (a *App) outputJSON(resp *core.ChatResponse) error {
 	output := map[string]interface{}{
 		"id":     resp.ID,
 		"model":  resp.Model,
@@ -335,12 +235,12 @@ func outputJSON(resp *core.ChatResponse) error {
 		},
 	}
 
-	enc := json.NewEncoder(os.Stdout)
+	enc := json.NewEncoder(a.stdout)
 	enc.SetIndent("", "  ")
 	return enc.Encode(output)
 }
 
-func outputErrorJSON(provErr *core.ProviderError) {
+func (a *App) outputErrorJSON(provErr *core.ProviderError) {
 	output := map[string]interface{}{
 		"error": map[string]interface{}{
 			"type":       provErr.Code,
@@ -350,12 +250,12 @@ func outputErrorJSON(provErr *core.ProviderError) {
 		},
 	}
 
-	enc := json.NewEncoder(os.Stderr)
+	enc := json.NewEncoder(a.stderr)
 	enc.SetIndent("", "  ")
-	enc.Encode(output)
+	_ = enc.Encode(output)
 }
 
-func outputSimpleErrorJSON(errType, message string) {
+func (a *App) outputSimpleErrorJSON(errType, message string) {
 	output := map[string]interface{}{
 		"error": map[string]interface{}{
 			"type":    errType,
@@ -363,9 +263,9 @@ func outputSimpleErrorJSON(errType, message string) {
 		},
 	}
 
-	enc := json.NewEncoder(os.Stderr)
+	enc := json.NewEncoder(a.stderr)
 	enc.SetIndent("", "  ")
-	enc.Encode(output)
+	_ = enc.Encode(output)
 }
 
 // exitError wraps an error with an exit code.
