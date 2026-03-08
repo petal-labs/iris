@@ -29,6 +29,10 @@ Iris solves these problems by providing:
 - Non-streaming and streaming response modes
 - Tool/function calling support
 - Tool middleware stack for logging, timeout, rate limiting, cache, validation, retry, and circuit breaking
+- **Structured Output** with `ResponseJSON()` and `ResponseJSONSchema()` for type-safe responses
+- **Conversation Management** with built-in `Conversation` type supporting streaming
+- **Batch API** for async processing at 50% cost savings (OpenAI)
+- **Testing Utilities** with `MockProvider` and `RecordingProvider`
 - **Responses API support** for GPT-5+ models with reasoning, built-in tools (web search, code interpreter), and response chaining
 - Automatic retry with exponential backoff
 - Telemetry hooks for observability
@@ -453,6 +457,132 @@ resp, err := client.Chat("gpt-4o").
 
 Use `tools.WithValidation(...)` with a custom schema validator when you want JSON-schema enforcement. Tool schemas are propagated automatically through `ToolContext`.
 
+### Structured Output
+
+Constrain model output to valid JSON or a specific JSON Schema:
+
+```go
+// JSON mode - model outputs valid JSON
+resp, err := client.Chat("gpt-4o").
+    User("List 3 programming languages with their year created").
+    ResponseJSON().
+    GetResponse(ctx)
+
+// Parse the JSON response
+var languages []struct {
+    Name string `json:"name"`
+    Year int    `json:"year"`
+}
+json.Unmarshal([]byte(resp.Output), &languages)
+```
+
+For strict schema enforcement:
+
+```go
+schema := &core.JSONSchemaDefinition{
+    Name:   "person",
+    Strict: true,
+    Schema: json.RawMessage(`{
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "age": {"type": "integer"}
+        },
+        "required": ["name", "age"]
+    }`),
+}
+
+resp, err := client.Chat("gpt-4o").
+    User("Extract: John is 30 years old").
+    ResponseJSONSchema(schema).
+    GetResponse(ctx)
+
+// Output is guaranteed to match the schema
+```
+
+### Conversation Management
+
+The `Conversation` type manages message history automatically:
+
+```go
+// Create a conversation with a system prompt
+conv := core.NewConversation(client, "gpt-4o",
+    core.WithSystemMessage("You are a helpful assistant."),
+)
+
+// Send messages - history is managed automatically
+resp1, _ := conv.Send("What is Go?")
+resp2, _ := conv.Send("What are its main features?") // Remembers context
+
+// Streaming responses
+stream, _ := conv.Stream("Tell me more about concurrency")
+for chunk := range stream.Ch {
+    fmt.Print(chunk.Delta)
+}
+```
+
+### Batch API
+
+Submit requests for async processing at 50% cost savings:
+
+```go
+// Check if provider supports batch
+bp, ok := core.AsBatchProvider(provider)
+if !ok {
+    log.Fatal("Provider does not support batch API")
+}
+
+// Create batch requests
+requests := []core.BatchRequest{
+    {CustomID: "req-1", Request: core.ChatRequest{Model: "gpt-4o", Messages: msgs1}},
+    {CustomID: "req-2", Request: core.ChatRequest{Model: "gpt-4o", Messages: msgs2}},
+}
+
+// Submit batch
+batchID, _ := bp.CreateBatch(ctx, requests)
+
+// Wait for completion (with polling)
+waiter := core.NewBatchWaiter(bp).
+    WithPollInterval(30 * time.Second).
+    WithMaxWait(24 * time.Hour)
+
+results, _ := waiter.WaitAndCollect(ctx, batchID)
+
+for _, result := range results {
+    if result.IsSuccess() {
+        fmt.Printf("%s: %s\n", result.CustomID, result.Response.Output)
+    }
+}
+```
+
+### Testing Utilities
+
+The `testing` package provides utilities for deterministic tests:
+
+```go
+import "github.com/petal-labs/iris/testing"
+
+// MockProvider for predictable responses
+mock := testing.NewMockProvider().
+    WithResponse("Hello!").
+    WithResponse("Follow-up response")
+
+client := core.NewClient(mock)
+resp, _ := client.Chat("any-model").User("Hi").GetResponse(ctx)
+// resp.Output == "Hello!"
+
+// RecordingProvider for capturing interactions
+recorder := testing.NewRecordingProvider(realProvider)
+client := core.NewClient(recorder)
+
+// ... run your code ...
+
+// Inspect recorded calls
+for _, call := range recorder.Calls() {
+    fmt.Printf("Model: %s, Messages: %d\n", call.Request.Model, len(call.Request.Messages))
+}
+```
+
 ### Image Generation
 
 Generate images using OpenAI's image models:
@@ -599,7 +729,7 @@ iris/
 ├── core/           # Core SDK types and client
 ├── providers/      # LLM provider implementations
 │   ├── internal/   # Shared provider internals (normalize, toolcalls, etc.)
-│   ├── openai/     # OpenAI provider
+│   ├── openai/     # OpenAI provider (includes Batch API)
 │   ├── anthropic/  # Anthropic Claude provider
 │   ├── gemini/     # Google Gemini provider
 │   ├── xai/        # xAI Grok provider
@@ -607,6 +737,7 @@ iris/
 │   ├── perplexity/ # Perplexity Search provider
 │   └── ollama/     # Ollama provider (local and cloud)
 ├── tools/          # Tool/function calling framework + middleware
+├── testing/        # Test utilities (MockProvider, RecordingProvider)
 ├── cli/            # Command-line interface
 │   ├── cmd/iris/   # CLI entry point
 │   ├── commands/   # CLI commands
@@ -678,9 +809,9 @@ See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentatio
 
 | Provider | Status | Features |
 |----------|--------|----------|
-| OpenAI | Supported | Chat, Streaming, Tools, Responses API (GPT-5+) |
+| OpenAI | Supported | Chat, Streaming, Tools, Batch API, Structured Output, Responses API (GPT-5+) |
 | Anthropic | Supported | Chat, Streaming, Tools |
-| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning |
+| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning, Structured Output |
 | xAI Grok | Supported | Chat, Streaming, Tools, Reasoning |
 | Z.ai GLM | Supported | Chat, Streaming, Tools, Thinking |
 | Perplexity | Supported | Chat, Streaming, Tools, Web Search |
@@ -904,6 +1035,7 @@ import (
     "github.com/petal-labs/iris/providers/perplexity"
     "github.com/petal-labs/iris/providers/ollama"
     "github.com/petal-labs/iris/tools"
+    "github.com/petal-labs/iris/testing"  // Test utilities
 )
 ```
 
