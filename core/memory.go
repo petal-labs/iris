@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"strings"
 	"sync"
 )
 
@@ -232,4 +233,97 @@ func (c *Conversation) Clear() {
 // MessageCount returns the number of messages in the conversation.
 func (c *Conversation) MessageCount() int {
 	return c.memory.Len()
+}
+
+// Stream sends a user message and returns a streaming response.
+// Automatically manages conversation history; the assistant's response
+// is added to history when the stream completes.
+// Uses context.Background() internally.
+func (c *Conversation) Stream(userMessage string) (*ChatStream, error) {
+	return c.StreamWithContext(context.Background(), userMessage)
+}
+
+// StreamWithContext sends a user message with context and returns a streaming response.
+// The stream is wrapped to automatically add the assistant's response to history
+// when the stream completes successfully.
+func (c *Conversation) StreamWithContext(ctx context.Context, userMessage string) (*ChatStream, error) {
+	// Add user message to history
+	c.memory.AddMessage(Message{
+		Role:    RoleUser,
+		Content: userMessage,
+	})
+
+	// Build request with full history
+	builder := c.client.Chat(c.model)
+	for _, msg := range c.memory.GetHistory() {
+		switch msg.Role {
+		case RoleSystem:
+			builder = builder.System(msg.Content)
+		case RoleUser:
+			builder = builder.User(msg.Content)
+		case RoleAssistant:
+			builder = builder.Assistant(msg.Content)
+		}
+	}
+
+	// Get stream
+	stream, err := builder.Stream(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Wrap stream to capture final response for history
+	return c.wrapStreamForHistory(stream), nil
+}
+
+// wrapStreamForHistory wraps a ChatStream to capture the final response
+// and add it to conversation history.
+func (c *Conversation) wrapStreamForHistory(stream *ChatStream) *ChatStream {
+	wrappedCh := make(chan ChatChunk, 1)
+	wrappedFinal := make(chan *ChatResponse, 1)
+
+	go func() {
+		// Accumulate content from chunks
+		var accumulated strings.Builder
+
+		// Forward all chunks while accumulating
+		for chunk := range stream.Ch {
+			accumulated.WriteString(chunk.Delta)
+			wrappedCh <- chunk
+		}
+		// Close chunk channel immediately after forwarding all chunks
+		// so consumers know chunks are done before waiting for Final
+		close(wrappedCh)
+
+		// Wait for final response
+		finalResp, ok := <-stream.Final
+		if !ok {
+			close(wrappedFinal)
+			return
+		}
+
+		// Use accumulated content if Final.Output is empty
+		output := finalResp.Output
+		if output == "" {
+			output = accumulated.String()
+		}
+
+		// Add assistant response to history
+		if output != "" {
+			c.memory.AddMessage(Message{
+				Role:    RoleAssistant,
+				Content: output,
+			})
+		}
+
+		// Forward the final response and close the channel
+		wrappedFinal <- finalResp
+		close(wrappedFinal)
+	}()
+
+	return &ChatStream{
+		Ch:    wrappedCh,
+		Err:   stream.Err,
+		Final: wrappedFinal,
+	}
 }

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"sync"
 	"testing"
 )
@@ -261,4 +262,126 @@ func TestConversationClearNoSystem(t *testing.T) {
 func TestMemoryInterfaceImplementation(t *testing.T) {
 	// Verify InMemoryStore implements Memory interface
 	var _ Memory = (*InMemoryStore)(nil)
+}
+
+// -----------------------------------------------------------------------------
+// Conversation Streaming Tests
+// -----------------------------------------------------------------------------
+
+func TestConversationStream(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	conv := NewConversation(client, "test-model")
+
+	// Get stream
+	stream, err := conv.Stream("Hello")
+	if err != nil {
+		t.Fatalf("Stream() error: %v", err)
+	}
+
+	// Use DrainStream for proper handling
+	resp, err := DrainStream(context.Background(), stream)
+	if err != nil {
+		t.Fatalf("DrainStream error: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("No response received")
+	}
+
+	// Verify history was updated
+	history := conv.GetHistory()
+	if len(history) != 2 {
+		t.Fatalf("History length = %d, want 2", len(history))
+	}
+
+	if history[0].Role != RoleUser {
+		t.Errorf("First message role = %q, want %q", history[0].Role, RoleUser)
+	}
+	if history[0].Content != "Hello" {
+		t.Errorf("First message content = %q, want %q", history[0].Content, "Hello")
+	}
+
+	if history[1].Role != RoleAssistant {
+		t.Errorf("Second message role = %q, want %q", history[1].Role, RoleAssistant)
+	}
+}
+
+func TestConversationStreamWithContext(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	conv := NewConversation(client, "test-model", WithSystemMessage("You are helpful"))
+
+	ctx := context.Background()
+	stream, err := conv.StreamWithContext(ctx, "How are you?")
+	if err != nil {
+		t.Fatalf("StreamWithContext() error: %v", err)
+	}
+
+	// Use DrainStream for proper synchronization
+	resp, err := DrainStream(ctx, stream)
+	if err != nil {
+		t.Fatalf("DrainStream error: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("No response received")
+	}
+
+	// History should have: system, user, assistant
+	history := conv.GetHistory()
+	if len(history) != 3 {
+		t.Fatalf("History length = %d, want 3", len(history))
+	}
+
+	if history[0].Role != RoleSystem {
+		t.Errorf("Message 0 role = %q, want %q", history[0].Role, RoleSystem)
+	}
+	if history[1].Role != RoleUser {
+		t.Errorf("Message 1 role = %q, want %q", history[1].Role, RoleUser)
+	}
+	if history[2].Role != RoleAssistant {
+		t.Errorf("Message 2 role = %q, want %q", history[2].Role, RoleAssistant)
+	}
+}
+
+func TestConversationStreamMultipleTurns(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	conv := NewConversation(client, "test-model")
+	ctx := context.Background()
+
+	// First turn
+	stream1, err := conv.Stream("First")
+	if err != nil {
+		t.Fatalf("Stream() first turn error: %v", err)
+	}
+	_, err = DrainStream(ctx, stream1)
+	if err != nil {
+		t.Fatalf("DrainStream first turn error: %v", err)
+	}
+
+	// Second turn
+	stream2, err := conv.Stream("Second")
+	if err != nil {
+		t.Fatalf("Stream() second turn error: %v", err)
+	}
+	_, err = DrainStream(ctx, stream2)
+	if err != nil {
+		t.Fatalf("DrainStream second turn error: %v", err)
+	}
+
+	// Should have 4 messages: user1, assistant1, user2, assistant2
+	history := conv.GetHistory()
+	if len(history) != 4 {
+		t.Fatalf("History length = %d, want 4", len(history))
+	}
+
+	if history[0].Content != "First" {
+		t.Errorf("Message 0 content = %q, want %q", history[0].Content, "First")
+	}
+	if history[2].Content != "Second" {
+		t.Errorf("Message 2 content = %q, want %q", history[2].Content, "Second")
+	}
 }
