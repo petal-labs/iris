@@ -1436,3 +1436,123 @@ func TestValidateWithToolResultMessage(t *testing.T) {
 		t.Errorf("validate() = %v, want nil", err)
 	}
 }
+
+func TestResponseJSON(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	builder := client.Chat("gpt-4").
+		User("Return JSON").
+		ResponseJSON()
+
+	if builder.req.ResponseFormat != ResponseFormatJSON {
+		t.Errorf("ResponseFormat = %v, want %v", builder.req.ResponseFormat, ResponseFormatJSON)
+	}
+}
+
+func TestResponseJSONSchema(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	schema := &JSONSchemaDefinition{
+		Name:        "person",
+		Description: "A person object",
+		Schema:      []byte(`{"type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"}},"required":["name","age"]}`),
+		Strict:      true,
+	}
+
+	builder := client.Chat("gpt-4").
+		User("Extract person info").
+		ResponseJSONSchema(schema)
+
+	if builder.req.ResponseFormat != ResponseFormatJSONSchema {
+		t.Errorf("ResponseFormat = %v, want %v", builder.req.ResponseFormat, ResponseFormatJSONSchema)
+	}
+	if builder.req.JSONSchema == nil {
+		t.Fatal("JSONSchema is nil")
+	}
+	if builder.req.JSONSchema.Name != "person" {
+		t.Errorf("JSONSchema.Name = %v, want person", builder.req.JSONSchema.Name)
+	}
+	if !builder.req.JSONSchema.Strict {
+		t.Error("JSONSchema.Strict = false, want true")
+	}
+}
+
+func TestResponseText(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	schema := &JSONSchemaDefinition{Name: "test"}
+
+	// First set JSON schema, then clear it
+	builder := client.Chat("gpt-4").
+		User("Test").
+		ResponseJSONSchema(schema).
+		ResponseText()
+
+	if builder.req.ResponseFormat != ResponseFormatText {
+		t.Errorf("ResponseFormat = %v, want %v", builder.req.ResponseFormat, ResponseFormatText)
+	}
+	if builder.req.JSONSchema != nil {
+		t.Error("JSONSchema should be nil after ResponseText()")
+	}
+}
+
+func TestCloneWithResponseFormat(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	schema := &JSONSchemaDefinition{
+		Name:   "test",
+		Schema: []byte(`{"type":"string"}`),
+		Strict: true,
+	}
+
+	original := client.Chat("gpt-4").
+		User("Test").
+		ResponseJSONSchema(schema)
+
+	clone := original.Clone()
+
+	// Verify clone has the same values
+	if clone.req.ResponseFormat != ResponseFormatJSONSchema {
+		t.Errorf("clone.ResponseFormat = %v, want %v", clone.req.ResponseFormat, ResponseFormatJSONSchema)
+	}
+	if clone.req.JSONSchema == nil {
+		t.Fatal("clone.JSONSchema is nil")
+	}
+	if clone.req.JSONSchema.Name != "test" {
+		t.Errorf("clone.JSONSchema.Name = %v, want test", clone.req.JSONSchema.Name)
+	}
+	if !clone.req.JSONSchema.Strict {
+		t.Error("clone.JSONSchema.Strict = false, want true")
+	}
+
+	// Verify independence
+	clone.req.JSONSchema.Name = "modified"
+	if original.req.JSONSchema.Name == "modified" {
+		t.Error("modifying clone's JSONSchema affected original")
+	}
+
+	// Also verify schema bytes are independent
+	clone.req.JSONSchema.Schema[0] = 'X'
+	if original.req.JSONSchema.Schema[0] == 'X' {
+		t.Error("modifying clone's JSONSchema.Schema affected original")
+	}
+}
+
+func TestCloneWithResponseFormatJSON(t *testing.T) {
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	original := client.Chat("gpt-4").
+		User("Test").
+		ResponseJSON()
+
+	clone := original.Clone()
+
+	if clone.req.ResponseFormat != ResponseFormatJSON {
+		t.Errorf("clone.ResponseFormat = %v, want %v", clone.req.ResponseFormat, ResponseFormatJSON)
+	}
+}

@@ -35,9 +35,11 @@ type geminiFileData struct {
 
 // geminiGenConfig holds generation configuration.
 type geminiGenConfig struct {
-	Temperature     *float32           `json:"temperature,omitempty"`
-	MaxOutputTokens *int               `json:"maxOutputTokens,omitempty"`
-	ThinkingConfig  *geminiThinkConfig `json:"thinkingConfig,omitempty"`
+	Temperature      *float32           `json:"temperature,omitempty"`
+	MaxOutputTokens  *int               `json:"maxOutputTokens,omitempty"`
+	ThinkingConfig   *geminiThinkConfig `json:"thinkingConfig,omitempty"`
+	ResponseMimeType string             `json:"responseMimeType,omitempty"`
+	ResponseSchema   json.RawMessage    `json:"responseSchema,omitempty"`
 }
 
 // geminiThinkConfig configures thinking/reasoning mode.

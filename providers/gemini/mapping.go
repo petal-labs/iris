@@ -51,6 +51,13 @@ func buildRequest(req *core.ChatRequest) *geminiRequest {
 		}
 	}
 
+	// Map response format for structured output
+	if mimeType, schema := mapResponseFormat(req); mimeType != "" {
+		genConfig.ResponseMimeType = mimeType
+		genConfig.ResponseSchema = schema
+		hasGenConfig = true
+	}
+
 	if hasGenConfig {
 		gemReq.GenerationConfig = genConfig
 	}
@@ -376,4 +383,21 @@ func mapResponse(resp *geminiResponse, model string) (*core.ChatResponse, error)
 	}
 
 	return result, nil
+}
+
+// mapResponseFormat converts Iris response format to Gemini format.
+// Returns the responseMimeType and optional responseSchema.
+func mapResponseFormat(req *core.ChatRequest) (mimeType string, schema json.RawMessage) {
+	switch req.ResponseFormat {
+	case core.ResponseFormatJSON:
+		return "application/json", nil
+	case core.ResponseFormatJSONSchema:
+		if req.JSONSchema == nil {
+			return "", nil
+		}
+		return "application/json", req.JSONSchema.Schema
+	default:
+		// ResponseFormatText or empty: no constraints
+		return "", nil
+	}
 }

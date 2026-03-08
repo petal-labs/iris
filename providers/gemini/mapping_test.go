@@ -420,3 +420,118 @@ func TestMapInputFile_WithFileURL(t *testing.T) {
 		t.Errorf("FileURI = %q, want FileURL", part.FileData.FileURI)
 	}
 }
+
+func TestMapResponseFormatJSON(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:          "gemini-2.5-pro",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatJSON,
+	}
+
+	mimeType, schema := mapResponseFormat(req)
+
+	if mimeType != "application/json" {
+		t.Errorf("mimeType = %q, want %q", mimeType, "application/json")
+	}
+	if schema != nil {
+		t.Errorf("schema = %v, want nil", schema)
+	}
+}
+
+func TestMapResponseFormatJSONSchema(t *testing.T) {
+	schemaBytes := json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}}}`)
+	req := &core.ChatRequest{
+		Model:          "gemini-2.5-pro",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatJSONSchema,
+		JSONSchema: &core.JSONSchemaDefinition{
+			Name:   "person",
+			Schema: schemaBytes,
+		},
+	}
+
+	mimeType, schema := mapResponseFormat(req)
+
+	if mimeType != "application/json" {
+		t.Errorf("mimeType = %q, want %q", mimeType, "application/json")
+	}
+	if string(schema) != string(schemaBytes) {
+		t.Errorf("schema = %s, want %s", schema, schemaBytes)
+	}
+}
+
+func TestMapResponseFormatJSONSchemaWithoutSchema(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:          "gemini-2.5-pro",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatJSONSchema,
+		JSONSchema:     nil,
+	}
+
+	mimeType, schema := mapResponseFormat(req)
+
+	if mimeType != "" {
+		t.Errorf("mimeType = %q, want empty", mimeType)
+	}
+	if schema != nil {
+		t.Errorf("schema = %v, want nil", schema)
+	}
+}
+
+func TestMapResponseFormatText(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:          "gemini-2.5-pro",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatText,
+	}
+
+	mimeType, schema := mapResponseFormat(req)
+
+	if mimeType != "" {
+		t.Errorf("mimeType = %q, want empty", mimeType)
+	}
+	if schema != nil {
+		t.Errorf("schema = %v, want nil", schema)
+	}
+}
+
+func TestMapResponseFormatEmpty(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:    "gemini-2.5-pro",
+		Messages: []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+	}
+
+	mimeType, schema := mapResponseFormat(req)
+
+	if mimeType != "" {
+		t.Errorf("mimeType = %q, want empty", mimeType)
+	}
+	if schema != nil {
+		t.Errorf("schema = %v, want nil", schema)
+	}
+}
+
+func TestBuildRequestWithResponseFormat(t *testing.T) {
+	schemaBytes := json.RawMessage(`{"type":"string"}`)
+	req := &core.ChatRequest{
+		Model:          "gemini-2.5-pro",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatJSONSchema,
+		JSONSchema: &core.JSONSchemaDefinition{
+			Name:   "test",
+			Schema: schemaBytes,
+		},
+	}
+
+	result := buildRequest(req)
+
+	if result.GenerationConfig == nil {
+		t.Fatal("GenerationConfig is nil")
+	}
+	if result.GenerationConfig.ResponseMimeType != "application/json" {
+		t.Errorf("ResponseMimeType = %q, want %q", result.GenerationConfig.ResponseMimeType, "application/json")
+	}
+	if string(result.GenerationConfig.ResponseSchema) != string(schemaBytes) {
+		t.Errorf("ResponseSchema = %s, want %s", result.GenerationConfig.ResponseSchema, schemaBytes)
+	}
+}

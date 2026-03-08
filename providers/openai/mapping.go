@@ -139,5 +139,32 @@ func buildRequest(req *core.ChatRequest, stream bool) *openAIRequest {
 		oaiReq.ToolChoice = "auto"
 	}
 
+	// Map response format for structured output
+	oaiReq.ResponseFormat = mapResponseFormat(req)
+
 	return oaiReq
+}
+
+// mapResponseFormat converts Iris response format to OpenAI format.
+func mapResponseFormat(req *core.ChatRequest) *openAIResponseFormat {
+	switch req.ResponseFormat {
+	case core.ResponseFormatJSON:
+		return &openAIResponseFormat{Type: "json_object"}
+	case core.ResponseFormatJSONSchema:
+		if req.JSONSchema == nil {
+			return nil
+		}
+		return &openAIResponseFormat{
+			Type: "json_schema",
+			JSONSchema: &openAIJSONSchema{
+				Name:        req.JSONSchema.Name,
+				Description: req.JSONSchema.Description,
+				Schema:      req.JSONSchema.Schema,
+				Strict:      req.JSONSchema.Strict,
+			},
+		}
+	default:
+		// ResponseFormatText or empty: no response_format constraint
+		return nil
+	}
 }
