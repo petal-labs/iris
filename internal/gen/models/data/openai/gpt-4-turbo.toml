@@ -1,0 +1,16 @@
+# GPT-4 Turbo
+name = "GPT-4 Turbo"
+tool_call = true
+structured_output = true
+temperature = true
+reasoning = false
+knowledge = "2023-12"
+release_date = "2024-04-09"
+
+[limit]
+context = 128000
+output = 4096
+
+[modalities]
+input = ["text", "image"]
+output = ["text"]

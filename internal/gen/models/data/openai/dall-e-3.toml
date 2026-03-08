@@ -1,0 +1,11 @@
+# DALL-E 3 - Image generation model
+name = "DALL-E 3"
+tool_call = false
+structured_output = false
+temperature = false
+reasoning = false
+release_date = "2023-10-03"
+
+[modalities]
+input = ["text"]
+output = ["image"]

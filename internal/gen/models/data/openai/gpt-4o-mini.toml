@@ -1,0 +1,16 @@
+# GPT-4o Mini - Affordable, fast model
+name = "GPT-4o Mini"
+tool_call = true
+structured_output = true
+temperature = true
+reasoning = false
+knowledge = "2023-10"
+release_date = "2024-07-18"
+
+[limit]
+context = 128000
+output = 16384
+
+[modalities]
+input = ["text", "image"]
+output = ["text"]

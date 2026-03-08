@@ -1,0 +1,16 @@
+# GPT-3.5 Turbo - Legacy model
+name = "GPT-3.5 Turbo"
+tool_call = false
+structured_output = false
+temperature = true
+reasoning = false
+knowledge = "2021-09"
+release_date = "2023-03-01"
+
+[limit]
+context = 16385
+output = 4096
+
+[modalities]
+input = ["text"]
+output = ["text"]
