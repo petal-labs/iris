@@ -256,14 +256,14 @@ func TestGetBatchResults(t *testing.T) {
 		outputContent := `{"id":"resp_1","custom_id":"req-1","error":{"code":"rate_limit_exceeded","message":"Too many requests"}}`
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch {
-			case r.URL.Path == "/batches/batch_123":
+			switch r.URL.Path {
+			case "/batches/batch_123":
 				json.NewEncoder(w).Encode(openAIBatch{
 					ID:           "batch_123",
 					Status:       "completed",
 					OutputFileID: "file-output",
 				})
-			case r.URL.Path == "/files/file-output/content":
+			case "/files/file-output/content":
 				w.Write([]byte(outputContent))
 			default:
 				http.NotFound(w, r)

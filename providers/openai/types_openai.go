@@ -4,19 +4,19 @@ import "encoding/json"
 
 // openAIRequest represents a request to the OpenAI chat completions API.
 type openAIRequest struct {
-	Model          string               `json:"model"`
-	Messages       []openAIMessage      `json:"messages"`
-	Temperature    *float32             `json:"temperature,omitempty"`
-	MaxTokens      *int                 `json:"max_tokens,omitempty"`
-	Stream         bool                 `json:"stream"`
-	Tools          []openAITool         `json:"tools,omitempty"`
-	ToolChoice     string               `json:"tool_choice,omitempty"`
+	Model          string                `json:"model"`
+	Messages       []openAIMessage       `json:"messages"`
+	Temperature    *float32              `json:"temperature,omitempty"`
+	MaxTokens      *int                  `json:"max_tokens,omitempty"`
+	Stream         bool                  `json:"stream"`
+	Tools          []openAITool          `json:"tools,omitempty"`
+	ToolChoice     string                `json:"tool_choice,omitempty"`
 	ResponseFormat *openAIResponseFormat `json:"response_format,omitempty"`
 }
 
 // openAIResponseFormat represents the response_format parameter.
 type openAIResponseFormat struct {
-	Type       string           `json:"type"`
+	Type       string            `json:"type"`
 	JSONSchema *openAIJSONSchema `json:"json_schema,omitempty"`
 }
 

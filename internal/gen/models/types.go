@@ -3,23 +3,23 @@ package models
 
 // ModelData represents a model definition from models.dev.
 type ModelData struct {
-	ID               string         `toml:"-"` // Derived from filename
-	Name             string         `toml:"name"`
-	Attachment       bool           `toml:"attachment"`
-	Reasoning        bool           `toml:"reasoning"`
-	ToolCall         bool           `toml:"tool_call"`
-	StructuredOutput bool           `toml:"structured_output"`
-	Temperature      bool           `toml:"temperature"`
-	Knowledge        string         `toml:"knowledge"`
-	ReleaseDate      string         `toml:"release_date"`
-	LastUpdated      string         `toml:"last_updated"`
-	OpenWeights      bool           `toml:"open_weights"`
-	Status           string         `toml:"status"` // alpha, beta, deprecated
-	Cost             *CostData      `toml:"cost"`
-	Limit            *LimitData     `toml:"limit"`
-	Modalities       *ModalityData  `toml:"modalities"`
-	Interleaved      any            `toml:"interleaved"` // bool or object
-	API              string         `toml:"api"`         // Optional API endpoint override
+	ID               string        `toml:"-"` // Derived from filename
+	Name             string        `toml:"name"`
+	Attachment       bool          `toml:"attachment"`
+	Reasoning        bool          `toml:"reasoning"`
+	ToolCall         bool          `toml:"tool_call"`
+	StructuredOutput bool          `toml:"structured_output"`
+	Temperature      bool          `toml:"temperature"`
+	Knowledge        string        `toml:"knowledge"`
+	ReleaseDate      string        `toml:"release_date"`
+	LastUpdated      string        `toml:"last_updated"`
+	OpenWeights      bool          `toml:"open_weights"`
+	Status           string        `toml:"status"` // alpha, beta, deprecated
+	Cost             *CostData     `toml:"cost"`
+	Limit            *LimitData    `toml:"limit"`
+	Modalities       *ModalityData `toml:"modalities"`
+	Interleaved      any           `toml:"interleaved"` // bool or object
+	API              string        `toml:"api"`         // Optional API endpoint override
 }
 
 // CostData represents pricing information.
@@ -53,12 +53,12 @@ type ProviderData struct {
 
 // ProviderMapping maps models.dev provider names to Iris provider packages.
 var ProviderMapping = map[string]string{
-	"openai":    "openai",
-	"anthropic": "anthropic",
-	"google":    "gemini",
-	"ollama":    "ollama",
-	"xai":       "xai",
-	"perplexity": "perplexity",
+	"openai":      "openai",
+	"anthropic":   "anthropic",
+	"google":      "gemini",
+	"ollama":      "ollama",
+	"xai":         "xai",
+	"perplexity":  "perplexity",
 	"huggingface": "huggingface",
 }
 

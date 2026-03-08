@@ -16,9 +16,9 @@ type MockCall struct {
 
 // MockStreamConfig configures a streaming response.
 type MockStreamConfig struct {
-	Chunks   []string            // Text chunks to emit
-	Final    *core.ChatResponse  // Final response (optional, auto-generated if nil)
-	Error    error               // Error to emit (if set, sent after chunks)
+	Chunks []string           // Text chunks to emit
+	Final  *core.ChatResponse // Final response (optional, auto-generated if nil)
+	Error  error              // Error to emit (if set, sent after chunks)
 }
 
 // MockProvider is a test double for core.Provider.

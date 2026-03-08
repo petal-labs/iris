@@ -140,14 +140,10 @@ func (w *BatchWaiter) Wait(ctx context.Context, id BatchID) (*BatchInfo, error) 
 // WaitAndCollect waits for completion and retrieves all results.
 // This is a convenience method combining Wait and GetBatchResults.
 func (w *BatchWaiter) WaitAndCollect(ctx context.Context, id BatchID) ([]BatchResult, error) {
-	info, err := w.Wait(ctx, id)
-	if err != nil {
+	if _, err := w.Wait(ctx, id); err != nil {
 		return nil, err
 	}
 
-	if info.Status == BatchStatusFailed || info.Status == BatchStatusCancelled {
-		// Still try to get partial results
-	}
-
+	// We still try to get partial results even for failed/cancelled batches
 	return w.provider.GetBatchResults(ctx, id)
 }

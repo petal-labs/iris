@@ -17,22 +17,22 @@ type openAIBatch struct {
 		Object string           `json:"object"`
 		Data   []openAIBatchErr `json:"data"`
 	} `json:"errors,omitempty"`
-	InputFileID      string              `json:"input_file_id"`
-	CompletionWindow string              `json:"completion_window"`
-	Status           string              `json:"status"`
-	OutputFileID     string              `json:"output_file_id,omitempty"`
-	ErrorFileID      string              `json:"error_file_id,omitempty"`
-	CreatedAt        int64               `json:"created_at"`
-	InProgressAt     *int64              `json:"in_progress_at,omitempty"`
-	ExpiresAt        *int64              `json:"expires_at,omitempty"`
-	FinalizingAt     *int64              `json:"finalizing_at,omitempty"`
-	CompletedAt      *int64              `json:"completed_at,omitempty"`
-	FailedAt         *int64              `json:"failed_at,omitempty"`
-	ExpiredAt        *int64              `json:"expired_at,omitempty"`
-	CancellingAt     *int64              `json:"cancelling_at,omitempty"`
-	CancelledAt      *int64              `json:"cancelled_at,omitempty"`
-	RequestCounts    openAIBatchCounts   `json:"request_counts"`
-	Metadata         map[string]string   `json:"metadata,omitempty"`
+	InputFileID      string            `json:"input_file_id"`
+	CompletionWindow string            `json:"completion_window"`
+	Status           string            `json:"status"`
+	OutputFileID     string            `json:"output_file_id,omitempty"`
+	ErrorFileID      string            `json:"error_file_id,omitempty"`
+	CreatedAt        int64             `json:"created_at"`
+	InProgressAt     *int64            `json:"in_progress_at,omitempty"`
+	ExpiresAt        *int64            `json:"expires_at,omitempty"`
+	FinalizingAt     *int64            `json:"finalizing_at,omitempty"`
+	CompletedAt      *int64            `json:"completed_at,omitempty"`
+	FailedAt         *int64            `json:"failed_at,omitempty"`
+	ExpiredAt        *int64            `json:"expired_at,omitempty"`
+	CancellingAt     *int64            `json:"cancelling_at,omitempty"`
+	CancelledAt      *int64            `json:"cancelled_at,omitempty"`
+	RequestCounts    openAIBatchCounts `json:"request_counts"`
+	Metadata         map[string]string `json:"metadata,omitempty"`
 }
 
 // openAIBatchErr represents an error within a batch.
@@ -70,10 +70,10 @@ type openAIBatchListResponse struct {
 // openAIBatchRequestLine represents a single request in a batch JSONL file.
 // This is the format required by OpenAI for batch input files.
 type openAIBatchRequestLine struct {
-	CustomID string               `json:"custom_id"`
-	Method   string               `json:"method"`
-	URL      string               `json:"url"`
-	Body     openAIBatchReqBody   `json:"body"`
+	CustomID string             `json:"custom_id"`
+	Method   string             `json:"method"`
+	URL      string             `json:"url"`
+	Body     openAIBatchReqBody `json:"body"`
 }
 
 // openAIBatchReqBody is the body of a batch request line.

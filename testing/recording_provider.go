@@ -10,13 +10,13 @@ import (
 
 // RecordedCall contains details about a call made to the underlying provider.
 type RecordedCall struct {
-	Method    string            // "Chat" or "StreamChat"
-	Request   *core.ChatRequest // The request that was made
+	Method    string             // "Chat" or "StreamChat"
+	Request   *core.ChatRequest  // The request that was made
 	Response  *core.ChatResponse // The response received (nil for streaming until drained)
-	Error     error             // Any error that occurred
-	StartTime time.Time         // When the call started
-	EndTime   time.Time         // When the call completed
-	Duration  time.Duration     // How long the call took
+	Error     error              // Any error that occurred
+	StartTime time.Time          // When the call started
+	EndTime   time.Time          // When the call completed
+	Duration  time.Duration      // How long the call took
 }
 
 // RecordingProvider wraps a real provider and records all calls for inspection.

@@ -125,7 +125,7 @@ func generateProvider(providerName, packageName string) error {
 	outPath := filepath.Join(outDir, "models_gen.go")
 
 	// Write file
-	if err := os.WriteFile(outPath, code, 0644); err != nil {
+	if err := os.WriteFile(outPath, code, 0600); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
 
