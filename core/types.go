@@ -16,7 +16,35 @@ const (
 	FeatureEmbeddings               Feature = "embeddings"
 	FeatureContextualizedEmbeddings Feature = "contextualized_embeddings"
 	FeatureReranking                Feature = "reranking"
+	FeatureStructuredOutput         Feature = "structured_output"
+	FeatureBatch                    Feature = "batch"
 )
+
+// ResponseFormat specifies the output format constraint for chat responses.
+type ResponseFormat string
+
+const (
+	// ResponseFormatText is the default format with no constraints.
+	ResponseFormatText ResponseFormat = "text"
+	// ResponseFormatJSON forces the model to output valid JSON.
+	ResponseFormatJSON ResponseFormat = "json_object"
+	// ResponseFormatJSONSchema forces output matching a specific JSON Schema.
+	ResponseFormatJSONSchema ResponseFormat = "json_schema"
+)
+
+// JSONSchemaDefinition represents a JSON Schema for structured output.
+// When provided, the model's output will conform to this schema.
+type JSONSchemaDefinition struct {
+	// Name is a required identifier for the schema (used by some providers).
+	Name string `json:"name"`
+	// Description explains what the schema represents (optional).
+	Description string `json:"description,omitempty"`
+	// Schema is the JSON Schema definition.
+	Schema json.RawMessage `json:"schema"`
+	// Strict enables strict schema validation (recommended).
+	// When true, the model will always output valid JSON matching the schema.
+	Strict bool `json:"strict,omitempty"`
+}
 
 // APIEndpoint represents which API endpoint a model uses.
 type APIEndpoint string
@@ -242,6 +270,10 @@ type ChatRequest struct {
 	MaxTokens   *int      `json:"max_tokens,omitempty"`
 	Tools       []Tool    `json:"-"` // Tools are handled separately by providers
 
+	// Structured output fields
+	ResponseFormat ResponseFormat        `json:"response_format,omitempty"`
+	JSONSchema     *JSONSchemaDefinition `json:"json_schema,omitempty"`
+
 	// Responses API fields (ignored for Chat Completions API)
 	Instructions       string          `json:"instructions,omitempty"`
 	ReasoningEffort    ReasoningEffort `json:"reasoning_effort,omitempty"`
@@ -292,4 +324,95 @@ func (r *ChatResponse) HasReasoning() bool {
 // Delta contains incremental assistant text.
 type ChatChunk struct {
 	Delta string `json:"delta"`
+}
+
+// -----------------------------------------------------------------------------
+// Batch API Types
+// -----------------------------------------------------------------------------
+
+// BatchID uniquely identifies a batch request.
+type BatchID string
+
+// BatchStatus represents the state of a batch request.
+type BatchStatus string
+
+const (
+	// BatchStatusPending indicates the batch is queued but not yet processing.
+	BatchStatusPending BatchStatus = "pending"
+	// BatchStatusInProgress indicates the batch is currently being processed.
+	BatchStatusInProgress BatchStatus = "in_progress"
+	// BatchStatusCompleted indicates all requests in the batch have finished.
+	BatchStatusCompleted BatchStatus = "completed"
+	// BatchStatusFailed indicates the batch failed (check individual results).
+	BatchStatusFailed BatchStatus = "failed"
+	// BatchStatusCancelled indicates the batch was cancelled by the user.
+	BatchStatusCancelled BatchStatus = "cancelled"
+	// BatchStatusExpired indicates the batch expired before completion.
+	BatchStatusExpired BatchStatus = "expired"
+)
+
+// BatchInfo contains metadata about a batch.
+type BatchInfo struct {
+	// ID is the unique identifier for this batch.
+	ID BatchID `json:"id"`
+	// Status is the current processing state.
+	Status BatchStatus `json:"status"`
+	// Total is the total number of requests in the batch.
+	Total int `json:"total"`
+	// Completed is the number of successfully completed requests.
+	Completed int `json:"completed"`
+	// Failed is the number of failed requests.
+	Failed int `json:"failed"`
+	// CreatedAt is when the batch was created.
+	CreatedAt int64 `json:"created_at"`
+	// CompletedAt is when the batch finished (nil if still processing).
+	CompletedAt *int64 `json:"completed_at,omitempty"`
+	// ExpiresAt is when the batch will expire if not completed.
+	ExpiresAt *int64 `json:"expires_at,omitempty"`
+	// Endpoint is the API endpoint used for this batch.
+	Endpoint string `json:"endpoint,omitempty"`
+	// ErrorFileID contains error details if the batch failed.
+	ErrorFileID string `json:"error_file_id,omitempty"`
+	// OutputFileID contains results when the batch completes.
+	OutputFileID string `json:"output_file_id,omitempty"`
+}
+
+// IsComplete returns true if the batch has finished processing.
+func (b *BatchInfo) IsComplete() bool {
+	return b.Status == BatchStatusCompleted ||
+		b.Status == BatchStatusFailed ||
+		b.Status == BatchStatusCancelled ||
+		b.Status == BatchStatusExpired
+}
+
+// BatchRequest wraps a ChatRequest with a custom ID for correlation.
+type BatchRequest struct {
+	// CustomID is a user-provided identifier for correlating results.
+	// Must be unique within a batch and 64 characters or fewer.
+	CustomID string `json:"custom_id"`
+	// Request is the chat request to process.
+	Request ChatRequest `json:"request"`
+}
+
+// BatchResult contains the response for a single request in a batch.
+type BatchResult struct {
+	// CustomID is the user-provided identifier from the request.
+	CustomID string `json:"custom_id"`
+	// Response is the chat response (nil if request failed).
+	Response *ChatResponse `json:"response,omitempty"`
+	// Error contains error details if the request failed.
+	Error *BatchError `json:"error,omitempty"`
+}
+
+// BatchError contains error details for a failed batch request.
+type BatchError struct {
+	// Code is the error code (e.g., "rate_limit_exceeded").
+	Code string `json:"code"`
+	// Message is a human-readable error description.
+	Message string `json:"message"`
+}
+
+// IsSuccess returns true if the batch request succeeded.
+func (r *BatchResult) IsSuccess() bool {
+	return r.Error == nil && r.Response != nil
 }

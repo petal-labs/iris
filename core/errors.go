@@ -42,6 +42,13 @@ var (
 	ErrNotSupported = errors.New("operation not supported")
 )
 
+// Batch processing errors.
+var (
+	ErrBatchTimeout   = errors.New("batch processing timed out")
+	ErrBatchNotFound  = errors.New("batch not found")
+	ErrBatchCancelled = errors.New("batch was cancelled")
+)
+
 // Validation errors with actionable guidance.
 var (
 	ErrModelRequired = errors.New("model required: pass a model ID to Client.Chat(), e.g., client.Chat(\"gpt-4\")")

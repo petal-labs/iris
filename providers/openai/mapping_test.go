@@ -407,3 +407,126 @@ func TestBuildRequestJSONOutput(t *testing.T) {
 		t.Errorf("JSON tools length = %v, want 1", len(toolsList))
 	}
 }
+
+func TestMapResponseFormatJSON(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:          "gpt-4o",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatJSON,
+	}
+
+	result := mapResponseFormat(req)
+
+	if result == nil {
+		t.Fatal("mapResponseFormat returned nil")
+	}
+	if result.Type != "json_object" {
+		t.Errorf("Type = %q, want %q", result.Type, "json_object")
+	}
+	if result.JSONSchema != nil {
+		t.Errorf("JSONSchema = %v, want nil", result.JSONSchema)
+	}
+}
+
+func TestMapResponseFormatJSONSchema(t *testing.T) {
+	schema := &core.JSONSchemaDefinition{
+		Name:        "person",
+		Description: "A person object",
+		Schema:      json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}}}`),
+		Strict:      true,
+	}
+
+	req := &core.ChatRequest{
+		Model:          "gpt-4o",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatJSONSchema,
+		JSONSchema:     schema,
+	}
+
+	result := mapResponseFormat(req)
+
+	if result == nil {
+		t.Fatal("mapResponseFormat returned nil")
+	}
+	if result.Type != "json_schema" {
+		t.Errorf("Type = %q, want %q", result.Type, "json_schema")
+	}
+	if result.JSONSchema == nil {
+		t.Fatal("JSONSchema is nil")
+	}
+	if result.JSONSchema.Name != "person" {
+		t.Errorf("JSONSchema.Name = %q, want %q", result.JSONSchema.Name, "person")
+	}
+	if result.JSONSchema.Description != "A person object" {
+		t.Errorf("JSONSchema.Description = %q, want %q", result.JSONSchema.Description, "A person object")
+	}
+	if !result.JSONSchema.Strict {
+		t.Error("JSONSchema.Strict = false, want true")
+	}
+}
+
+func TestMapResponseFormatJSONSchemaWithoutSchema(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:          "gpt-4o",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatJSONSchema,
+		JSONSchema:     nil, // No schema provided
+	}
+
+	result := mapResponseFormat(req)
+
+	if result != nil {
+		t.Errorf("mapResponseFormat returned %v, want nil", result)
+	}
+}
+
+func TestMapResponseFormatText(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:          "gpt-4o",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatText,
+	}
+
+	result := mapResponseFormat(req)
+
+	if result != nil {
+		t.Errorf("mapResponseFormat returned %v, want nil", result)
+	}
+}
+
+func TestMapResponseFormatEmpty(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:    "gpt-4o",
+		Messages: []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		// ResponseFormat not set
+	}
+
+	result := mapResponseFormat(req)
+
+	if result != nil {
+		t.Errorf("mapResponseFormat returned %v, want nil", result)
+	}
+}
+
+func TestBuildRequestWithResponseFormat(t *testing.T) {
+	schema := &core.JSONSchemaDefinition{
+		Name:   "test",
+		Schema: json.RawMessage(`{"type":"string"}`),
+	}
+
+	req := &core.ChatRequest{
+		Model:          "gpt-4o",
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		ResponseFormat: core.ResponseFormatJSONSchema,
+		JSONSchema:     schema,
+	}
+
+	result := buildRequest(req, false)
+
+	if result.ResponseFormat == nil {
+		t.Fatal("ResponseFormat is nil")
+	}
+	if result.ResponseFormat.Type != "json_schema" {
+		t.Errorf("ResponseFormat.Type = %q, want %q", result.ResponseFormat.Type, "json_schema")
+	}
+}

@@ -244,6 +244,7 @@ func (b *ChatBuilder) Clone() *ChatBuilder {
 			ReasoningEffort:    b.req.ReasoningEffort,
 			PreviousResponseID: b.req.PreviousResponseID,
 			Truncation:         b.req.Truncation,
+			ResponseFormat:     b.req.ResponseFormat,
 		},
 	}
 
@@ -255,6 +256,15 @@ func (b *ChatBuilder) Clone() *ChatBuilder {
 	if b.req.MaxTokens != nil {
 		m := *b.req.MaxTokens
 		clone.req.MaxTokens = &m
+	}
+	if b.req.JSONSchema != nil {
+		schemaCopy := *b.req.JSONSchema
+		// Deep copy the schema bytes
+		if len(b.req.JSONSchema.Schema) > 0 {
+			schemaCopy.Schema = make([]byte, len(b.req.JSONSchema.Schema))
+			copy(schemaCopy.Schema, b.req.JSONSchema.Schema)
+		}
+		clone.req.JSONSchema = &schemaCopy
 	}
 
 	// Deep copy slices
@@ -307,6 +317,43 @@ func (b *ChatBuilder) Clone() *ChatBuilder {
 // Truncation sets the truncation mode for the request.
 func (b *ChatBuilder) Truncation(mode string) *ChatBuilder {
 	b.req.Truncation = mode
+	return b
+}
+
+// ResponseJSON constrains the model output to valid JSON.
+// This enables JSON mode where the model outputs syntactically valid JSON.
+// Note: The model may still produce invalid JSON in edge cases; always validate.
+func (b *ChatBuilder) ResponseJSON() *ChatBuilder {
+	b.req.ResponseFormat = ResponseFormatJSON
+	return b
+}
+
+// ResponseJSONSchema constrains the model output to match a specific JSON Schema.
+// This enables structured output mode where the model produces JSON conforming to the schema.
+// The schema parameter defines the structure the output must conform to.
+//
+// Example:
+//
+//	schema := &core.JSONSchemaDefinition{
+//	    Name:   "person",
+//	    Strict: true,
+//	    Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"}},"required":["name","age"]}`),
+//	}
+//	resp, err := client.Chat(model).
+//	    User("Extract: John is 30 years old").
+//	    ResponseJSONSchema(schema).
+//	    GetResponse(ctx)
+func (b *ChatBuilder) ResponseJSONSchema(schema *JSONSchemaDefinition) *ChatBuilder {
+	b.req.ResponseFormat = ResponseFormatJSONSchema
+	b.req.JSONSchema = schema
+	return b
+}
+
+// ResponseText explicitly sets the response format to text (the default).
+// This is mainly useful for clearing a previously set JSON format.
+func (b *ChatBuilder) ResponseText() *ChatBuilder {
+	b.req.ResponseFormat = ResponseFormatText
+	b.req.JSONSchema = nil
 	return b
 }
 
@@ -647,19 +694,36 @@ func wrapStreamWithTelemetry(
 		var finalResp *ChatResponse
 		var finalErr error
 
-		// Wait for either final response or error
-		select {
-		case resp, ok := <-stream.Final:
-			if ok {
-				finalResp = resp
-				finalCh <- resp
-			}
-		case err, ok := <-stream.Err:
-			if ok {
-				finalErr = err
-				errCh <- err
+		// Wait for final response, checking for errors along the way
+		// Use a loop to avoid the race where select randomly picks Err
+		// over Final when both channels are ready
+		for finalResp == nil && finalErr == nil {
+			select {
+			case resp, ok := <-stream.Final:
+				if ok {
+					finalResp = resp
+					finalCh <- resp
+				} else {
+					// Final channel closed without value, check for error
+					select {
+					case err, ok := <-stream.Err:
+						if ok {
+							finalErr = err
+							errCh <- err
+						}
+					default:
+					}
+					goto done
+				}
+			case err, ok := <-stream.Err:
+				if ok {
+					finalErr = err
+					errCh <- err
+				}
+				// If Err closed without value, continue to wait for Final
 			}
 		}
+	done:
 
 		// Emit telemetry end
 		usage := TokenUsage{}

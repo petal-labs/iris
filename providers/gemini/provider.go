@@ -76,7 +76,7 @@ func (p *Gemini) Models() []core.ModelInfo {
 // Supports reports whether the provider supports the given feature.
 func (p *Gemini) Supports(feature core.Feature) bool {
 	switch feature {
-	case core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling, core.FeatureReasoning, core.FeatureImageGeneration:
+	case core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling, core.FeatureReasoning, core.FeatureImageGeneration, core.FeatureStructuredOutput:
 		return true
 	default:
 		return false
