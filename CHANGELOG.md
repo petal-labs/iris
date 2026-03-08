@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-03-08
+
+### Added
+
+- Batch API support for async request processing at 50% cost savings
+  - `BatchProvider` interface with `CreateBatch`, `GetBatchStatus`, `GetBatchResults`, `CancelBatch`, `ListBatches`
+  - `BatchWaiter` utility for automatic polling with configurable intervals
+  - OpenAI batch implementation with JSONL file handling
+- Structured output for constrained model responses
+  - `ResponseJSON()` for freeform JSON mode
+  - `ResponseJSONSchema()` for strict JSON Schema enforcement
+  - `JSONSchemaDefinition` type for schema configuration
+- Conversation streaming support via `Conversation.Stream()` method
+- Testing utilities package (`testing/`)
+  - `MockProvider` with response queuing, error injection, and streaming mocks
+  - `RecordingProvider` for capturing provider interactions
+- Model constants code generator (`cmd/gen-models/`)
+- Convenience re-exports at package root for streamlined imports
+
+### Changed
+
+- Updated README with comprehensive feature documentation
+- Added examples for structured output, conversation streaming, batch API, and testing utilities
+
 ## [0.12.0] - 2026-02-15
 
 ### Added
@@ -103,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telemetry hooks and retry policies
 - Typed error handling
 
-[Unreleased]: https://github.com/petal-labs/iris/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/petal-labs/iris/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/petal-labs/iris/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/petal-labs/iris/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/petal-labs/iris/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/petal-labs/iris/compare/v0.9.0...v0.10.0
