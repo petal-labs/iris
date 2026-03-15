@@ -18,11 +18,14 @@ var zaiTestMutex sync.Mutex
 
 // zaiTestSetup acquires the mutex and returns cleanup function.
 // This prevents concurrent Z.ai API calls which cause rate limiting.
+// Z.ai has a concurrency limit of 3, so we serialize all tests.
 func zaiTestSetup(t *testing.T) func() {
 	t.Helper()
 	zaiTestMutex.Lock()
+	// Delay before starting the test to ensure spacing between API calls.
+	time.Sleep(2 * time.Second)
 	return func() {
-		// Small delay between tests to avoid rate limiting.
+		// Additional delay after test completes.
 		time.Sleep(500 * time.Millisecond)
 		zaiTestMutex.Unlock()
 	}
