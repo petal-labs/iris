@@ -469,13 +469,18 @@ func (b *ChatBuilder) GetResponse(ctx context.Context) (*ChatResponse, error) {
 
 	start := time.Now()
 	providerID := b.client.provider.ID()
-
-	// Emit telemetry start
-	b.client.telemetry.OnRequestStart(RequestStartEvent{
+	startEvent := RequestStartEvent{
 		Provider: providerID,
 		Model:    b.req.Model,
 		Start:    start,
-	})
+	}
+
+	// Emit telemetry start (with context if supported)
+	if ctxHook, ok := b.client.telemetry.(ContextualTelemetryHook); ok {
+		ctx = ctxHook.OnRequestStartWithContext(ctx, startEvent)
+	} else {
+		b.client.telemetry.OnRequestStart(startEvent)
+	}
 
 	var resp *ChatResponse
 	var err error
@@ -510,14 +515,20 @@ retryLoop:
 	if resp != nil {
 		usage = resp.Usage
 	}
-	b.client.telemetry.OnRequestEnd(RequestEndEvent{
+	endEvent := RequestEndEvent{
 		Provider: providerID,
 		Model:    b.req.Model,
 		Start:    start,
 		End:      end,
 		Usage:    usage,
 		Err:      err,
-	})
+	}
+
+	if ctxHook, ok := b.client.telemetry.(ContextualTelemetryHook); ok {
+		ctxHook.OnRequestEndWithContext(ctx, endEvent)
+	} else {
+		b.client.telemetry.OnRequestEnd(endEvent)
+	}
 
 	return resp, err
 }
@@ -539,29 +550,39 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 
 	start := time.Now()
 	providerID := b.client.provider.ID()
-
-	// Emit telemetry start
-	b.client.telemetry.OnRequestStart(RequestStartEvent{
+	startEvent := RequestStartEvent{
 		Provider: providerID,
 		Model:    b.req.Model,
 		Start:    start,
-	})
+	}
+
+	// Emit telemetry start (with context if supported)
+	if ctxHook, ok := b.client.telemetry.(ContextualTelemetryHook); ok {
+		ctx = ctxHook.OnRequestStartWithContext(ctx, startEvent)
+	} else {
+		b.client.telemetry.OnRequestStart(startEvent)
+	}
 
 	stream, err := b.client.provider.StreamChat(ctx, &b.req)
 	if err != nil {
 		// Emit telemetry end on immediate error
-		b.client.telemetry.OnRequestEnd(RequestEndEvent{
+		endEvent := RequestEndEvent{
 			Provider: providerID,
 			Model:    b.req.Model,
 			Start:    start,
 			End:      time.Now(),
 			Err:      err,
-		})
+		}
+		if ctxHook, ok := b.client.telemetry.(ContextualTelemetryHook); ok {
+			ctxHook.OnRequestEndWithContext(ctx, endEvent)
+		} else {
+			b.client.telemetry.OnRequestEnd(endEvent)
+		}
 		return nil, err
 	}
 
 	// Wrap the stream to emit telemetry when it completes
-	return wrapStreamWithTelemetry(stream, b.client.telemetry, providerID, b.req.Model, start), nil
+	return wrapStreamWithTelemetry(ctx, stream, b.client.telemetry, providerID, b.req.Model, start), nil
 }
 
 // MessageBuilder provides a fluent API for building multimodal messages.
@@ -678,6 +699,7 @@ func (b *ChatBuilder) UserWithFileID(text, fileID string) *ChatBuilder {
 
 // wrapStreamWithTelemetry wraps a ChatStream to emit telemetry on completion.
 func wrapStreamWithTelemetry(
+	ctx context.Context,
 	stream *ChatStream,
 	hook TelemetryHook,
 	provider string,
@@ -730,14 +752,20 @@ func wrapStreamWithTelemetry(
 		if finalResp != nil {
 			usage = finalResp.Usage
 		}
-		hook.OnRequestEnd(RequestEndEvent{
+		endEvent := RequestEndEvent{
 			Provider: provider,
 			Model:    model,
 			Start:    start,
 			End:      time.Now(),
 			Usage:    usage,
 			Err:      finalErr,
-		})
+		}
+
+		if ctxHook, ok := hook.(ContextualTelemetryHook); ok {
+			ctxHook.OnRequestEndWithContext(ctx, endEvent)
+		} else {
+			hook.OnRequestEnd(endEvent)
+		}
 	}()
 
 	return &ChatStream{
