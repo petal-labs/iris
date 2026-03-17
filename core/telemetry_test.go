@@ -208,6 +208,9 @@ func TestEventStructsHaveNoSecretFields(t *testing.T) {
 	// etc.
 }
 
+// telemetryTestKey is a custom type for context keys to satisfy staticcheck SA1029.
+type telemetryTestKey struct{}
+
 // testContextualTelemetryHook is a test implementation that records events
 // and supports context propagation.
 type testContextualTelemetryHook struct {
@@ -220,7 +223,7 @@ type testContextualTelemetryHook struct {
 func (h *testContextualTelemetryHook) OnRequestStartWithContext(ctx context.Context, e RequestStartEvent) context.Context {
 	h.startContextEvents = append(h.startContextEvents, e)
 	// Return a new context with a value to verify propagation
-	return context.WithValue(ctx, "telemetry-test-key", "telemetry-test-value")
+	return context.WithValue(ctx, telemetryTestKey{}, "telemetry-test-value")
 }
 
 func (h *testContextualTelemetryHook) OnRequestEndWithContext(ctx context.Context, e RequestEndEvent) {
@@ -273,7 +276,7 @@ func TestContextualTelemetryHookReceivesContext(t *testing.T) {
 	}
 
 	// The new context should have the test value
-	val := newCtx.Value("telemetry-test-key")
+	val := newCtx.Value(telemetryTestKey{})
 	if val != "telemetry-test-value" {
 		t.Errorf("context value = %v, want telemetry-test-value", val)
 	}
@@ -301,7 +304,7 @@ func TestContextualTelemetryHookReceivesContext(t *testing.T) {
 
 	// Verify the context passed to OnRequestEndWithContext is the one from OnRequestStartWithContext
 	receivedCtx := hook.contexts[0]
-	if receivedCtx.Value("telemetry-test-key") != "telemetry-test-value" {
+	if receivedCtx.Value(telemetryTestKey{}) != "telemetry-test-value" {
 		t.Error("OnRequestEndWithContext should receive the context from OnRequestStartWithContext")
 	}
 }
