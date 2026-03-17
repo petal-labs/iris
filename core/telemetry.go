@@ -1,6 +1,9 @@
 package core
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // TelemetryHook receives notifications about request lifecycle events.
 // Implementations can use this for logging, metrics, tracing, etc.
@@ -84,3 +87,33 @@ func (NoopTelemetryHook) OnRequestEnd(RequestEndEvent) {}
 
 // Compile-time check that NoopTelemetryHook implements TelemetryHook.
 var _ TelemetryHook = NoopTelemetryHook{}
+
+// ContextualTelemetryHook extends TelemetryHook with context support.
+// Implementations that need access to context.Context (e.g., OpenTelemetry
+// for span creation and propagation) should implement this interface.
+//
+// The Client checks for this interface at runtime and uses it when available,
+// falling back to the base TelemetryHook methods otherwise. This ensures
+// backward compatibility with existing TelemetryHook implementations.
+//
+// # Context Propagation
+//
+// OnRequestStartWithContext returns a new context that may contain span
+// information or other telemetry-related data. The returned context is
+// passed through the request lifecycle and provided to OnRequestEndWithContext.
+//
+// # Security
+//
+// Like TelemetryHook, implementations must NOT capture sensitive data
+// (API keys, prompts, responses) in spans or other telemetry output.
+type ContextualTelemetryHook interface {
+	TelemetryHook
+
+	// OnRequestStartWithContext is called when a request to a provider begins.
+	// Returns a new context that should be used for the request.
+	// The returned context may contain span information for propagation.
+	OnRequestStartWithContext(ctx context.Context, e RequestStartEvent) context.Context
+
+	// OnRequestEndWithContext is called when a request to a provider completes.
+	OnRequestEndWithContext(ctx context.Context, e RequestEndEvent)
+}

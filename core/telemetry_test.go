@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -205,4 +206,136 @@ func TestEventStructsHaveNoSecretFields(t *testing.T) {
 	// - ResponseContent / Output
 	// - Headers
 	// etc.
+}
+
+// telemetryTestKey is a custom type for context keys to satisfy staticcheck SA1029.
+type telemetryTestKey struct{}
+
+// testContextualTelemetryHook is a test implementation that records events
+// and supports context propagation.
+type testContextualTelemetryHook struct {
+	testTelemetryHook
+	startContextEvents []RequestStartEvent
+	endContextEvents   []RequestEndEvent
+	contexts           []context.Context
+}
+
+func (h *testContextualTelemetryHook) OnRequestStartWithContext(ctx context.Context, e RequestStartEvent) context.Context {
+	h.startContextEvents = append(h.startContextEvents, e)
+	// Return a new context with a value to verify propagation
+	return context.WithValue(ctx, telemetryTestKey{}, "telemetry-test-value")
+}
+
+func (h *testContextualTelemetryHook) OnRequestEndWithContext(ctx context.Context, e RequestEndEvent) {
+	h.endContextEvents = append(h.endContextEvents, e)
+	h.contexts = append(h.contexts, ctx)
+}
+
+func TestContextualTelemetryHookCanBeImplemented(t *testing.T) {
+	// Verify test struct implements both interfaces
+	var hook TelemetryHook = &testContextualTelemetryHook{}
+	if hook == nil {
+		t.Fatal("testContextualTelemetryHook should implement TelemetryHook")
+	}
+
+	var ctxHook ContextualTelemetryHook = &testContextualTelemetryHook{}
+	if ctxHook == nil {
+		t.Fatal("testContextualTelemetryHook should implement ContextualTelemetryHook")
+	}
+}
+
+func TestContextualTelemetryHookExtendsBase(t *testing.T) {
+	hook := &testContextualTelemetryHook{}
+
+	// Should also work as base TelemetryHook
+	hook.OnRequestStart(RequestStartEvent{Provider: "test", Model: "model", Start: time.Now()})
+	hook.OnRequestEnd(RequestEndEvent{Provider: "test", Model: "model", Start: time.Now(), End: time.Now()})
+
+	if len(hook.startEvents) != 1 {
+		t.Errorf("expected 1 base start event, got %d", len(hook.startEvents))
+	}
+	if len(hook.endEvents) != 1 {
+		t.Errorf("expected 1 base end event, got %d", len(hook.endEvents))
+	}
+}
+
+func TestContextualTelemetryHookReceivesContext(t *testing.T) {
+	hook := &testContextualTelemetryHook{}
+	ctx := context.Background()
+
+	startEvent := RequestStartEvent{
+		Provider: "openai",
+		Model:    "gpt-4",
+		Start:    time.Now(),
+	}
+
+	// OnRequestStartWithContext should return a new context
+	newCtx := hook.OnRequestStartWithContext(ctx, startEvent)
+	if newCtx == ctx {
+		t.Error("OnRequestStartWithContext should return a new context")
+	}
+
+	// The new context should have the test value
+	val := newCtx.Value(telemetryTestKey{})
+	if val != "telemetry-test-value" {
+		t.Errorf("context value = %v, want telemetry-test-value", val)
+	}
+
+	endEvent := RequestEndEvent{
+		Provider: "openai",
+		Model:    "gpt-4",
+		Start:    startEvent.Start,
+		End:      time.Now(),
+		Usage:    TokenUsage{TotalTokens: 100},
+	}
+
+	// OnRequestEndWithContext should receive the context
+	hook.OnRequestEndWithContext(newCtx, endEvent)
+
+	if len(hook.startContextEvents) != 1 {
+		t.Errorf("expected 1 contextual start event, got %d", len(hook.startContextEvents))
+	}
+	if len(hook.endContextEvents) != 1 {
+		t.Errorf("expected 1 contextual end event, got %d", len(hook.endContextEvents))
+	}
+	if len(hook.contexts) != 1 {
+		t.Errorf("expected 1 context, got %d", len(hook.contexts))
+	}
+
+	// Verify the context passed to OnRequestEndWithContext is the one from OnRequestStartWithContext
+	receivedCtx := hook.contexts[0]
+	if receivedCtx.Value(telemetryTestKey{}) != "telemetry-test-value" {
+		t.Error("OnRequestEndWithContext should receive the context from OnRequestStartWithContext")
+	}
+}
+
+func TestContextualTelemetryHookTypeAssertion(t *testing.T) {
+	// Test type assertion pattern used in client.go
+	var baseTelemetry TelemetryHook = &testTelemetryHook{}
+
+	// Base hook should NOT be assertable to ContextualTelemetryHook
+	if _, ok := baseTelemetry.(ContextualTelemetryHook); ok {
+		t.Error("base TelemetryHook should not be assertable to ContextualTelemetryHook")
+	}
+
+	var contextualTelemetry TelemetryHook = &testContextualTelemetryHook{}
+
+	// Contextual hook SHOULD be assertable to ContextualTelemetryHook
+	ctxHook, ok := contextualTelemetry.(ContextualTelemetryHook)
+	if !ok {
+		t.Error("ContextualTelemetryHook should be assertable from TelemetryHook")
+	}
+	if ctxHook == nil {
+		t.Error("type assertion should return non-nil hook")
+	}
+}
+
+func TestNoopTelemetryHookIsNotContextual(t *testing.T) {
+	var hook TelemetryHook = NoopTelemetryHook{}
+
+	// NoopTelemetryHook should NOT implement ContextualTelemetryHook
+	// This is intentional - noop doesn't need context
+	if _, ok := hook.(ContextualTelemetryHook); ok {
+		t.Error("NoopTelemetryHook should not implement ContextualTelemetryHook")
+	}
 }
