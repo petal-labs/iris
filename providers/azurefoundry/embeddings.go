@@ -26,10 +26,10 @@ type azureEmbeddingRequest struct {
 
 // azureEmbeddingResponse is the response from embeddings endpoint.
 type azureEmbeddingResponse struct {
-	Object string                `json:"object"`
-	Data   []azureEmbeddingData  `json:"data"`
-	Model  string                `json:"model"`
-	Usage  azureEmbeddingUsage   `json:"usage"`
+	Object string               `json:"object"`
+	Data   []azureEmbeddingData `json:"data"`
+	Model  string               `json:"model"`
+	Usage  azureEmbeddingUsage  `json:"usage"`
 }
 
 // azureEmbeddingData represents a single embedding in the response.

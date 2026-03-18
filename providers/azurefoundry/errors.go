@@ -43,9 +43,9 @@ var (
 // Azure-specific error codes.
 const (
 	// Content safety error codes
-	codeContentFilter           = "content_filter"
-	codeResponsibleAIViolation  = "ResponsibleAIPolicyViolation"
-	codeContentFilterResult     = "content_filter_result"
+	codeContentFilter          = "content_filter"
+	codeResponsibleAIViolation = "ResponsibleAIPolicyViolation"
+	codeContentFilterResult    = "content_filter_result"
 
 	// Deployment and model error codes
 	codeDeploymentNotFound = "DeploymentNotFound"
@@ -53,11 +53,11 @@ const (
 	codeInvalidModel       = "invalid_model"
 
 	// Quota and limit error codes
-	codeQuotaExceeded        = "quota_exceeded"
-	codeTokensPerMinute      = "tokens_per_minute"
-	codeRequestsPerMinute    = "requests_per_minute"
+	codeQuotaExceeded         = "quota_exceeded"
+	codeTokensPerMinute       = "tokens_per_minute"
+	codeRequestsPerMinute     = "requests_per_minute"
 	codeContextLengthExceeded = "context_length_exceeded"
-	codeMaxTokensExceeded    = "max_tokens_exceeded"
+	codeMaxTokensExceeded     = "max_tokens_exceeded"
 
 	// Authentication error codes
 	codeInvalidAPIKey       = "invalid_api_key"
@@ -73,11 +73,11 @@ type azureErrorResponse struct {
 
 // azureErrorDetail contains the error details.
 type azureErrorDetail struct {
-	Message    string            `json:"message"`
-	Type       string            `json:"type"`
-	Code       string            `json:"code"`
-	Param      string            `json:"param,omitempty"`
-	InnerError *azureInnerError  `json:"innererror,omitempty"`
+	Message    string           `json:"message"`
+	Type       string           `json:"type"`
+	Code       string           `json:"code"`
+	Param      string           `json:"param,omitempty"`
+	InnerError *azureInnerError `json:"innererror,omitempty"`
 }
 
 // azureInnerError contains additional error details.
@@ -156,16 +156,6 @@ func classifyErrorCode(code, innerCode string, status int) error {
 
 	// Fall back to status-based classification
 	return normalize.SentinelForStatus(status)
-}
-
-// normalizeErrorWithRetry extracts retry-after information along with the error.
-func normalizeErrorWithRetry(status int, body []byte, headers http.Header, requestID string) (error, time.Duration) {
-	err := normalizeError(status, body, requestID)
-
-	// Extract retry-after header for rate limiting
-	retryAfter := parseRetryAfter(headers)
-
-	return err, retryAfter
 }
 
 // parseRetryAfter extracts the retry-after duration from response headers.

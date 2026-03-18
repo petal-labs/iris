@@ -14,7 +14,6 @@ func TestAzureFoundryImplementsProvider(t *testing.T) {
 	var _ core.Provider = p
 }
 
-
 func TestAzureFoundryImplementsEmbeddingProvider(t *testing.T) {
 	p := New("https://test.openai.azure.com", "test-key")
 	var _ core.EmbeddingProvider = p

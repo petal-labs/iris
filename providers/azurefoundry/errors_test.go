@@ -2,6 +2,7 @@ package azurefoundry
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -464,7 +465,7 @@ func TestCalculateBackoff(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run("attempt_"+string(rune('0'+tt.attempt)), func(t *testing.T) {
+		t.Run(fmt.Sprintf("attempt_%d", tt.attempt), func(t *testing.T) {
 			got := calculateBackoff(tt.attempt, baseDelay)
 			if got != tt.want {
 				t.Errorf("calculateBackoff(%d, %v) = %v, want %v", tt.attempt, baseDelay, got, tt.want)

@@ -32,24 +32,11 @@ type azureRequest struct {
 
 // azureMessage represents a message in the Azure format.
 type azureMessage struct {
-	Role       string            `json:"role"`
-	Content    any               `json:"content,omitempty"` // string or []contentPart for multimodal
-	Name       string            `json:"name,omitempty"`
-	ToolCalls  []azureToolCall   `json:"tool_calls,omitempty"`   // For assistant messages requesting tools
-	ToolCallID string            `json:"tool_call_id,omitempty"` // For tool result messages
-}
-
-// azureContentPart represents a content part for multimodal messages.
-type azureContentPart struct {
-	Type     string            `json:"type"` // "text" or "image_url"
-	Text     string            `json:"text,omitempty"`
-	ImageURL *azureImageURL    `json:"image_url,omitempty"`
-}
-
-// azureImageURL represents an image URL in a multimodal message.
-type azureImageURL struct {
-	URL    string `json:"url"`
-	Detail string `json:"detail,omitempty"` // "auto", "low", "high"
+	Role       string          `json:"role"`
+	Content    any             `json:"content,omitempty"` // string or []contentPart for multimodal
+	Name       string          `json:"name,omitempty"`
+	ToolCalls  []azureToolCall `json:"tool_calls,omitempty"`   // For assistant messages requesting tools
+	ToolCallID string          `json:"tool_call_id,omitempty"` // For tool result messages
 }
 
 // azureTool represents a tool definition in the Azure format.
@@ -86,23 +73,23 @@ type azureJSONSchema struct {
 
 // azureResponse represents a response from the Azure AI chat completions API.
 type azureResponse struct {
-	ID                  string               `json:"id"`
-	Object              string               `json:"object"`
-	Created             int64                `json:"created"`
-	Model               string               `json:"model"`
-	Choices             []azureChoice        `json:"choices"`
-	Usage               azureUsage           `json:"usage"`
-	SystemFingerprint   string               `json:"system_fingerprint,omitempty"`
-	PromptFilterResults []azureFilterResult  `json:"prompt_filter_results,omitempty"`
+	ID                  string              `json:"id"`
+	Object              string              `json:"object"`
+	Created             int64               `json:"created"`
+	Model               string              `json:"model"`
+	Choices             []azureChoice       `json:"choices"`
+	Usage               azureUsage          `json:"usage"`
+	SystemFingerprint   string              `json:"system_fingerprint,omitempty"`
+	PromptFilterResults []azureFilterResult `json:"prompt_filter_results,omitempty"`
 }
 
 // azureChoice represents a single choice in an Azure response.
 type azureChoice struct {
-	Index                int                   `json:"index"`
-	Message              *azureRespMsg         `json:"message,omitempty"`
-	Delta                *azureRespMsg         `json:"delta,omitempty"` // For streaming
-	FinishReason         string                `json:"finish_reason"`
-	ContentFilterResults *azureContentFilters  `json:"content_filter_results,omitempty"`
+	Index                int                  `json:"index"`
+	Message              *azureRespMsg        `json:"message,omitempty"`
+	Delta                *azureRespMsg        `json:"delta,omitempty"` // For streaming
+	FinishReason         string               `json:"finish_reason"`
+	ContentFilterResults *azureContentFilters `json:"content_filter_results,omitempty"`
 }
 
 // azureRespMsg represents the assistant message in a response.
@@ -115,10 +102,10 @@ type azureRespMsg struct {
 
 // azureToolCall represents a tool call in an Azure response.
 type azureToolCall struct {
-	ID       string             `json:"id"`
-	Type     string             `json:"type"`
-	Function azureFunctionCall  `json:"function"`
-	Index    *int               `json:"index,omitempty"` // For streaming tool calls
+	ID       string            `json:"id"`
+	Type     string            `json:"type"`
+	Function azureFunctionCall `json:"function"`
+	Index    *int              `json:"index,omitempty"` // For streaming tool calls
 }
 
 // azureFunctionCall represents the function details in a tool call.
@@ -129,11 +116,11 @@ type azureFunctionCall struct {
 
 // azureUsage represents token usage in an Azure response.
 type azureUsage struct {
-	PromptTokens            int                      `json:"prompt_tokens"`
-	CompletionTokens        int                      `json:"completion_tokens"`
-	TotalTokens             int                      `json:"total_tokens"`
-	CompletionTokensDetails *azureCompletionDetails  `json:"completion_tokens_details,omitempty"`
-	PromptTokensDetails     *azurePromptDetails      `json:"prompt_tokens_details,omitempty"`
+	PromptTokens            int                     `json:"prompt_tokens"`
+	CompletionTokens        int                     `json:"completion_tokens"`
+	TotalTokens             int                     `json:"total_tokens"`
+	CompletionTokensDetails *azureCompletionDetails `json:"completion_tokens_details,omitempty"`
+	PromptTokensDetails     *azurePromptDetails     `json:"prompt_tokens_details,omitempty"`
 }
 
 // azureCompletionDetails contains detailed token usage for completions.
@@ -156,8 +143,8 @@ type azurePromptDetails struct {
 
 // azureFilterResult represents content filtering results for a prompt.
 type azureFilterResult struct {
-	PromptIndex          int                  `json:"prompt_index"`
-	ContentFilterResults azureContentFilters  `json:"content_filter_results"`
+	PromptIndex          int                 `json:"prompt_index"`
+	ContentFilterResults azureContentFilters `json:"content_filter_results"`
 }
 
 // azureContentFilters contains all content filter results.

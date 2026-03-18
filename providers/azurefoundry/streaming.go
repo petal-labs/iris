@@ -18,37 +18,37 @@ import (
 
 // azureStreamChunk represents a single SSE chunk from Azure.
 type azureStreamChunk struct {
-	ID                string               `json:"id"`
-	Object            string               `json:"object"`
-	Created           int64                `json:"created"`
-	Model             string               `json:"model"`
-	Choices           []azureStreamChoice  `json:"choices"`
-	Usage             *azureUsage          `json:"usage,omitempty"`
-	SystemFingerprint string               `json:"system_fingerprint,omitempty"`
+	ID                string              `json:"id"`
+	Object            string              `json:"object"`
+	Created           int64               `json:"created"`
+	Model             string              `json:"model"`
+	Choices           []azureStreamChoice `json:"choices"`
+	Usage             *azureUsage         `json:"usage,omitempty"`
+	SystemFingerprint string              `json:"system_fingerprint,omitempty"`
 }
 
 // azureStreamChoice represents a choice in a streaming response.
 type azureStreamChoice struct {
-	Index                int                   `json:"index"`
-	Delta                azureStreamDelta      `json:"delta"`
-	FinishReason         *string               `json:"finish_reason,omitempty"`
-	ContentFilterResults *azureContentFilters  `json:"content_filter_results,omitempty"`
+	Index                int                  `json:"index"`
+	Delta                azureStreamDelta     `json:"delta"`
+	FinishReason         *string              `json:"finish_reason,omitempty"`
+	ContentFilterResults *azureContentFilters `json:"content_filter_results,omitempty"`
 }
 
 // azureStreamDelta represents the incremental content in a streaming choice.
 type azureStreamDelta struct {
-	Role      string                 `json:"role,omitempty"`
-	Content   string                 `json:"content,omitempty"`
-	ToolCalls []azureStreamToolCall  `json:"tool_calls,omitempty"`
-	Refusal   string                 `json:"refusal,omitempty"`
+	Role      string                `json:"role,omitempty"`
+	Content   string                `json:"content,omitempty"`
+	ToolCalls []azureStreamToolCall `json:"tool_calls,omitempty"`
+	Refusal   string                `json:"refusal,omitempty"`
 }
 
 // azureStreamToolCall represents a tool call fragment in streaming.
 type azureStreamToolCall struct {
-	Index    int                    `json:"index"`
-	ID       string                 `json:"id,omitempty"`
-	Type     string                 `json:"type,omitempty"`
-	Function azureStreamFunction    `json:"function,omitempty"`
+	Index    int                 `json:"index"`
+	ID       string              `json:"id,omitempty"`
+	Type     string              `json:"type,omitempty"`
+	Function azureStreamFunction `json:"function,omitempty"`
 }
 
 // azureStreamFunction represents function details in a streaming tool call.

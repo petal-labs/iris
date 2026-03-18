@@ -224,7 +224,13 @@ func retryableStatus(status int) bool {
 
 // calculateBackoff returns the backoff duration for a given attempt.
 func calculateBackoff(attempt int, baseDelay time.Duration) time.Duration {
-	delay := baseDelay * time.Duration(1<<uint(attempt))
+	if attempt < 0 {
+		attempt = 0
+	}
+	if attempt > 10 {
+		attempt = 10 // Cap to prevent overflow
+	}
+	delay := baseDelay * time.Duration(1<<attempt)
 	if delay > 30*time.Second {
 		delay = 30 * time.Second
 	}
