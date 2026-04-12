@@ -47,12 +47,10 @@ func mapTools(irisTools []core.Tool) []perplexityTool {
 		}
 
 		result[i] = perplexityTool{
-			Type: "function",
-			Function: perplexityFunction{
-				Name:        t.Name(),
-				Description: t.Description(),
-				Parameters:  params,
-			},
+			Type:        "function",
+			Name:        t.Name(),
+			Description: t.Description(),
+			Parameters:  params,
 		}
 	}
 	return result
