@@ -68,15 +68,15 @@ func TestMapTools(t *testing.T) {
 		if result[0].Type != "function" {
 			t.Errorf("result[0].Type = %q, want %q", result[0].Type, "function")
 		}
-		if result[0].Function.Name != "get_weather" {
-			t.Errorf("result[0].Function.Name = %q, want %q", result[0].Function.Name, "get_weather")
+		if result[0].Name != "get_weather" {
+			t.Errorf("result[0].Name = %q, want %q", result[0].Name, "get_weather")
 		}
-		if result[0].Function.Description != "Get weather for a city" {
-			t.Errorf("result[0].Function.Description = %q, want %q", result[0].Function.Description, "Get weather for a city")
+		if result[0].Description != "Get weather for a city" {
+			t.Errorf("result[0].Description = %q, want %q", result[0].Description, "Get weather for a city")
 		}
 
-		if result[1].Function.Name != "search" {
-			t.Errorf("result[1].Function.Name = %q, want %q", result[1].Function.Name, "search")
+		if result[1].Name != "search" {
+			t.Errorf("result[1].Name = %q, want %q", result[1].Name, "search")
 		}
 	})
 }

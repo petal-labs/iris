@@ -55,13 +55,10 @@ type perplexityMessage struct {
 }
 
 // perplexityTool represents a tool definition in the Perplexity format.
+// Perplexity uses a flat structure with name, description, and parameters
+// at the same level as type (not nested inside a "function" wrapper).
 type perplexityTool struct {
-	Type     string             `json:"type"`
-	Function perplexityFunction `json:"function"`
-}
-
-// perplexityFunction represents a function definition for Perplexity tools.
-type perplexityFunction struct {
+	Type        string          `json:"type"`
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	Parameters  json.RawMessage `json:"parameters"`
