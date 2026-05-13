@@ -3,8 +3,8 @@ name: Integration Tests
 on:
   workflow_dispatch:
   schedule:
-    # Run nightly at 2 AM UTC
-    - cron: "0 2 * * *"
+    # Run weekly on Sunday at 2 AM UTC
+    - cron: "0 2 * * 0"
 
 jobs:
   integration:
