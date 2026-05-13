@@ -72,8 +72,8 @@ func TestModels(t *testing.T) {
 	p := New("test-key")
 	models := p.Models()
 
-	if len(models) != 3 {
-		t.Errorf("Models() count = %d, want 3", len(models))
+	if len(models) != 11 {
+		t.Errorf("Models() count = %d, want 11", len(models))
 	}
 
 	// Verify model IDs
@@ -83,9 +83,17 @@ func TestModels(t *testing.T) {
 	}
 
 	expected := []core.ModelID{
+		ModelClaudeOpus47,
+		ModelClaudeSonnet46,
+		ModelClaudeSonnet46Thinking,
+		ModelClaudeOpus46,
+		ModelClaudeOpus46Thinking,
 		ModelClaudeSonnet45,
+		ModelClaudeSonnet45Thinking,
 		ModelClaudeHaiku45,
 		ModelClaudeOpus45,
+		ModelClaudeOpus45Thinking,
+		ModelClaude35HaikuLatest,
 	}
 
 	for _, id := range expected {
@@ -120,7 +128,7 @@ func TestSupports(t *testing.T) {
 		{core.FeatureChat, true},
 		{core.FeatureChatStreaming, true},
 		{core.FeatureToolCalling, true},
-		{core.FeatureReasoning, false},
+		{core.FeatureReasoning, true},
 		{core.FeatureBuiltInTools, false},
 		{core.FeatureResponseChain, false},
 		{core.Feature("unknown"), false},
@@ -203,6 +211,7 @@ func TestModelCapabilities(t *testing.T) {
 				core.FeatureChat,
 				core.FeatureChatStreaming,
 				core.FeatureToolCalling,
+				core.FeatureReasoning,
 			}
 
 			for _, cap := range expected {

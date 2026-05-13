@@ -5,6 +5,12 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for OpenAI models.
 const (
+	// GPT-5.4 series (latest)
+	ModelGPT54     core.ModelID = "gpt-5.4"
+	ModelGPT54Pro  core.ModelID = "gpt-5.4-pro"
+	ModelGPT54Mini core.ModelID = "gpt-5.4-mini"
+	ModelGPT54Nano core.ModelID = "gpt-5.4-nano"
+
 	// GPT-5.2 series
 	ModelGPT52      core.ModelID = "gpt-5.2"
 	ModelGPT52Pro   core.ModelID = "gpt-5.2-pro"
@@ -17,11 +23,12 @@ const (
 	ModelGPT51CodexMax  core.ModelID = "gpt-5.1-codex-max"
 
 	// GPT-5 series
-	ModelGPT5      core.ModelID = "gpt-5"
-	ModelGPT5Mini  core.ModelID = "gpt-5-mini"
-	ModelGPT5Nano  core.ModelID = "gpt-5-nano"
-	ModelGPT5Pro   core.ModelID = "gpt-5-pro"
-	ModelGPT5Codex core.ModelID = "gpt-5-codex"
+	ModelGPT5         core.ModelID = "gpt-5"
+	ModelGPT5Mini     core.ModelID = "gpt-5-mini"
+	ModelGPT5Nano     core.ModelID = "gpt-5-nano"
+	ModelGPT5Pro      core.ModelID = "gpt-5-pro"
+	ModelGPT5Codex    core.ModelID = "gpt-5-codex"
+	ModelGPT5Thinking core.ModelID = "gpt-5-thinking"
 
 	// GPT-4.1 series
 	ModelGPT41     core.ModelID = "gpt-4.1"
@@ -60,6 +67,59 @@ const (
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
+	// GPT-5.4 series (latest - Responses API with reasoning and built-in tools)
+	{
+		ID:          ModelGPT54,
+		DisplayName: "GPT-5.4",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	{
+		ID:          ModelGPT54Pro,
+		DisplayName: "GPT-5.4 Pro",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	{
+		ID:          ModelGPT54Mini,
+		DisplayName: "GPT-5.4 Mini",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	{
+		ID:          ModelGPT54Nano,
+		DisplayName: "GPT-5.4 Nano",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
 	// GPT-5.2 series (Responses API with reasoning and built-in tools)
 	{
 		ID:          ModelGPT52,
@@ -208,6 +268,19 @@ var models = []core.ModelInfo{
 	{
 		ID:          ModelGPT5Codex,
 		DisplayName: "GPT-5 Codex",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	{
+		ID:          ModelGPT5Thinking,
+		DisplayName: "GPT-5 Thinking",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
 			core.FeatureChat,

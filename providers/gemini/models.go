@@ -5,22 +5,39 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for Google Gemini models.
 const (
+	// Gemini 3.1 series (preview)
+	ModelGemini31FlashImagePreview core.ModelID = "gemini-3.1-flash-image-preview"
+
 	// Gemini 3 series (preview)
-	ModelGemini3Pro   core.ModelID = "gemini-3-pro-preview"
-	ModelGemini3Flash core.ModelID = "gemini-3-flash-preview"
+	ModelGemini3Pro      core.ModelID = "gemini-3-pro-preview"
+	ModelGemini3Flash    core.ModelID = "gemini-3-flash-preview"
+	ModelGemini3ProImage core.ModelID = "gemini-3-pro-image-preview"
 
 	// Gemini 2.5 series
 	ModelGemini25Flash     core.ModelID = "gemini-2.5-flash"
 	ModelGemini25FlashLite core.ModelID = "gemini-2.5-flash-lite"
 	ModelGemini25Pro       core.ModelID = "gemini-2.5-pro"
 
+	// Gemini 2.0 series
+	ModelGemini20FlashLite core.ModelID = "gemini-2.0-flash-lite"
+
 	// Image generation models (Nano Banana)
-	ModelGemini25FlashImage core.ModelID = "gemini-2.5-flash-image"     // Nano Banana - fast/efficient
-	ModelGemini3ProImage    core.ModelID = "gemini-3-pro-image-preview" // Nano Banana Pro - professional with reasoning
+	ModelGemini25FlashImage core.ModelID = "gemini-2.5-flash-image"
 )
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
+	// Gemini 3.1 series (preview)
+	{
+		ID:          ModelGemini31FlashImagePreview,
+		DisplayName: "Gemini 3.1 Flash Image Preview",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureImageGeneration,
+		},
+	},
+	// Gemini 3 series (preview)
 	{
 		ID:          ModelGemini3Pro,
 		DisplayName: "Gemini 3 Pro Preview",
@@ -41,6 +58,14 @@ var models = []core.ModelInfo{
 			core.FeatureReasoning,
 		},
 	},
+	{
+		ID:          ModelGemini3ProImage,
+		DisplayName: "Gemini 3 Pro Image Preview (Nano Banana Pro)",
+		Capabilities: []core.Feature{
+			core.FeatureImageGeneration,
+		},
+	},
+	// Gemini 2.5 series
 	{
 		ID:          ModelGemini25Flash,
 		DisplayName: "Gemini 2.5 Flash",
@@ -71,17 +96,19 @@ var models = []core.ModelInfo{
 			core.FeatureReasoning,
 		},
 	},
+	// Gemini 2.0 series
+	{
+		ID:          ModelGemini20FlashLite,
+		DisplayName: "Gemini 2.0 Flash Lite",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+		},
+	},
 	// Image generation models (Nano Banana)
 	{
 		ID:          ModelGemini25FlashImage,
 		DisplayName: "Gemini 2.5 Flash Image (Nano Banana)",
-		Capabilities: []core.Feature{
-			core.FeatureImageGeneration,
-		},
-	},
-	{
-		ID:          ModelGemini3ProImage,
-		DisplayName: "Gemini 3 Pro Image Preview (Nano Banana Pro)",
 		Capabilities: []core.Feature{
 			core.FeatureImageGeneration,
 		},
@@ -107,5 +134,6 @@ func GetModelInfo(id core.ModelID) *core.ModelInfo {
 
 // isGemini3Model returns true if the model is a Gemini 3 series model.
 func isGemini3Model(model string) bool {
-	return model == string(ModelGemini3Pro) || model == string(ModelGemini3Flash)
+	return model == string(ModelGemini3Pro) || model == string(ModelGemini3Flash) ||
+		model == string(ModelGemini3ProImage) || model == string(ModelGemini31FlashImagePreview)
 }

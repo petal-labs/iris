@@ -4,7 +4,13 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for Z.ai GLM models.
 const (
-	// GLM-4.7 series (latest flagship)
+	// GLM-5 series (latest)
+	ModelGLM51      core.ModelID = "glm-5.1"
+	ModelGLM5       core.ModelID = "glm-5"
+	ModelGLM5Turbo  core.ModelID = "glm-5-turbo"
+	ModelGLM5VTurbo core.ModelID = "glm-5v-turbo"
+
+	// GLM-4.7 series
 	ModelGLM47       core.ModelID = "glm-4.7"
 	ModelGLM47Flash  core.ModelID = "glm-4.7-flash"
 	ModelGLM47FlashX core.ModelID = "glm-4.7-flashx"
@@ -23,13 +29,61 @@ const (
 	ModelGLM45AirX  core.ModelID = "glm-4.5-airx"
 	ModelGLM45Flash core.ModelID = "glm-4.5-flash"
 
+	// GLM Specialized
+	ModelGLMForCoding core.ModelID = "glm-for-coding"
+
 	// GLM-4 32B
 	ModelGLM4_32B core.ModelID = "glm-4-32b-0414-128k"
 )
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
-	// GLM-4.7 series (latest flagship)
+	// GLM-5 series (latest)
+	{
+		ID:          ModelGLM51,
+		DisplayName: "GLM-5.1",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGLM5,
+		DisplayName: "GLM-5",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGLM5Turbo,
+		DisplayName: "GLM-5 Turbo",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGLM5VTurbo,
+		DisplayName: "GLM-5V Turbo",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	// GLM-4.7 series
 	{
 		ID:          ModelGLM47,
 		DisplayName: "GLM-4.7",
@@ -82,7 +136,6 @@ var models = []core.ModelInfo{
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
 			core.FeatureReasoning,
-			// Note: Vision model - supports image inputs
 		},
 	},
 	{
@@ -93,7 +146,6 @@ var models = []core.ModelInfo{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
-			// Note: Vision model - supports image inputs
 		},
 	},
 	{
@@ -104,7 +156,6 @@ var models = []core.ModelInfo{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
-			// Note: Vision model - supports image inputs
 		},
 	},
 	// GLM-4.5 series
@@ -128,7 +179,6 @@ var models = []core.ModelInfo{
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
 			core.FeatureReasoning,
-			// Note: Vision model - supports image inputs
 		},
 	},
 	{
@@ -169,6 +219,18 @@ var models = []core.ModelInfo{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
+		},
+	},
+	// GLM Specialized
+	{
+		ID:          ModelGLMForCoding,
+		DisplayName: "GLM for Coding",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
 		},
 	},
 	// GLM-4 32B
