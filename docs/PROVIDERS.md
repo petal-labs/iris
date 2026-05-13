@@ -34,22 +34,35 @@ This document provides a comprehensive comparison of the AI providers supported 
 
 | Model | Display Name | Reasoning | Built-in Tools | Notes |
 |-------|--------------|-----------|----------------|-------|
-| gpt-5.2 | GPT-5.2 | Yes | Yes | Latest flagship |
+| gpt-5.4 | GPT-5.4 | Yes | Yes | Latest flagship |
+| gpt-5.4-pro | GPT-5.4 Pro | Yes | Yes | Enhanced capabilities |
+| gpt-5.4-mini | GPT-5.4 Mini | Yes | Yes | Smaller, faster |
+| gpt-5.4-nano | GPT-5.4 Nano | Yes | Yes | Lightweight |
+| gpt-5.2 | GPT-5.2 | Yes | Yes | |
 | gpt-5.2-pro | GPT-5.2 Pro | Yes | Yes | Enhanced capabilities |
 | gpt-5.2-codex | GPT-5.2 Codex | Yes | Yes | Code specialized |
 | gpt-5.1 | GPT-5.1 | Yes | Yes | |
 | gpt-5.1-codex | GPT-5.1 Codex | Yes | Yes | Code specialized |
+| gpt-5.1-codex-mini | GPT-5.1 Codex Mini | Yes | Yes | Smaller codex |
+| gpt-5.1-codex-max | GPT-5.1 Codex Max | Yes | Yes | Largest codex |
 | gpt-5 | GPT-5 | Yes | Yes | |
 | gpt-5-mini | GPT-5 Mini | Yes | Yes | Smaller, faster |
 | gpt-5-nano | GPT-5 Nano | No | Yes | Lightweight |
+| gpt-5-codex | GPT-5 Codex | Yes | Yes | Code specialized |
+| gpt-5-thinking | GPT-5 Thinking | Yes | Yes | Extended reasoning |
 | gpt-4.1 | GPT-4.1 | No | Yes | |
+| gpt-4.1-mini | GPT-4.1 Mini | No | Yes | |
+| gpt-4.1-nano | GPT-4.1 Nano | No | Yes | |
 | gpt-4o | GPT-4o | No | No | Multimodal |
 | gpt-4o-mini | GPT-4o Mini | No | No | Cost-effective |
 | o4-mini | o4-mini | Yes | Yes | Reasoning focused |
+| o4-mini-deep-research | o4-mini Deep Research | Yes | Yes | Research focused |
 | o3 | o3 | Yes | Yes | Reasoning focused |
+| o3-mini | o3-mini | Yes | Yes | Smaller reasoning |
 | o1 | o1 | Yes | No | Reasoning focused |
+| o1-pro | o1 Pro | Yes | No | Enhanced reasoning |
 
-**Image Generation Models**: gpt-image-1.5, gpt-image-1, dall-e-3, dall-e-2
+**Image Generation Models**: gpt-image-1.5, gpt-image-1, gpt-image-1-mini, dall-e-3, dall-e-2, chatgpt-image-latest
 
 **Usage Example**:
 ```go
@@ -71,23 +84,32 @@ resp, err := client.Chat(openai.ModelGPT4o).
 
 **Models**:
 
-| Model | Display Name | Notes |
-|-------|--------------|-------|
-| claude-sonnet-4-5 | Claude Sonnet 4.5 | Balanced performance |
-| claude-haiku-4-5 | Claude Haiku 4.5 | Fast, cost-effective |
-| claude-opus-4-5 | Claude Opus 4.5 | Most capable |
+| Model | Display Name | Reasoning | Notes |
+|-------|--------------|-----------|-------|
+| claude-opus-4-7 | Claude Opus 4.7 | Yes | Latest flagship |
+| claude-sonnet-4-6 | Claude Sonnet 4.6 | Yes | Balanced performance |
+| claude-sonnet-4-6-thinking | Claude Sonnet 4.6 (Thinking) | Yes | Extended reasoning |
+| claude-opus-4-6 | Claude Opus 4.6 | Yes | High capability |
+| claude-opus-4-6-thinking | Claude Opus 4.6 (Thinking) | Yes | Extended reasoning |
+| claude-sonnet-4-5 | Claude Sonnet 4.5 | Yes | Balanced performance |
+| claude-sonnet-4-5-thinking | Claude Sonnet 4.5 (Thinking) | Yes | Extended reasoning |
+| claude-haiku-4-5 | Claude Haiku 4.5 | Yes | Fast, cost-effective |
+| claude-opus-4-5 | Claude Opus 4.5 | Yes | High capability |
+| claude-opus-4-5-thinking | Claude Opus 4.5 (Thinking) | Yes | Extended reasoning |
+| claude-3-5-haiku-latest | Claude 3.5 Haiku | No | Legacy fast model |
 
 **Special Features**:
 - Extended context windows
 - Strong instruction following
 - Built-in safety guardrails
+- Thinking/reasoning modes
 
 **Usage Example**:
 ```go
 provider := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"))
 client := core.NewClient(provider)
 
-resp, err := client.Chat(anthropic.ModelClaudeSonnet45).
+resp, err := client.Chat(anthropic.ModelClaudeSonnet46).
     System("You are a helpful assistant.").
     User("Explain quantum computing.").
     GetResponse(ctx)
@@ -105,13 +127,17 @@ resp, err := client.Chat(anthropic.ModelClaudeSonnet45).
 
 | Model | Display Name | Reasoning | Notes |
 |-------|--------------|-----------|-------|
+| gemini-3.1-flash-image-preview | Gemini 3.1 Flash Image Preview | No | Image generation |
 | gemini-3-pro-preview | Gemini 3 Pro Preview | Yes | Latest preview |
 | gemini-3-flash-preview | Gemini 3 Flash Preview | Yes | Fast preview |
+| gemini-3-pro-image-preview | Gemini 3 Pro Image Preview | No | Image generation (Nano Banana Pro) |
 | gemini-2.5-pro | Gemini 2.5 Pro | Yes | Production ready |
 | gemini-2.5-flash | Gemini 2.5 Flash | Yes | Fast, efficient |
 | gemini-2.5-flash-lite | Gemini 2.5 Flash Lite | Yes | Lightweight |
+| gemini-2.5-flash-image | Gemini 2.5 Flash Image | No | Image generation (Nano Banana) |
+| gemini-2.0-flash-lite | Gemini 2.0 Flash Lite | No | Legacy lightweight |
 
-**Image Generation Models**: gemini-2.5-flash-image, gemini-3-pro-image-preview (Nano Banana)
+**Image Generation Models**: gemini-3.1-flash-image-preview, gemini-3-pro-image-preview, gemini-2.5-flash-image (Nano Banana)
 
 **Special Features**:
 - Native multimodal support
@@ -140,10 +166,15 @@ resp, err := client.Chat(gemini.ModelGemini25Flash).
 
 | Model | Display Name | Reasoning | Notes |
 |-------|--------------|-----------|-------|
-| grok-4 | Grok 4 | Yes | Latest flagship |
+| grok-4.20-multi-agent-beta-0309 | Grok 4.20 Multi-Agent Beta | Yes | Multi-agent beta |
+| grok-4.20-beta-0309-reasoning | Grok 4.20 Beta (Reasoning) | Yes | Beta with reasoning |
+| grok-4.20-beta-0309-non-reasoning | Grok 4.20 Beta (Non-Reasoning) | No | Beta without reasoning |
+| grok-4.1 | Grok 4.1 | No | Latest stable |
+| grok-4-1-fast-non-reasoning | Grok 4.1 Fast (Non-Reasoning) | No | Fast without reasoning |
+| grok-4-1-fast-reasoning | Grok 4.1 Fast (Reasoning) | Yes | Fast with reasoning |
+| grok-4 | Grok 4 | Yes | Flagship |
 | grok-4-fast-reasoning | Grok 4 Fast (Reasoning) | Yes | Fast with reasoning |
 | grok-4-fast-non-reasoning | Grok 4 Fast (Non-Reasoning) | No | Fast without reasoning |
-| grok-4-1-fast-reasoning | Grok 4.1 Fast (Reasoning) | Yes | Newest fast model |
 | grok-3 | Grok 3 | Yes | Previous generation |
 | grok-3-mini | Grok 3 Mini | Yes | Smaller model |
 | grok-code-fast | Grok Code Fast | No | Code specialized |
@@ -151,6 +182,7 @@ resp, err := client.Chat(gemini.ModelGemini25Flash).
 **Special Features**:
 - Real-time information access
 - Distinct reasoning modes
+- Multi-agent capabilities (beta)
 
 **Usage Example**:
 ```go
@@ -206,18 +238,31 @@ resp, err := client.Chat(perplexity.ModelSonarPro).
 
 | Model | Display Name | Reasoning | Vision | Notes |
 |-------|--------------|-----------|--------|-------|
-| glm-4.7 | GLM-4.7 | Yes | No | Latest flagship |
+| glm-5.1 | GLM-5.1 | Yes | No | Latest flagship |
+| glm-5 | GLM-5 | Yes | No | |
+| glm-5-turbo | GLM-5 Turbo | Yes | No | Fast |
+| glm-5v-turbo | GLM-5V Turbo | Yes | Yes | Vision capable |
+| glm-4.7 | GLM-4.7 | Yes | No | |
 | glm-4.7-flash | GLM-4.7 Flash | No | No | Fast |
+| glm-4.7-flashx | GLM-4.7 FlashX | No | No | Extra fast |
 | glm-4.6 | GLM-4.6 | Yes | No | |
 | glm-4.6v | GLM-4.6V | Yes | Yes | Vision capable |
+| glm-4.6v-flash | GLM-4.6V Flash | No | Yes | Fast vision |
+| glm-4.6v-flashx | GLM-4.6V FlashX | No | Yes | Extra fast vision |
 | glm-4.5 | GLM-4.5 | Yes | No | |
 | glm-4.5v | GLM-4.5V | Yes | Yes | Vision capable |
+| glm-4.5-x | GLM-4.5-X | No | No | Extended |
+| glm-4.5-air | GLM-4.5 Air | No | No | Lightweight |
+| glm-4.5-airx | GLM-4.5 AirX | No | No | Extra lightweight |
+| glm-4.5-flash | GLM-4.5 Flash | No | No | Fast |
+| glm-for-coding | GLM for Coding | Yes | No | Code specialized |
 | glm-4-32b-0414-128k | GLM-4 32B | No | No | Large context |
 
 **Special Features**:
 - Vision models for image understanding
 - Chinese language optimization
 - Large context windows
+- Code-specialized model
 
 **Usage Example**:
 ```go
