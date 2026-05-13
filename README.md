@@ -118,8 +118,8 @@ func main() {
     // Create a client
     client := core.NewClient(provider)
 
-    // Send a chat request
-    resp, err := client.Chat("claude-sonnet-4-5").
+    // Send a chat request (using latest Claude Sonnet 4.6)
+    resp, err := client.Chat("claude-sonnet-4-6").
         System("You are a helpful assistant.").
         User("What is the capital of France?").
         GetResponse(context.Background())
@@ -646,13 +646,13 @@ resp, _ := provider.EditImage(ctx, &core.ImageEditRequest{
 | `dall-e-3` | High quality (deprecated May 2026) |
 | `dall-e-2` | Lower cost, inpainting (deprecated May 2026) |
 
-### Using the Responses API (GPT-5)
+### Using the Responses API (GPT-5.4)
 
-GPT-5 models automatically use OpenAI's Responses API, which provides advanced features like reasoning, built-in tools, and response chaining.
+GPT-5+ models automatically use OpenAI's Responses API, which provides advanced features like reasoning, built-in tools, and response chaining.
 
 ```go
-// GPT-5 uses the Responses API automatically
-resp, err := client.Chat("gpt-5").
+// GPT-5.4 uses the Responses API automatically
+resp, err := client.Chat("gpt-5.4").
     Instructions("You are a helpful research assistant.").
     User("What are the latest developments in quantum computing?").
     ReasoningEffort(core.ReasoningEffortHigh).
@@ -673,7 +673,7 @@ if resp.Reasoning != nil {
 }
 
 // Response chaining - continue from a previous response
-followUp, err := client.Chat("gpt-5").
+followUp, err := client.Chat("gpt-5.4").
     ContinueFrom(resp.ID).
     User("Can you elaborate on the most promising approach?").
     GetResponse(ctx)
@@ -694,7 +694,7 @@ iris keys set ollama  # Only needed for Ollama Cloud
 iris chat --provider openai --model gpt-4o --prompt "Hello, world!"
 
 # Chat with Anthropic Claude
-iris chat --provider anthropic --model claude-sonnet-4-5 --prompt "Hello, world!"
+iris chat --provider anthropic --model claude-sonnet-4-6 --prompt "Hello, world!"
 
 # Chat with Google Gemini
 iris chat --provider gemini --model gemini-2.5-flash --prompt "Hello, world!"
@@ -713,7 +713,7 @@ iris chat --provider openai --model gpt-5 --prompt "Explain quantum entanglement
 
 # Stream responses
 iris chat --provider openai --model gpt-4o --prompt "Tell me a story" --stream
-iris chat --provider anthropic --model claude-sonnet-4-5 --prompt "Tell me a story" --stream
+iris chat --provider anthropic --model claude-sonnet-4-6 --prompt "Tell me a story" --stream
 
 # Get JSON output
 iris chat --provider openai --model gpt-4o --prompt "Hello" --json
@@ -753,7 +753,7 @@ Iris looks for configuration at `~/.iris/config.yaml`:
 
 ```yaml
 default_provider: openai
-default_model: gpt-5  # or gpt-4o for older models
+default_model: gpt-5.4  # or gpt-4o for older models
 
 providers:
   openai:
@@ -821,20 +821,28 @@ See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentatio
 
 | Model ID | Features |
 |----------|----------|
-| `grok-3` | Chat, Streaming, Tools, Reasoning |
-| `grok-3-mini` | Chat, Streaming, Tools, Reasoning (exposes reasoning_content) |
-| `grok-4` | Chat, Streaming, Tools, Reasoning (latest) |
-| `grok-4-fast-non-reasoning` | Chat, Streaming, Tools |
-| `grok-4-fast-reasoning` | Chat, Streaming, Tools, Reasoning |
-| `grok-code-fast` | Chat, Streaming, Tools (code-optimized) |
+| `grok-4.20-multi-agent-beta-0309` | Chat, Streaming, Tools, Reasoning (multi-agent beta) |
+| `grok-4.20-beta-0309-reasoning` | Chat, Streaming, Tools, Reasoning (beta) |
+| `grok-4.20-beta-0309-non-reasoning` | Chat, Streaming, Tools (beta) |
+| `grok-4.1` | Chat, Streaming, Tools |
 | `grok-4-1-fast-non-reasoning` | Chat, Streaming, Tools (default for CLI) |
 | `grok-4-1-fast-reasoning` | Chat, Streaming, Tools, Reasoning |
+| `grok-4` | Chat, Streaming, Tools, Reasoning |
+| `grok-4-fast-non-reasoning` | Chat, Streaming, Tools |
+| `grok-4-fast-reasoning` | Chat, Streaming, Tools, Reasoning |
+| `grok-3` | Chat, Streaming, Tools, Reasoning |
+| `grok-3-mini` | Chat, Streaming, Tools, Reasoning (exposes reasoning_content) |
+| `grok-code-fast` | Chat, Streaming, Tools (code-optimized) |
 
 ### Z.ai GLM Models
 
 | Model ID | Features |
 |----------|----------|
-| `glm-4.7` | Chat, Streaming, Tools, Thinking (latest flagship) |
+| `glm-5.1` | Chat, Streaming, Tools, Thinking (latest) |
+| `glm-5` | Chat, Streaming, Tools, Thinking |
+| `glm-5-turbo` | Chat, Streaming, Tools, Thinking |
+| `glm-5v-turbo` | Chat, Streaming, Tools, Thinking, Vision |
+| `glm-4.7` | Chat, Streaming, Tools, Thinking |
 | `glm-4.7-flash` | Chat, Streaming, Tools (default for CLI) |
 | `glm-4.7-flashx` | Chat, Streaming, Tools |
 | `glm-4.6` | Chat, Streaming, Tools, Thinking |
@@ -847,6 +855,7 @@ See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentatio
 | `glm-4.5-air` | Chat, Streaming, Tools |
 | `glm-4.5-airx` | Chat, Streaming, Tools |
 | `glm-4.5-flash` | Chat, Streaming, Tools |
+| `glm-for-coding` | Chat, Streaming, Tools, Thinking (code-optimized) |
 | `glm-4-32b-0414-128k` | Chat, Streaming, Tools (128K context) |
 
 ### Perplexity Models
@@ -862,11 +871,15 @@ See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentatio
 
 | Model ID | Features |
 |----------|----------|
+| `gemini-3.1-flash-image-preview` | Chat, Streaming, Image Generation |
 | `gemini-3-pro-preview` | Chat, Streaming, Tools, Reasoning (thinkingLevel) |
 | `gemini-3-flash-preview` | Chat, Streaming, Tools, Reasoning (thinkingLevel) |
+| `gemini-3-pro-image-preview` | Image Generation (Nano Banana Pro) |
 | `gemini-2.5-pro` | Chat, Streaming, Tools, Reasoning (thinkingBudget) |
 | `gemini-2.5-flash` | Chat, Streaming, Tools, Reasoning (thinkingBudget) |
 | `gemini-2.5-flash-lite` | Chat, Streaming, Tools, Reasoning (thinkingBudget) |
+| `gemini-2.5-flash-image` | Image Generation (Nano Banana) |
+| `gemini-2.0-flash-lite` | Chat, Streaming |
 
 ### Ollama Models
 
