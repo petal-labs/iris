@@ -19,8 +19,8 @@ func main() {
 	p := zai.New(apiKey)
 	c := core.NewClient(p)
 
-	// Use GLM-4.7 with thinking enabled
-	resp, err := c.Chat(zai.ModelGLM47).
+	// Use GLM-5.2 with thinking enabled
+	resp, err := c.Chat(zai.ModelGLM52).
 		System("You are a helpful assistant. Think step by step.").
 		User("What is 15% of 240?").
 		ReasoningEffort(core.ReasoningEffortHigh).
