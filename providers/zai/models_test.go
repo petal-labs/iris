@@ -79,8 +79,8 @@ func TestModelCapabilities(t *testing.T) {
 }
 
 func TestModelsCount(t *testing.T) {
-	if len(models) != 19 {
-		t.Errorf("len(models) = %d, want 19", len(models))
+	if len(models) != 20 {
+		t.Errorf("len(models) = %d, want 20", len(models))
 	}
 }
 

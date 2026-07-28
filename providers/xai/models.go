@@ -5,6 +5,12 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for xAI Grok models.
 const (
+	// Grok 4.5 series (latest)
+	ModelGrok45 core.ModelID = "grok-4.5"
+
+	// Grok 4.3 series
+	ModelGrok43 core.ModelID = "grok-4.3"
+
 	// Grok 4.20 series (multi-agent beta)
 	ModelGrok420MultiAgentBeta   core.ModelID = "grok-4.20-multi-agent-beta-0309"
 	ModelGrok420BetaReasoning    core.ModelID = "grok-4.20-beta-0309-reasoning"
@@ -26,10 +32,37 @@ const (
 
 	// Grok Code
 	ModelGrokCodeFast core.ModelID = "grok-code-fast"
+
+	// Grok Build
+	ModelGrokBuild01 core.ModelID = "grok-build-0.1"
 )
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
+	// Grok 4.5 series (latest)
+	{
+		ID:          ModelGrok45,
+		DisplayName: "Grok 4.5",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	// Grok 4.3 series
+	{
+		ID:          ModelGrok43,
+		DisplayName: "Grok 4.3",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
 	// Grok 4.20 series (multi-agent beta)
 	{
 		ID:          ModelGrok420MultiAgentBeta,
@@ -160,6 +193,18 @@ var models = []core.ModelInfo{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
+		},
+	},
+	// Grok Build
+	{
+		ID:          ModelGrokBuild01,
+		DisplayName: "Grok Build 0.1",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
 		},
 	},
 }

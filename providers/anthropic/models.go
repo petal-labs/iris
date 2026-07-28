@@ -5,7 +5,18 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for Anthropic Claude models.
 const (
-	// Claude 4.7 series (latest)
+	// Claude 5 series (latest)
+	ModelClaudeOpus5           core.ModelID = "claude-opus-5"
+	ModelClaudeOpus5Thinking   core.ModelID = "claude-opus-5-thinking"
+	ModelClaudeSonnet5         core.ModelID = "claude-sonnet-5"
+	ModelClaudeSonnet5Thinking core.ModelID = "claude-sonnet-5-thinking"
+	ModelClaudeFable5          core.ModelID = "claude-fable-5"
+
+	// Claude 4.8 series
+	ModelClaudeOpus48         core.ModelID = "claude-opus-4-8"
+	ModelClaudeOpus48Thinking core.ModelID = "claude-opus-4-8-thinking"
+
+	// Claude 4.7 series
 	ModelClaudeOpus47 core.ModelID = "claude-opus-4-7"
 
 	// Claude 4.6 series
@@ -27,7 +38,79 @@ const (
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
-	// Claude 4.7 series (latest)
+	// Claude 5 series (latest)
+	{
+		ID:          ModelClaudeOpus5,
+		DisplayName: "Claude Opus 5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeOpus5Thinking,
+		DisplayName: "Claude Opus 5 (Thinking)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeSonnet5,
+		DisplayName: "Claude Sonnet 5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeSonnet5Thinking,
+		DisplayName: "Claude Sonnet 5 (Thinking)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeFable5,
+		DisplayName: "Claude Fable 5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	// Claude 4.8 series
+	{
+		ID:          ModelClaudeOpus48,
+		DisplayName: "Claude Opus 4.8",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeOpus48Thinking,
+		DisplayName: "Claude Opus 4.8 (Thinking)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	// Claude 4.7 series
 	{
 		ID:          ModelClaudeOpus47,
 		DisplayName: "Claude Opus 4.7",
