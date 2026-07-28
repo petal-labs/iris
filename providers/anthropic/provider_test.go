@@ -72,8 +72,8 @@ func TestModels(t *testing.T) {
 	p := New("test-key")
 	models := p.Models()
 
-	if len(models) != 11 {
-		t.Errorf("Models() count = %d, want 11", len(models))
+	if len(models) != 18 {
+		t.Errorf("Models() count = %d, want 18", len(models))
 	}
 
 	// Verify model IDs
@@ -83,6 +83,13 @@ func TestModels(t *testing.T) {
 	}
 
 	expected := []core.ModelID{
+		ModelClaudeOpus5,
+		ModelClaudeOpus5Thinking,
+		ModelClaudeSonnet5,
+		ModelClaudeSonnet5Thinking,
+		ModelClaudeFable5,
+		ModelClaudeOpus48,
+		ModelClaudeOpus48Thinking,
 		ModelClaudeOpus47,
 		ModelClaudeSonnet46,
 		ModelClaudeSonnet46Thinking,
