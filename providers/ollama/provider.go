@@ -102,7 +102,7 @@ func (p *Ollama) Models() []core.ModelInfo {
 // Supports reports whether the provider supports the given feature.
 func (p *Ollama) Supports(feature core.Feature) bool {
 	switch feature {
-	case core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling, core.FeatureReasoning:
+	case core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling, core.FeatureReasoning, core.FeatureEmbeddings:
 		return true
 	default:
 		return false
