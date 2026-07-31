@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+// DefaultTimeout is the execution timeout applied to chat and streaming calls
+// when neither the caller's context nor a per-call Timeout() supplies one.
+// Disable it per client with WithTimeout(0).
+const DefaultTimeout = 120 * time.Second
+
 // Provider is the interface that LLM providers must implement.
 // Providers SHOULD be safe for concurrent calls.
 // If a provider cannot be concurrent-safe, it MUST document this.
@@ -46,6 +51,7 @@ type Client struct {
 	telemetry      TelemetryHook
 	retry          RetryPolicy
 	warningHandler WarningHandler
+	timeout        time.Duration
 }
 
 // ClientOption configures a Client.
@@ -62,6 +68,7 @@ func NewClient(p Provider, opts ...ClientOption) *Client {
 		telemetry:      NoopTelemetryHook{},
 		retry:          DefaultRetryPolicy(),
 		warningHandler: func(string) {},
+		timeout:        DefaultTimeout,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -94,6 +101,15 @@ func WithWarningHandler(h WarningHandler) ClientOption {
 		if h != nil {
 			c.warningHandler = h
 		}
+	}
+}
+
+// WithTimeout sets the default execution timeout applied to chat and streaming
+// calls when the caller's context has no deadline of its own and no per-call
+// Timeout() is set. Pass 0 to disable the default and allow unbounded calls.
+func WithTimeout(d time.Duration) ClientOption {
+	return func(c *Client) {
+		c.timeout = d
 	}
 }
 
@@ -428,6 +444,19 @@ func (b *ChatBuilder) ToolError(assistantResp *ChatResponse, callID string, err 
 		Content: err.Error(),
 		IsError: true,
 	}})
+}
+
+// effectiveTimeout resolves the timeout to apply for this call, or 0 for none.
+// Precedence: an existing ctx deadline wins (returns 0, no wrapping); then a
+// per-call builder timeout; then the client default.
+func (b *ChatBuilder) effectiveTimeout(ctx context.Context) time.Duration {
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		return 0
+	}
+	if b.timeout > 0 {
+		return b.timeout
+	}
+	return b.client.timeout
 }
 
 // validate checks that the request is valid.
