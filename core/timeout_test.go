@@ -158,3 +158,51 @@ func TestStreamStalledTimesOut(t *testing.T) {
 		t.Fatalf("Stream() err = %v, want ErrTimeout", err)
 	}
 }
+
+// midStreamTimeoutProvider establishes a real stream (StreamChat returns a
+// nil setup error), then blocks until ctx's deadline fires and reports
+// ctx.Err() on Err — unlike blockingProvider, which fails synchronously
+// during StreamChat setup. This exercises the mid-stream path: the deadline
+// error is received inside wrapStreamWithTelemetry's goroutine (off
+// stream.Err), passed through mapErr, and onDone fires cancel() when the
+// goroutine exits.
+type midStreamTimeoutProvider struct{}
+
+func (midStreamTimeoutProvider) ID() string                    { return "midstreamtimeout" }
+func (midStreamTimeoutProvider) Models() []ModelInfo           { return nil }
+func (midStreamTimeoutProvider) Supports(feature Feature) bool { return false }
+func (midStreamTimeoutProvider) Chat(context.Context, *ChatRequest) (*ChatResponse, error) {
+	return nil, ErrNotSupported
+}
+func (midStreamTimeoutProvider) StreamChat(ctx context.Context, _ *ChatRequest) (*ChatStream, error) {
+	ch := make(chan ChatChunk)
+	errc := make(chan error, 1)
+	final := make(chan *ChatResponse)
+	go func() {
+		<-ctx.Done()
+		errc <- ctx.Err()
+		// Give the telemetry-wrapping goroutine a moment to drain and
+		// forward this error before closing Ch. DrainStream watches Ch
+		// directly (it is passed through unwrapped) and treats its closure
+		// as the signal to stop looping; closing it prematurely relative to
+		// the wrapper's forwarding of Err would make the test's outcome
+		// depend on unrelated goroutine scheduling.
+		time.Sleep(5 * time.Millisecond)
+		close(ch)
+		close(errc)
+		close(final)
+	}()
+	return &ChatStream{Ch: ch, Err: errc, Final: final}, nil
+}
+
+func TestStreamMidStreamTimeout(t *testing.T) {
+	c := NewClient(midStreamTimeoutProvider{}, WithTimeout(50*time.Millisecond))
+	stream, err := c.Chat("m").User("hi").Stream(context.Background())
+	if err != nil {
+		t.Fatalf("Stream() error = %v", err)
+	}
+	_, err = DrainStream(context.Background(), stream)
+	if !errors.Is(err, ErrTimeout) {
+		t.Fatalf("DrainStream err = %v, want ErrTimeout", err)
+	}
+}

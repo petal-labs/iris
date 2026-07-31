@@ -821,11 +821,11 @@ func wrapStreamWithTelemetry(
 					select {
 					case err, ok := <-stream.Err:
 						if ok {
-							finalErr = err
 							out := err
 							if mapErr != nil {
 								out = mapErr(err)
 							}
+							finalErr = out
 							errCh <- out
 						}
 					default:
@@ -834,11 +834,11 @@ func wrapStreamWithTelemetry(
 				}
 			case err, ok := <-stream.Err:
 				if ok {
-					finalErr = err
 					out := err
 					if mapErr != nil {
 						out = mapErr(err)
 					}
+					finalErr = out
 					errCh <- out
 				}
 				// If Err closed without value, continue to wait for Final
