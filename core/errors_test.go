@@ -1,8 +1,11 @@
 package core
 
 import (
+	"context"
 	"errors"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestProviderErrorImplementsError(t *testing.T) {
@@ -240,6 +243,20 @@ func TestErrorChaining(t *testing.T) {
 	}
 	if pe.Provider != "openai" {
 		t.Errorf("Provider = %v, want openai", pe.Provider)
+	}
+}
+
+func TestNewTimeoutError(t *testing.T) {
+	err := newTimeoutError(120 * time.Second)
+
+	if !errors.Is(err, ErrTimeout) {
+		t.Errorf("errors.Is(err, ErrTimeout) = false, want true")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("errors.Is(err, context.DeadlineExceeded) = false, want true")
+	}
+	if !strings.Contains(err.Error(), "2m0s") {
+		t.Errorf("err.Error() = %q, want it to contain the duration", err.Error())
 	}
 }
 

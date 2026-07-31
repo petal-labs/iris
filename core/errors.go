@@ -1,8 +1,10 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // ProviderError represents an error returned by a provider with full context.
@@ -54,3 +56,15 @@ var (
 	ErrModelRequired = errors.New("model required: pass a model ID to Client.Chat(), e.g., client.Chat(\"gpt-4\")")
 	ErrNoMessages    = errors.New("no messages: add at least one message using .System(), .User(), or .Assistant()")
 )
+
+// ErrTimeout indicates an Iris-imposed execution timeout elapsed before the
+// provider call completed. It wraps context.DeadlineExceeded, so
+// errors.Is(err, context.DeadlineExceeded) also holds.
+var ErrTimeout = errors.New("execution timeout")
+
+// newTimeoutError builds a timeout error carrying the elapsed budget. The
+// returned error satisfies errors.Is for both ErrTimeout and
+// context.DeadlineExceeded.
+func newTimeoutError(d time.Duration) error {
+	return fmt.Errorf("iris: %w after %s: %w", ErrTimeout, d, context.DeadlineExceeded)
+}
