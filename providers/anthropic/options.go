@@ -25,7 +25,9 @@ type Config struct {
 	// Headers contains optional extra headers to include in requests.
 	Headers http.Header
 
-	// Timeout is the optional request timeout.
+	// Timeout is retained for compatibility but is not applied by this provider.
+	//
+	// Deprecated: use core.WithTimeout on the Client instead.
 	Timeout time.Duration
 
 	// FilesAPIBeta is the beta version for Files API. Defaults to DefaultFilesAPIBeta.
@@ -76,6 +78,10 @@ func WithHeader(key, value string) Option {
 }
 
 // WithTimeout sets the request timeout.
+//
+// Deprecated: this option is currently inert for this provider and has no
+// effect on requests. Use core.WithTimeout on the Client (or a context
+// deadline) to bound execution. Retained for API compatibility.
 func WithTimeout(d time.Duration) Option {
 	return func(c *Config) {
 		c.Timeout = d
