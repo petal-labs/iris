@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-07-31
+
+### Added
+
+- Core-level LLM execution timeout applied uniformly across all providers
+  - `core.WithTimeout(d)` client option and `DefaultTimeout` (120s)
+  - `core.ErrTimeout` typed error that wraps `context.DeadlineExceeded`
+  - Applies to both unary (`GetResponse`) and streaming (`Stream`) calls
+  - Precedence: caller context deadline > `ChatBuilder.Timeout()` > client default
+- Test coverage confirming `gpt-5.4-mini` routes to the OpenAI Responses API
+
+### Changed
+
+- A default 120s execution timeout now applies when neither a context deadline nor a per-call timeout is set; opt out with `core.WithTimeout(0)`. Streaming helpers that use a background context (for example `Conversation.Stream`) inherit this default, so generations longer than 120s are cut off unless the value is raised or disabled.
+
+### Deprecated
+
+- Per-provider `WithTimeout` option and `Config.Timeout` field (inert on every provider except Azure AI Foundry); use `core.WithTimeout` on the client instead
+
+## [0.14.0] - 2026-07-29
+
+### Added
+
+- Azure AI Foundry provider
+- OpenTelemetry instrumentation support
+- Ollama embeddings via `core.EmbeddingProvider` (`/api/embed`)
+- Latest model definitions synced from models.dev across providers
+
+### Fixed
+
+- Perplexity tool format updated to flat structure
+
 ## [0.13.0] - 2026-03-08
 
 ### Added
