@@ -206,3 +206,37 @@ func TestStreamMidStreamTimeout(t *testing.T) {
 		t.Fatalf("DrainStream err = %v, want ErrTimeout", err)
 	}
 }
+
+// TestStreamCallerDeadlineNotRemapped is the streaming counterpart to
+// TestGetResponseCallerDeadlineNotRemapped: it proves that when the CALLER
+// supplies its own ctx deadline, Stream's mid-stream error is left as the
+// raw context error and is NOT remapped to ErrTimeout.
+//
+// The client's own default timeout is set large (30s) so it cannot fire
+// first. The caller's ctx carries a short 50ms deadline instead. Because a
+// caller-supplied deadline is present, effectiveTimeout(ctx) returns 0 (see
+// its precedence rule: caller ctx deadline wins), so Stream applies no
+// additional Iris timeout — timeout stays 0, and mapErr's
+// `timeout > 0 && errors.Is(e, context.DeadlineExceeded)` guard never
+// triggers, so mapErr returns the raw error unchanged.
+func TestStreamCallerDeadlineNotRemapped(t *testing.T) {
+	c := NewClient(midStreamTimeoutProvider{}, WithTimeout(30*time.Second))
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	stream, err := c.Chat("m").User("hi").Stream(ctx)
+	if err != nil {
+		t.Fatalf("Stream() error = %v", err)
+	}
+
+	// Drain with an unrelated background context so the error observed here
+	// can only have come from the stream's Err channel (via mapErr), not
+	// from DrainStream's own ctx.Done() check.
+	_, err = DrainStream(context.Background(), stream)
+	if errors.Is(err, ErrTimeout) {
+		t.Errorf("caller deadline was remapped to ErrTimeout; want raw context error: %v", err)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("err = %v, want context.DeadlineExceeded", err)
+	}
+}
