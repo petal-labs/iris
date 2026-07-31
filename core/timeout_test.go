@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -49,5 +50,65 @@ func TestEffectiveTimeoutPrecedence(t *testing.T) {
 	b3 := c.Chat("m")
 	if got := b3.effectiveTimeout(context.Background()); got != 30*time.Second {
 		t.Errorf("client default = %v, want 30s", got)
+	}
+}
+
+// noRetryPolicy is a retry policy that never retries.
+type noRetryPolicy struct{}
+
+func (noRetryPolicy) NextDelay(attempt int, err error) (time.Duration, bool) {
+	return 0, false
+}
+
+// blockingProvider blocks Chat until ctx is cancelled, then returns ctx.Err().
+type blockingProvider struct{}
+
+func (blockingProvider) ID() string { return "blocking" }
+func (blockingProvider) Models() []ModelInfo { return nil }
+func (blockingProvider) Supports(feature Feature) bool { return false }
+func (blockingProvider) Chat(ctx context.Context, _ *ChatRequest) (*ChatResponse, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+func (blockingProvider) StreamChat(ctx context.Context, _ *ChatRequest) (*ChatStream, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func TestGetResponseTimesOutWithErrTimeout(t *testing.T) {
+	c := NewClient(blockingProvider{}, WithTimeout(50*time.Millisecond),
+		WithRetryPolicy(noRetryPolicy{}))
+
+	_, err := c.Chat("m").User("hi").GetResponse(context.Background())
+
+	if !errors.Is(err, ErrTimeout) {
+		t.Fatalf("err = %v, want ErrTimeout", err)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("err = %v, want it to wrap DeadlineExceeded", err)
+	}
+}
+
+func TestGetResponseCallerDeadlineNotRemapped(t *testing.T) {
+	c := NewClient(blockingProvider{}, WithRetryPolicy(noRetryPolicy{}))
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	_, err := c.Chat("m").User("hi").GetResponse(ctx)
+
+	if errors.Is(err, ErrTimeout) {
+		t.Errorf("caller deadline was remapped to ErrTimeout; want raw context error")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("err = %v, want context.DeadlineExceeded", err)
+	}
+}
+
+func TestGetResponseDisabledTimeoutDoesNotFire(t *testing.T) {
+	c := NewClient(&mockProvider{}, WithTimeout(0))
+	// mockProvider returns promptly; assert no ErrTimeout on the happy path.
+	_, err := c.Chat("m").User("hi").GetResponse(context.Background())
+	if errors.Is(err, ErrTimeout) {
+		t.Errorf("unexpected ErrTimeout with timeout disabled: %v", err)
 	}
 }

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -487,13 +488,15 @@ func (b *ChatBuilder) GetResponse(ctx context.Context) (*ChatResponse, error) {
 		return nil, err
 	}
 
-	// Apply timeout if set and context has no deadline
-	if b.timeout > 0 {
-		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-			var cancel context.CancelFunc
-			ctx, cancel = context.WithTimeout(ctx, b.timeout)
-			defer cancel()
-		}
+	// Apply the effective execution timeout (see effectiveTimeout for precedence).
+	// timedOut records that any resulting DeadlineExceeded is Iris-owned and
+	// should surface as ErrTimeout rather than a raw context error.
+	var timedOut time.Duration
+	if d := b.effectiveTimeout(ctx); d > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, d)
+		defer cancel()
+		timedOut = d
 	}
 
 	start := time.Now()
@@ -536,6 +539,11 @@ retryLoop:
 		case <-time.After(delay):
 			continue
 		}
+	}
+
+	// Map an Iris-applied deadline to a legible typed error.
+	if timedOut > 0 && err != nil && errors.Is(err, context.DeadlineExceeded) {
+		err = newTimeoutError(timedOut)
 	}
 
 	// Emit telemetry end
