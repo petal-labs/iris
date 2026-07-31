@@ -2,9 +2,15 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
+
+// DefaultTimeout is the execution timeout applied to chat and streaming calls
+// when neither the caller's context nor a per-call Timeout() supplies one.
+// Disable it per client with WithTimeout(0).
+const DefaultTimeout = 120 * time.Second
 
 // Provider is the interface that LLM providers must implement.
 // Providers SHOULD be safe for concurrent calls.
@@ -46,6 +52,7 @@ type Client struct {
 	telemetry      TelemetryHook
 	retry          RetryPolicy
 	warningHandler WarningHandler
+	timeout        time.Duration
 }
 
 // ClientOption configures a Client.
@@ -62,6 +69,7 @@ func NewClient(p Provider, opts ...ClientOption) *Client {
 		telemetry:      NoopTelemetryHook{},
 		retry:          DefaultRetryPolicy(),
 		warningHandler: func(string) {},
+		timeout:        DefaultTimeout,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -94,6 +102,15 @@ func WithWarningHandler(h WarningHandler) ClientOption {
 		if h != nil {
 			c.warningHandler = h
 		}
+	}
+}
+
+// WithTimeout sets the default execution timeout applied to chat and streaming
+// calls when the caller's context has no deadline of its own and no per-call
+// Timeout() is set. Pass 0 to disable the default and allow unbounded calls.
+func WithTimeout(d time.Duration) ClientOption {
+	return func(c *Client) {
+		c.timeout = d
 	}
 }
 
@@ -430,6 +447,19 @@ func (b *ChatBuilder) ToolError(assistantResp *ChatResponse, callID string, err 
 	}})
 }
 
+// effectiveTimeout resolves the timeout to apply for this call, or 0 for none.
+// Precedence: an existing ctx deadline wins (returns 0, no wrapping); then a
+// per-call builder timeout; then the client default.
+func (b *ChatBuilder) effectiveTimeout(ctx context.Context) time.Duration {
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		return 0
+	}
+	if b.timeout > 0 {
+		return b.timeout
+	}
+	return b.client.timeout
+}
+
 // validate checks that the request is valid.
 func (b *ChatBuilder) validate() error {
 	if b.req.Model == "" {
@@ -458,13 +488,15 @@ func (b *ChatBuilder) GetResponse(ctx context.Context) (*ChatResponse, error) {
 		return nil, err
 	}
 
-	// Apply timeout if set and context has no deadline
-	if b.timeout > 0 {
-		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-			var cancel context.CancelFunc
-			ctx, cancel = context.WithTimeout(ctx, b.timeout)
-			defer cancel()
-		}
+	// Apply the effective execution timeout (see effectiveTimeout for precedence).
+	// timedOut records that any resulting DeadlineExceeded is Iris-owned and
+	// should surface as ErrTimeout rather than a raw context error.
+	var timedOut time.Duration
+	if d := b.effectiveTimeout(ctx); d > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, d)
+		defer cancel()
+		timedOut = d
 	}
 
 	start := time.Now()
@@ -509,6 +541,11 @@ retryLoop:
 		}
 	}
 
+	// Map an Iris-applied deadline to a legible typed error.
+	if timedOut > 0 && err != nil && errors.Is(err, context.DeadlineExceeded) {
+		err = newTimeoutError(timedOut)
+	}
+
 	// Emit telemetry end
 	end := time.Now()
 	usage := TokenUsage{}
@@ -536,9 +573,15 @@ retryLoop:
 // Stream executes the chat request and returns a streaming response.
 // It applies validation and telemetry.
 //
-// Note: The Timeout() setting is NOT applied to streaming requests because
-// the context must outlive this method call. For streaming with timeouts,
-// create the context externally:
+// The effective execution timeout (see effectiveTimeout for precedence) is
+// applied to the context used to establish the stream. The derived timeout
+// context is NOT cancelled when Stream returns; it stays alive until the
+// stream completes (successfully or with an error) or the deadline fires,
+// so the timeout does not truncate an in-flight stream prematurely.
+//
+// A caller-supplied ctx deadline is never remapped to ErrTimeout — only a
+// deadline applied internally by Iris is. To apply a timeout externally
+// instead:
 //
 //	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 //	defer cancel()
@@ -546,6 +589,20 @@ retryLoop:
 func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
+	}
+
+	// Apply the effective execution timeout (see effectiveTimeout for precedence).
+	// cancel is intentionally NOT deferred here: on success it is handed to
+	// wrapStreamWithTelemetry via onDone, which fires it exactly once when the
+	// stream completes or the deadline fires. On a setup error we cancel
+	// immediately below.
+	var (
+		cancel  context.CancelFunc
+		timeout time.Duration
+	)
+	if d := b.effectiveTimeout(ctx); d > 0 {
+		ctx, cancel = context.WithTimeout(ctx, d)
+		timeout = d
 	}
 
 	start := time.Now()
@@ -565,6 +622,13 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 
 	stream, err := b.client.provider.StreamChat(ctx, &b.req)
 	if err != nil {
+		if cancel != nil {
+			cancel()
+		}
+		// Map an Iris-applied deadline to a legible typed error.
+		if timeout > 0 && errors.Is(err, context.DeadlineExceeded) {
+			err = newTimeoutError(timeout)
+		}
 		// Emit telemetry end on immediate error
 		endEvent := RequestEndEvent{
 			Provider: providerID,
@@ -581,8 +645,25 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 		return nil, err
 	}
 
+	// onDone releases the timeout context exactly once, when the stream
+	// completes (success or error) or the deadline fires — never when
+	// Stream itself returns.
+	onDone := func() {
+		if cancel != nil {
+			cancel()
+		}
+	}
+	// mapErr remaps a mid-stream Iris-applied deadline to ErrTimeout while
+	// leaving caller-supplied deadlines and all other errors untouched.
+	mapErr := func(e error) error {
+		if timeout > 0 && errors.Is(e, context.DeadlineExceeded) {
+			return newTimeoutError(timeout)
+		}
+		return e
+	}
+
 	// Wrap the stream to emit telemetry when it completes
-	return wrapStreamWithTelemetry(ctx, stream, b.client.telemetry, providerID, b.req.Model, start), nil
+	return wrapStreamWithTelemetry(ctx, stream, b.client.telemetry, providerID, b.req.Model, start, onDone, mapErr), nil
 }
 
 // MessageBuilder provides a fluent API for building multimodal messages.
@@ -698,6 +779,11 @@ func (b *ChatBuilder) UserWithFileID(text, fileID string) *ChatBuilder {
 }
 
 // wrapStreamWithTelemetry wraps a ChatStream to emit telemetry on completion.
+// onDone, if non-nil, is invoked exactly once when the stream completes
+// (successfully or with an error) — used by Stream to release an
+// Iris-applied timeout context without truncating an in-flight stream.
+// mapErr, if non-nil, remaps errors forwarded on the returned Err channel
+// (e.g. a mid-stream Iris-applied deadline into ErrTimeout).
 func wrapStreamWithTelemetry(
 	ctx context.Context,
 	stream *ChatStream,
@@ -705,6 +791,8 @@ func wrapStreamWithTelemetry(
 	provider string,
 	model ModelID,
 	start time.Time,
+	onDone func(),
+	mapErr func(error) error,
 ) *ChatStream {
 	finalCh := make(chan *ChatResponse, 1)
 	errCh := make(chan error, 1)
@@ -712,6 +800,9 @@ func wrapStreamWithTelemetry(
 	go func() {
 		defer close(finalCh)
 		defer close(errCh)
+		if onDone != nil {
+			defer onDone()
+		}
 
 		var finalResp *ChatResponse
 		var finalErr error
@@ -730,8 +821,12 @@ func wrapStreamWithTelemetry(
 					select {
 					case err, ok := <-stream.Err:
 						if ok {
-							finalErr = err
-							errCh <- err
+							out := err
+							if mapErr != nil {
+								out = mapErr(err)
+							}
+							finalErr = out
+							errCh <- out
 						}
 					default:
 					}
@@ -739,8 +834,12 @@ func wrapStreamWithTelemetry(
 				}
 			case err, ok := <-stream.Err:
 				if ok {
-					finalErr = err
-					errCh <- err
+					out := err
+					if mapErr != nil {
+						out = mapErr(err)
+					}
+					finalErr = out
+					errCh <- out
 				}
 				// If Err closed without value, continue to wait for Final
 			}
