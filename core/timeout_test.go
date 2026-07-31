@@ -63,8 +63,8 @@ func (noRetryPolicy) NextDelay(attempt int, err error) (time.Duration, bool) {
 // blockingProvider blocks Chat until ctx is cancelled, then returns ctx.Err().
 type blockingProvider struct{}
 
-func (blockingProvider) ID() string { return "blocking" }
-func (blockingProvider) Models() []ModelInfo { return nil }
+func (blockingProvider) ID() string                    { return "blocking" }
+func (blockingProvider) Models() []ModelInfo           { return nil }
 func (blockingProvider) Supports(feature Feature) bool { return false }
 func (blockingProvider) Chat(ctx context.Context, _ *ChatRequest) (*ChatResponse, error) {
 	<-ctx.Done()
@@ -110,5 +110,51 @@ func TestGetResponseDisabledTimeoutDoesNotFire(t *testing.T) {
 	_, err := c.Chat("m").User("hi").GetResponse(context.Background())
 	if errors.Is(err, ErrTimeout) {
 		t.Errorf("unexpected ErrTimeout with timeout disabled: %v", err)
+	}
+}
+
+// fastStreamProvider emits one chunk then closes immediately.
+type fastStreamProvider struct{}
+
+func (fastStreamProvider) ID() string                    { return "faststream" }
+func (fastStreamProvider) Models() []ModelInfo           { return nil }
+func (fastStreamProvider) Supports(feature Feature) bool { return false }
+func (fastStreamProvider) Chat(context.Context, *ChatRequest) (*ChatResponse, error) {
+	return nil, ErrNotSupported
+}
+func (fastStreamProvider) StreamChat(_ context.Context, _ *ChatRequest) (*ChatStream, error) {
+	ch := make(chan ChatChunk, 1)
+	errc := make(chan error)
+	final := make(chan *ChatResponse, 1)
+	ch <- ChatChunk{Delta: "hello"}
+	close(ch)
+	final <- &ChatResponse{Output: "hello"}
+	close(final)
+	close(errc)
+	return &ChatStream{Ch: ch, Err: errc, Final: final}, nil
+}
+
+func TestStreamFastCompletesNotCancelled(t *testing.T) {
+	c := NewClient(fastStreamProvider{}, WithTimeout(50*time.Millisecond))
+	stream, err := c.Chat("m").User("hi").Stream(context.Background())
+	if err != nil {
+		t.Fatalf("Stream() error = %v", err)
+	}
+	resp, err := DrainStream(context.Background(), stream)
+	if err != nil {
+		t.Fatalf("DrainStream error = %v", err)
+	}
+	if resp.Output != "hello" {
+		t.Errorf("Output = %q, want %q", resp.Output, "hello")
+	}
+}
+
+func TestStreamStalledTimesOut(t *testing.T) {
+	// blockingProvider.StreamChat blocks until ctx cancels, then returns ctx.Err()
+	// as a setup error (StreamChat returns error, not a stream).
+	c := NewClient(blockingProvider{}, WithTimeout(50*time.Millisecond))
+	_, err := c.Chat("m").User("hi").Stream(context.Background())
+	if !errors.Is(err, ErrTimeout) {
+		t.Fatalf("Stream() err = %v, want ErrTimeout", err)
 	}
 }

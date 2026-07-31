@@ -573,9 +573,15 @@ retryLoop:
 // Stream executes the chat request and returns a streaming response.
 // It applies validation and telemetry.
 //
-// Note: The Timeout() setting is NOT applied to streaming requests because
-// the context must outlive this method call. For streaming with timeouts,
-// create the context externally:
+// The effective execution timeout (see effectiveTimeout for precedence) is
+// applied to the context used to establish the stream. The derived timeout
+// context is NOT cancelled when Stream returns; it stays alive until the
+// stream completes (successfully or with an error) or the deadline fires,
+// so the timeout does not truncate an in-flight stream prematurely.
+//
+// A caller-supplied ctx deadline is never remapped to ErrTimeout — only a
+// deadline applied internally by Iris is. To apply a timeout externally
+// instead:
 //
 //	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 //	defer cancel()
@@ -583,6 +589,20 @@ retryLoop:
 func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
+	}
+
+	// Apply the effective execution timeout (see effectiveTimeout for precedence).
+	// cancel is intentionally NOT deferred here: on success it is handed to
+	// wrapStreamWithTelemetry via onDone, which fires it exactly once when the
+	// stream completes or the deadline fires. On a setup error we cancel
+	// immediately below.
+	var (
+		cancel  context.CancelFunc
+		timeout time.Duration
+	)
+	if d := b.effectiveTimeout(ctx); d > 0 {
+		ctx, cancel = context.WithTimeout(ctx, d)
+		timeout = d
 	}
 
 	start := time.Now()
@@ -602,6 +622,13 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 
 	stream, err := b.client.provider.StreamChat(ctx, &b.req)
 	if err != nil {
+		if cancel != nil {
+			cancel()
+		}
+		// Map an Iris-applied deadline to a legible typed error.
+		if timeout > 0 && errors.Is(err, context.DeadlineExceeded) {
+			err = newTimeoutError(timeout)
+		}
 		// Emit telemetry end on immediate error
 		endEvent := RequestEndEvent{
 			Provider: providerID,
@@ -618,8 +645,25 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 		return nil, err
 	}
 
+	// onDone releases the timeout context exactly once, when the stream
+	// completes (success or error) or the deadline fires — never when
+	// Stream itself returns.
+	onDone := func() {
+		if cancel != nil {
+			cancel()
+		}
+	}
+	// mapErr remaps a mid-stream Iris-applied deadline to ErrTimeout while
+	// leaving caller-supplied deadlines and all other errors untouched.
+	mapErr := func(e error) error {
+		if timeout > 0 && errors.Is(e, context.DeadlineExceeded) {
+			return newTimeoutError(timeout)
+		}
+		return e
+	}
+
 	// Wrap the stream to emit telemetry when it completes
-	return wrapStreamWithTelemetry(ctx, stream, b.client.telemetry, providerID, b.req.Model, start), nil
+	return wrapStreamWithTelemetry(ctx, stream, b.client.telemetry, providerID, b.req.Model, start, onDone, mapErr), nil
 }
 
 // MessageBuilder provides a fluent API for building multimodal messages.
@@ -735,6 +779,11 @@ func (b *ChatBuilder) UserWithFileID(text, fileID string) *ChatBuilder {
 }
 
 // wrapStreamWithTelemetry wraps a ChatStream to emit telemetry on completion.
+// onDone, if non-nil, is invoked exactly once when the stream completes
+// (successfully or with an error) — used by Stream to release an
+// Iris-applied timeout context without truncating an in-flight stream.
+// mapErr, if non-nil, remaps errors forwarded on the returned Err channel
+// (e.g. a mid-stream Iris-applied deadline into ErrTimeout).
 func wrapStreamWithTelemetry(
 	ctx context.Context,
 	stream *ChatStream,
@@ -742,6 +791,8 @@ func wrapStreamWithTelemetry(
 	provider string,
 	model ModelID,
 	start time.Time,
+	onDone func(),
+	mapErr func(error) error,
 ) *ChatStream {
 	finalCh := make(chan *ChatResponse, 1)
 	errCh := make(chan error, 1)
@@ -749,6 +800,9 @@ func wrapStreamWithTelemetry(
 	go func() {
 		defer close(finalCh)
 		defer close(errCh)
+		if onDone != nil {
+			defer onDone()
+		}
 
 		var finalResp *ChatResponse
 		var finalErr error
@@ -768,7 +822,11 @@ func wrapStreamWithTelemetry(
 					case err, ok := <-stream.Err:
 						if ok {
 							finalErr = err
-							errCh <- err
+							out := err
+							if mapErr != nil {
+								out = mapErr(err)
+							}
+							errCh <- out
 						}
 					default:
 					}
@@ -777,7 +835,11 @@ func wrapStreamWithTelemetry(
 			case err, ok := <-stream.Err:
 				if ok {
 					finalErr = err
-					errCh <- err
+					out := err
+					if mapErr != nil {
+						out = mapErr(err)
+					}
+					errCh <- out
 				}
 				// If Err closed without value, continue to wait for Final
 			}
