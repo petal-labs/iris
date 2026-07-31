@@ -808,3 +808,45 @@ func TestResponsesAPIMultimodalFileWithID(t *testing.T) {
 		t.Errorf("Output = %q, want expected text", resp.Output)
 	}
 }
+
+func TestGPT54MiniRoutesToResponsesAPI(t *testing.T) {
+	var gotPath, gotModel string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if m, ok := body["model"].(string); ok {
+			gotModel = m
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(responsesResponse{
+			ID:         "resp-54mini",
+			Model:      "gpt-5.4-mini",
+			Status:     "completed",
+			OutputText: "pong",
+			Output:     []responsesOutput{{Type: "message", Role: "assistant"}},
+			Usage:      &responsesUsage{InputTokens: 1, OutputTokens: 1, TotalTokens: 2},
+		})
+	}))
+	defer server.Close()
+
+	p := New("test-key", WithBaseURL(server.URL))
+	resp, err := p.Chat(context.Background(), &core.ChatRequest{
+		Model:    ModelGPT54Mini,
+		Messages: []core.Message{{Role: core.RoleUser, Content: "ping"}},
+	})
+	if err != nil {
+		t.Fatalf("Chat() error = %v", err)
+	}
+	if gotPath != "/responses" {
+		t.Errorf("request path = %q, want /responses", gotPath)
+	}
+	if gotModel != "gpt-5.4-mini" {
+		t.Errorf("request model = %q, want gpt-5.4-mini", gotModel)
+	}
+	if resp.Output != "pong" {
+		t.Errorf("Output = %q, want pong", resp.Output)
+	}
+}
