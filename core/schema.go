@@ -103,7 +103,7 @@ func validateObjectConstraints(obj map[string]any, path string) error {
 	if !hasAddl {
 		return fmt.Errorf("%w: %s: object schema missing \"additionalProperties\": false", ErrInvalidSchema, pathOrRoot(path))
 	}
-	if b, isBool := addl.(bool); !isBool || b != false {
+	if b, isBool := addl.(bool); !isBool || b {
 		return fmt.Errorf("%w: %s: \"additionalProperties\" must be false, got %#v", ErrInvalidSchema, pathOrRoot(path), addl)
 	}
 
