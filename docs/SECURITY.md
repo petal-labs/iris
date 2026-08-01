@@ -93,7 +93,7 @@ ks.MigrateToV2()
 
 ## Secret Type
 
-Iris uses a `core.Secret` type for API keys to prevent accidental exposure:
+Iris uses a `core.Secret` type for API keys to prevent accidental exposure. `core.NewSecret` trims leading and trailing whitespace from the input — including trailing newlines that secret managers such as Azure Key Vault commonly append — so `Expose()` never returns a padded credential. `IsEmpty()` is whitespace-aware too: a value consisting only of whitespace is treated as empty, not as a present-but-blank secret.
 
 ```go
 import "github.com/petal-labs/iris/core"
