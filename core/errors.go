@@ -62,6 +62,11 @@ var (
 	ErrNoMessages    = errors.New("no messages: add at least one message using .System(), .User(), or .Assistant()")
 )
 
+// ErrInvalidSchema indicates a JSON Schema is not compatible with strict
+// structured output mode (e.g., missing "additionalProperties": false or a
+// "required" array that does not cover all declared properties).
+var ErrInvalidSchema = errors.New("invalid json schema for strict structured output")
+
 // ErrTimeout indicates an Iris-imposed execution timeout elapsed before the
 // provider call completed. It wraps context.DeadlineExceeded, so
 // errors.Is(err, context.DeadlineExceeded) also holds.

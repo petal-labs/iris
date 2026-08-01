@@ -349,18 +349,41 @@ func (b *ChatBuilder) ResponseJSON() *ChatBuilder {
 // This enables structured output mode where the model produces JSON conforming to the schema.
 // The schema parameter defines the structure the output must conform to.
 //
+// This always forces schema.Strict = true. Strict mode requires the schema to
+// set "additionalProperties": false and list every property in "required" at
+// every object node; validate() rejects non-compliant schemas with
+// ErrInvalidSchema before the request is sent. Use ResponseJSONSchemaNonStrict
+// to opt out of strict mode for schemas that cannot meet those constraints.
+//
 // Example:
 //
 //	schema := &core.JSONSchemaDefinition{
 //	    Name:   "person",
-//	    Strict: true,
-//	    Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"}},"required":["name","age"]}`),
+//	    Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"},"age":{"type":"integer"}},"required":["name","age"]}`),
 //	}
 //	resp, err := client.Chat(model).
 //	    User("Extract: John is 30 years old").
 //	    ResponseJSONSchema(schema).
 //	    GetResponse(ctx)
 func (b *ChatBuilder) ResponseJSONSchema(schema *JSONSchemaDefinition) *ChatBuilder {
+	if schema != nil {
+		schema.Strict = true
+	}
+	b.req.ResponseFormat = ResponseFormatJSONSchema
+	b.req.JSONSchema = schema
+	return b
+}
+
+// ResponseJSONSchemaNonStrict constrains the model output to match a specific
+// JSON Schema without enforcing strict mode. This forces schema.Strict = false,
+// skipping the strict-schema validation that ResponseJSONSchema applies. Use
+// this when a schema cannot satisfy strict mode's requirements (every object
+// node needs "additionalProperties": false and a "required" array covering
+// all declared properties) and the provider still accepts loose schemas.
+func (b *ChatBuilder) ResponseJSONSchemaNonStrict(schema *JSONSchemaDefinition) *ChatBuilder {
+	if schema != nil {
+		schema.Strict = false
+	}
 	b.req.ResponseFormat = ResponseFormatJSONSchema
 	b.req.JSONSchema = schema
 	return b
@@ -474,6 +497,16 @@ func (b *ChatBuilder) validate() error {
 		hasContent := msg.Content != "" || len(msg.Parts) > 0 || len(msg.ToolCalls) > 0 || len(msg.ToolResults) > 0
 		if !hasContent {
 			return ErrNoMessages
+		}
+	}
+
+	// Strict structured output requires a schema shape the provider can
+	// enforce exactly. (A capability gate that checks whether the target
+	// model supports strict mode at all belongs before this check; that is
+	// added separately.)
+	if b.req.ResponseFormat == ResponseFormatJSONSchema && b.req.JSONSchema != nil && b.req.JSONSchema.Strict {
+		if err := validateStrictSchema(b.req.JSONSchema.Schema); err != nil {
+			return err
 		}
 	}
 

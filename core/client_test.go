@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"sync"
@@ -1554,5 +1555,115 @@ func TestCloneWithResponseFormatJSON(t *testing.T) {
 
 	if clone.req.ResponseFormat != ResponseFormatJSON {
 		t.Errorf("clone.ResponseFormat = %v, want %v", clone.req.ResponseFormat, ResponseFormatJSON)
+	}
+}
+
+func TestResponseJSONSchemaDefaultsStrict(t *testing.T) {
+	b := NewClient(&mockProvider{}).Chat("m").
+		ResponseJSONSchema(&JSONSchemaDefinition{Name: "x", Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{},"required":[]}`)})
+	if !b.req.JSONSchema.Strict {
+		t.Error("ResponseJSONSchema should default Strict=true")
+	}
+}
+
+func TestResponseJSONSchemaNonStrictOptOut(t *testing.T) {
+	b := NewClient(&mockProvider{}).Chat("m").
+		ResponseJSONSchemaNonStrict(&JSONSchemaDefinition{Name: "x", Schema: json.RawMessage(`{}`)})
+	if b.req.JSONSchema.Strict {
+		t.Error("ResponseJSONSchemaNonStrict should set Strict=false")
+	}
+}
+
+func TestResponseJSONSchemaForcesStrictEvenIfCallerSetFalse(t *testing.T) {
+	schema := &JSONSchemaDefinition{
+		Name:   "x",
+		Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{},"required":[]}`),
+		Strict: false,
+	}
+	NewClient(&mockProvider{}).Chat("m").ResponseJSONSchema(schema)
+	if !schema.Strict {
+		t.Error("ResponseJSONSchema should force Strict=true even if the caller passed false")
+	}
+}
+
+func TestResponseJSONSchemaNilSchemaDoesNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("ResponseJSONSchema(nil) panicked: %v", r)
+		}
+	}()
+	b := NewClient(&mockProvider{}).Chat("m").ResponseJSONSchema(nil)
+	if b.req.JSONSchema != nil {
+		t.Error("req.JSONSchema should remain nil when passed nil")
+	}
+}
+
+func TestResponseJSONSchemaNonStrictNilSchemaDoesNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("ResponseJSONSchemaNonStrict(nil) panicked: %v", r)
+		}
+	}()
+	b := NewClient(&mockProvider{}).Chat("m").ResponseJSONSchemaNonStrict(nil)
+	if b.req.JSONSchema != nil {
+		t.Error("req.JSONSchema should remain nil when passed nil")
+	}
+}
+
+func TestGetResponseRejectsNonStrictCompatibleSchema(t *testing.T) {
+	ctx := context.Background()
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	_, err := client.Chat("gpt-4").
+		User("Extract person info").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(ctx)
+
+	if !errors.Is(err, ErrInvalidSchema) {
+		t.Fatalf("err = %v, want ErrInvalidSchema", err)
+	}
+}
+
+func TestGetResponseAcceptsStrictCompatibleSchema(t *testing.T) {
+	ctx := context.Background()
+	provider := &mockProvider{id: "test", chatFunc: func(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+		return &ChatResponse{Output: `{"name":"John"}`}, nil
+	}}
+	client := NewClient(provider)
+
+	_, err := client.Chat("gpt-4").
+		User("Extract person info").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(ctx)
+
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestGetResponseSkipsValidationForNonStrictSchema(t *testing.T) {
+	ctx := context.Background()
+	provider := &mockProvider{id: "test", chatFunc: func(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+		return &ChatResponse{Output: `{"name":"John"}`}, nil
+	}}
+	client := NewClient(provider)
+
+	_, err := client.Chat("gpt-4").
+		User("Extract person info").
+		ResponseJSONSchemaNonStrict(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(ctx)
+
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
 	}
 }
