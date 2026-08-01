@@ -809,45 +809,68 @@ func TestResponsesAPIMultimodalFileWithID(t *testing.T) {
 	}
 }
 
-func TestGPT54MiniRoutesToResponsesAPI(t *testing.T) {
-	var gotPath, gotModel string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		var body map[string]any
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode request: %v", err)
+// TestChatRoutesByDeclaredAPIEndpoint verifies that Chat dispatches to the
+// correct OpenAI endpoint based on each model's declared APIEndpoint in the
+// catalog, rather than any hardcoded model name. The expected path is derived
+// from the catalog, so this asserts the routing contract itself and stays
+// valid as individual models.dev entries come and go.
+func TestChatRoutesByDeclaredAPIEndpoint(t *testing.T) {
+	// One representative model per endpoint. ModelGPT52 is a Responses-API
+	// model; ModelGPT4Turbo is a Chat Completions model.
+	for _, model := range []core.ModelID{ModelGPT52, ModelGPT4Turbo} {
+		info := GetModelInfo(model)
+		if info == nil {
+			t.Fatalf("model %q missing from catalog", model)
 		}
-		if m, ok := body["model"].(string); ok {
-			gotModel = m
+		wantPath := "/chat/completions"
+		if info.GetAPIEndpoint() == core.APIEndpointResponses {
+			wantPath = "/responses"
 		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(responsesResponse{
-			ID:         "resp-54mini",
-			Model:      "gpt-5.4-mini",
-			Status:     "completed",
-			OutputText: "pong",
-			Output:     []responsesOutput{{Type: "message", Role: "assistant"}},
-			Usage:      &responsesUsage{InputTokens: 1, OutputTokens: 1, TotalTokens: 2},
-		})
-	}))
-	defer server.Close()
 
-	p := New("test-key", WithBaseURL(server.URL))
-	resp, err := p.Chat(context.Background(), &core.ChatRequest{
-		Model:    ModelGPT54Mini,
-		Messages: []core.Message{{Role: core.RoleUser, Content: "ping"}},
-	})
-	if err != nil {
-		t.Fatalf("Chat() error = %v", err)
-	}
-	if gotPath != "/responses" {
-		t.Errorf("request path = %q, want /responses", gotPath)
-	}
-	if gotModel != "gpt-5.4-mini" {
-		t.Errorf("request model = %q, want gpt-5.4-mini", gotModel)
-	}
-	if resp.Output != "pong" {
-		t.Errorf("Output = %q, want pong", resp.Output)
+		t.Run(string(model), func(t *testing.T) {
+			var gotPath string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				w.WriteHeader(http.StatusOK)
+				if r.URL.Path == "/responses" {
+					_ = json.NewEncoder(w).Encode(responsesResponse{
+						ID:         "resp-1",
+						Status:     "completed",
+						OutputText: "pong",
+						Output:     []responsesOutput{{Type: "message", Role: "assistant"}},
+						Usage:      &responsesUsage{InputTokens: 1, OutputTokens: 1, TotalTokens: 2},
+					})
+					return
+				}
+				_ = json.NewEncoder(w).Encode(openAIResponse{
+					ID:    "chatcmpl-1",
+					Model: string(model),
+					Choices: []openAIChoice{{
+						Index:        0,
+						Message:      openAIRespMsg{Role: "assistant", Content: "pong"},
+						FinishReason: "stop",
+					}},
+					Usage: openAIUsage{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2},
+				})
+			}))
+			defer server.Close()
+
+			p := New("test-key", WithBaseURL(server.URL))
+			resp, err := p.Chat(context.Background(), &core.ChatRequest{
+				Model:    model,
+				Messages: []core.Message{{Role: core.RoleUser, Content: "ping"}},
+			})
+			if err != nil {
+				t.Fatalf("Chat() error = %v", err)
+			}
+			if gotPath != wantPath {
+				t.Errorf("model %s routed to %q, want %q (declared endpoint %q)",
+					model, gotPath, wantPath, info.GetAPIEndpoint())
+			}
+			if resp.Output != "pong" {
+				t.Errorf("Output = %q, want pong", resp.Output)
+			}
+		})
 	}
 }
 
