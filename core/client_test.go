@@ -1696,11 +1696,50 @@ func (p nonStructuredProvider) StreamChat(ctx context.Context, req *ChatRequest)
 	return nil, errors.New("nonStructuredProvider.StreamChat should not be reached")
 }
 
-func TestStructuredOutputUnsupportedIsHardError(t *testing.T) {
-	c := NewClient(nonStructuredProvider{t: t})
+// nonStructuredButChattyProvider reports false for FeatureStructuredOutput,
+// like nonStructuredProvider, but actually implements Chat/StreamChat so
+// requests that are NOT hard-gated (plain ResponseJSON) can complete and
+// prove the request reached the provider instead of erroring in validate().
+type nonStructuredButChattyProvider struct{}
+
+func (p nonStructuredButChattyProvider) ID() string          { return "nonstructured-chatty" }
+func (p nonStructuredButChattyProvider) Models() []ModelInfo { return nil }
+func (p nonStructuredButChattyProvider) Supports(feature Feature) bool {
+	return feature == FeatureChat
+}
+
+func (p nonStructuredButChattyProvider) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+	return &ChatResponse{ID: "resp-1", Model: req.Model, Output: `{"ok":true}`}, nil
+}
+
+func (p nonStructuredButChattyProvider) StreamChat(ctx context.Context, req *ChatRequest) (*ChatStream, error) {
+	ch := make(chan ChatChunk, 1)
+	errCh := make(chan error, 1)
+	finalCh := make(chan *ChatResponse, 1)
+
+	go func() {
+		ch <- ChatChunk{Delta: "ok"}
+		close(ch)
+		finalCh <- &ChatResponse{ID: "resp-1", Model: req.Model, Output: "ok"}
+		close(finalCh)
+		close(errCh)
+	}()
+
+	return &ChatStream{Ch: ch, Err: errCh, Final: finalCh}, nil
+}
+
+func TestResponseJSONNotGatedForUnsupportedProvider(t *testing.T) {
+	// Plain json_object mode has no schema/shape contract to violate, so it
+	// must NOT be hard-gated by the FeatureStructuredOutput capability check
+	// even when the provider lacks that feature. The request must reach the
+	// provider; any incompatibility surfaces as the provider's own error.
+	c := NewClient(nonStructuredButChattyProvider{})
 	_, err := c.Chat("m").User("hi").ResponseJSON().GetResponse(context.Background())
-	if !errors.Is(err, ErrStructuredOutputUnsupported) {
-		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	if errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want no ErrStructuredOutputUnsupported for ResponseJSON", err)
+	}
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
 	}
 }
 
@@ -1781,12 +1820,31 @@ var modelGatedCatalog = []ModelInfo{
 func TestStructuredOutputUnsupportedForModelWithoutCapability(t *testing.T) {
 	// Provider supports structured output overall, but the specific
 	// requested model is in the catalog and does NOT declare the
-	// capability. This must be rejected even though the provider-level
-	// check passes.
+	// capability. Schema-based structured output (ResponseJSONSchema) must
+	// be rejected even though the provider-level check passes.
 	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
-	_, err := c.Chat("model-without-so").User("hi").ResponseJSON().GetResponse(context.Background())
+	_, err := c.Chat("model-without-so").User("hi").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(context.Background())
 	if !errors.Is(err, ErrStructuredOutputUnsupported) {
 		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	}
+}
+
+func TestResponseJSONNotGatedForModelWithoutCapability(t *testing.T) {
+	// Plain json_object mode (ResponseJSON) is not hard-gated by the
+	// model-level capability check either, even when the specific model is
+	// in the catalog and lacks FeatureStructuredOutput.
+	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
+	_, err := c.Chat("model-without-so").User("hi").ResponseJSON().GetResponse(context.Background())
+	if errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want no ErrStructuredOutputUnsupported for ResponseJSON", err)
+	}
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
 	}
 }
 

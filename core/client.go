@@ -500,12 +500,20 @@ func (b *ChatBuilder) validate() error {
 		}
 	}
 
-	// Capability gate: reject JSON/JSON-Schema structured output requests
-	// against a provider that does not support core.FeatureStructuredOutput.
-	// This must run before the strict-schema check below so an unsupported
-	// provider fails with ErrStructuredOutputUnsupported rather than a schema
-	// validation error.
-	if b.req.ResponseFormat == ResponseFormatJSON || b.req.ResponseFormat == ResponseFormatJSONSchema {
+	// Capability gate: reject schema-based structured output requests
+	// (ResponseFormatJSONSchema) against a provider/model that does not
+	// support core.FeatureStructuredOutput. This must run before the
+	// strict-schema check below so an unsupported provider fails with
+	// ErrStructuredOutputUnsupported rather than a schema validation error.
+	//
+	// Plain JSON mode (ResponseFormatJSON / json_object) is intentionally
+	// NOT hard-gated here: it has no schema/shape contract to silently
+	// violate, and many models support json_object without being tagged
+	// with FeatureStructuredOutput (e.g. OpenAI's gpt-3.5-turbo, gpt-4, and
+	// gpt-4-turbo). Gating it would reject requests that previously worked.
+	// If a provider genuinely can't do json_object, its descriptive API
+	// error surfaces instead.
+	if b.req.ResponseFormat == ResponseFormatJSONSchema {
 		if !b.client.provider.Supports(FeatureStructuredOutput) {
 			return fmt.Errorf("%w: provider %s model %s",
 				ErrStructuredOutputUnsupported, b.client.provider.ID(), b.req.Model)
