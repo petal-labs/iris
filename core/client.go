@@ -500,10 +500,20 @@ func (b *ChatBuilder) validate() error {
 		}
 	}
 
+	// Capability gate: reject JSON/JSON-Schema structured output requests
+	// against a provider that does not support core.FeatureStructuredOutput.
+	// This must run before the strict-schema check below so an unsupported
+	// provider fails with ErrStructuredOutputUnsupported rather than a schema
+	// validation error.
+	if b.req.ResponseFormat == ResponseFormatJSON || b.req.ResponseFormat == ResponseFormatJSONSchema {
+		if !b.client.provider.Supports(FeatureStructuredOutput) {
+			return fmt.Errorf("%w: provider %s model %s",
+				ErrStructuredOutputUnsupported, b.client.provider.ID(), b.req.Model)
+		}
+	}
+
 	// Strict structured output requires a schema shape the provider can
-	// enforce exactly. (A capability gate that checks whether the target
-	// model supports strict mode at all belongs before this check; that is
-	// added separately.)
+	// enforce exactly.
 	if b.req.ResponseFormat == ResponseFormatJSONSchema && b.req.JSONSchema != nil && b.req.JSONSchema.Strict {
 		if err := validateStrictSchema(b.req.JSONSchema.Schema); err != nil {
 			return err

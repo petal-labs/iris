@@ -31,7 +31,7 @@ func (m *mockProvider) Models() []ModelInfo {
 }
 
 func (m *mockProvider) Supports(feature Feature) bool {
-	return feature == FeatureChat || feature == FeatureChatStreaming
+	return feature == FeatureChat || feature == FeatureChatStreaming || feature == FeatureStructuredOutput
 }
 
 func (m *mockProvider) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
@@ -1665,5 +1665,73 @@ func TestGetResponseSkipsValidationForNonStrictSchema(t *testing.T) {
 
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+// nonStructuredProvider is a Provider whose Supports reports false for
+// FeatureStructuredOutput (and every other feature). Its Chat and StreamChat
+// methods fail the test if invoked, proving the capability gate in
+// validate() short-circuits before the provider is ever called.
+type nonStructuredProvider struct {
+	t *testing.T
+}
+
+func (p nonStructuredProvider) ID() string          { return "nonstructured" }
+func (p nonStructuredProvider) Models() []ModelInfo { return nil }
+func (p nonStructuredProvider) Supports(feature Feature) bool {
+	return false
+}
+
+func (p nonStructuredProvider) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+	if p.t != nil {
+		p.t.Fatal("Chat should not be called when the structured output capability gate fires")
+	}
+	return nil, errors.New("nonStructuredProvider.Chat should not be reached")
+}
+
+func (p nonStructuredProvider) StreamChat(ctx context.Context, req *ChatRequest) (*ChatStream, error) {
+	if p.t != nil {
+		p.t.Fatal("StreamChat should not be called when the structured output capability gate fires")
+	}
+	return nil, errors.New("nonStructuredProvider.StreamChat should not be reached")
+}
+
+func TestStructuredOutputUnsupportedIsHardError(t *testing.T) {
+	c := NewClient(nonStructuredProvider{t: t})
+	_, err := c.Chat("m").User("hi").ResponseJSON().GetResponse(context.Background())
+	if !errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	}
+}
+
+func TestStructuredOutputUnsupportedIsHardErrorForJSONSchema(t *testing.T) {
+	c := NewClient(nonStructuredProvider{t: t})
+	_, err := c.Chat("m").User("hi").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(context.Background())
+	if !errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	}
+}
+
+func TestStructuredOutputUnsupportedGateRunsBeforeSchemaValidation(t *testing.T) {
+	// An invalid strict schema against an unsupported provider must surface
+	// ErrStructuredOutputUnsupported, not ErrInvalidSchema, proving the
+	// capability gate runs first.
+	c := NewClient(nonStructuredProvider{t: t})
+	_, err := c.Chat("m").User("hi").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(context.Background())
+	if !errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	}
+	if errors.Is(err, ErrInvalidSchema) {
+		t.Error("err should not be ErrInvalidSchema; capability gate must run first")
 	}
 }

@@ -67,6 +67,14 @@ var (
 // "required" array that does not cover all declared properties).
 var ErrInvalidSchema = errors.New("invalid json schema for strict structured output")
 
+// ErrStructuredOutputUnsupported indicates a request asked for JSON or
+// JSON-Schema structured output (ResponseFormatJSON or
+// ResponseFormatJSONSchema) targeting a provider that does not support
+// core.FeatureStructuredOutput. validate() returns this before the request
+// is sent so callers fail fast instead of silently receiving unconstrained
+// output.
+var ErrStructuredOutputUnsupported = errors.New("structured output not supported by this provider or model")
+
 // ErrTimeout indicates an Iris-imposed execution timeout elapsed before the
 // provider call completed. It wraps context.DeadlineExceeded, so
 // errors.Is(err, context.DeadlineExceeded) also holds.
