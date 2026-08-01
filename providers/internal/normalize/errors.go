@@ -3,6 +3,7 @@ package normalize
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
@@ -41,7 +42,7 @@ func NetworkError(provider string, err error) error {
 	return &core.ProviderError{
 		Provider: provider,
 		Message:  err.Error(),
-		Err:      core.ErrNetwork,
+		Err:      fmt.Errorf("%w: %w", core.ErrNetwork, err),
 	}
 }
 
@@ -50,7 +51,7 @@ func DecodeError(provider string, err error) error {
 	return &core.ProviderError{
 		Provider: provider,
 		Message:  err.Error(),
-		Err:      core.ErrDecode,
+		Err:      fmt.Errorf("%w: %w", core.ErrDecode, err),
 	}
 }
 

@@ -42,7 +42,7 @@ func (p *Ollama) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core
 			Provider: "ollama",
 			Code:     "network_error",
 			Message:  err.Error(),
-			Err:      core.ErrNetwork,
+			Err:      fmt.Errorf("%w: %w", core.ErrNetwork, err),
 		}
 	}
 

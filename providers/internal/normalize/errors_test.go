@@ -1,7 +1,9 @@
 package normalize
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -126,6 +128,28 @@ func TestProviderErrorDefaults(t *testing.T) {
 	}
 	if !errors.Is(err, core.ErrServer) {
 		t.Error("error should wrap core.ErrServer")
+	}
+}
+
+func TestNetworkErrorPreservesChain(t *testing.T) {
+	underlying := fmt.Errorf("dial tcp: %w", context.DeadlineExceeded)
+	err := NetworkError("openai", underlying)
+	if !errors.Is(err, core.ErrNetwork) {
+		t.Error("want errors.Is(err, core.ErrNetwork)")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Error("want errors.Is(err, context.DeadlineExceeded)")
+	}
+}
+
+func TestDecodeErrorPreservesChain(t *testing.T) {
+	underlying := errors.New("invalid character '<'")
+	err := DecodeError("openai", underlying)
+	if !errors.Is(err, core.ErrDecode) {
+		t.Error("want errors.Is(err, core.ErrDecode)")
+	}
+	if !errors.Is(err, underlying) {
+		t.Error("want errors.Is(err, underlying)")
 	}
 }
 

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -268,5 +269,12 @@ func TestIsRetryable(t *testing.T) {
 				t.Errorf("isRetryable(%v) = %v, want %v", tt.err, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestWrappedTimeoutIsNotRetryable(t *testing.T) {
+	err := &ProviderError{Provider: "x", Err: fmt.Errorf("%w: %w", ErrNetwork, context.DeadlineExceeded)}
+	if isRetryable(err) {
+		t.Error("a timed-out request must not be retryable")
 	}
 }
