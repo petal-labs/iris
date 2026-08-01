@@ -224,6 +224,55 @@ func TestDrainStreamWithTimeout(t *testing.T) {
 	}
 }
 
+func TestDrainStreamDoesNotSwallowLateError(t *testing.T) {
+	ch := make(chan ChatChunk, 1)
+	errc := make(chan error, 1)
+	final := make(chan *ChatResponse, 1)
+	ch <- ChatChunk{Delta: "partial"}
+	close(ch) // Ch closes FIRST
+	go func() {
+		// error delivered slightly later, after Ch is already closed
+		time.Sleep(5 * time.Millisecond)
+		errc <- &ProviderError{Provider: "x", Message: "mid-stream boom", Err: ErrServer}
+		close(errc)
+		close(final)
+	}()
+
+	s := &ChatStream{Ch: ch, Err: errc, Final: final}
+	_, err := DrainStream(context.Background(), s)
+	if err == nil {
+		t.Fatal("DrainStream returned nil error; the late stream error was swallowed")
+	}
+}
+
+func TestDrainStreamNormalStreamAfterChCloses(t *testing.T) {
+	ch := make(chan ChatChunk, 3)
+	errc := make(chan error, 1)
+	final := make(chan *ChatResponse, 1)
+	ch <- ChatChunk{Delta: "Hello"}
+	ch <- ChatChunk{Delta: " "}
+	ch <- ChatChunk{Delta: "World"}
+	close(ch) // Ch closes first, same timing shape as the race above
+	go func() {
+		time.Sleep(5 * time.Millisecond)
+		close(errc)
+		final <- &ChatResponse{ID: "resp-late", Usage: TokenUsage{TotalTokens: 7}}
+		close(final)
+	}()
+
+	s := &ChatStream{Ch: ch, Err: errc, Final: final}
+	resp, err := DrainStream(context.Background(), s)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.Output != "Hello World" {
+		t.Errorf("Output = %q, want %q", resp.Output, "Hello World")
+	}
+	if resp.Usage.TotalTokens != 7 {
+		t.Errorf("Usage.TotalTokens = %d, want 7", resp.Usage.TotalTokens)
+	}
+}
+
 func TestChatStreamTypeHasCorrectChannelDirections(t *testing.T) {
 	// This is a compile-time check - if it compiles, the channel directions are correct
 	ch := make(chan ChatChunk)
