@@ -81,6 +81,22 @@ func (p *OpenAI) Supports(feature core.Feature) bool {
 	}
 }
 
+// requireAPIKey returns a descriptive *core.ProviderError wrapping
+// core.ErrUnauthorized when the configured API key is empty (or
+// whitespace-only). Callers must invoke this before building or sending any
+// HTTP request so misconfigured clients fail fast instead of round-tripping
+// to the API for a guaranteed 401.
+func (p *OpenAI) requireAPIKey() error {
+	if p.config.APIKey.IsEmpty() {
+		return &core.ProviderError{
+			Provider: "openai",
+			Message:  "API key is empty; pass it to openai.New(key) or configure your secret source",
+			Err:      core.ErrUnauthorized,
+		}
+	}
+	return nil
+}
+
 // buildHeaders constructs the HTTP headers for an API request.
 func (p *OpenAI) buildHeaders() http.Header {
 	headers := make(http.Header)
@@ -112,6 +128,9 @@ func (p *OpenAI) buildHeaders() http.Header {
 // Chat sends a non-streaming chat request.
 // Routes to either the Chat Completions API or Responses API based on the model.
 func (p *OpenAI) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
+	if err := p.requireAPIKey(); err != nil {
+		return nil, err
+	}
 	if p.shouldUseResponsesAPI(req.Model) {
 		return p.doResponsesChat(ctx, req)
 	}
@@ -121,6 +140,9 @@ func (p *OpenAI) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatRes
 // StreamChat sends a streaming chat request.
 // Routes to either the Chat Completions API or Responses API based on the model.
 func (p *OpenAI) StreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
+	if err := p.requireAPIKey(); err != nil {
+		return nil, err
+	}
 	if p.shouldUseResponsesAPI(req.Model) {
 		return p.doResponsesStreamChat(ctx, req)
 	}

@@ -15,6 +15,10 @@ const embeddingsPath = "/embeddings"
 
 // CreateEmbeddings generates embeddings for the given input texts.
 func (p *OpenAI) CreateEmbeddings(ctx context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
+	if err := p.requireAPIKey(); err != nil {
+		return nil, err
+	}
+
 	oaiReq := buildEmbeddingRequest(req)
 
 	body, err := json.Marshal(oaiReq)
