@@ -215,7 +215,8 @@ type ProviderError struct {
     RequestID string
     Code      string
     Message   string
-    Err       error // Wraps sentinel error
+    Body      string // raw response body (truncated); preserved when Message lacks detail
+    Err       error  // Wraps sentinel error
 }
 ```
 
@@ -238,18 +239,77 @@ if errors.As(err, &pe) {
 }
 ```
 
+**Additional Sentinels**: Beyond the provider-classification errors above, three more sentinels cover request-shape and execution-budget failures rather than transport errors:
+
+```go
+var ErrTimeout                     = errors.New("execution timeout")
+var ErrInvalidSchema               = errors.New("invalid json schema for strict structured output")
+var ErrStructuredOutputUnsupported = errors.New("structured output not supported by this provider or model")
+```
+
+- `ErrTimeout` is returned when Iris's own execution timeout (see [Default Execution Timeout](#default-execution-timeout) below) elapses. It wraps `context.DeadlineExceeded`, so `errors.Is(err, context.DeadlineExceeded)` holds in addition to `errors.Is(err, core.ErrTimeout)`.
+- `ErrInvalidSchema` is returned by `ChatBuilder.validate()` when a strict-mode JSON schema (`ResponseJSONSchema`) doesn't set `"additionalProperties": false` and list every property in `"required"` at every object node.
+- `ErrStructuredOutputUnsupported` is returned when `ResponseJSONSchema` targets a provider or model that doesn't declare `core.FeatureStructuredOutput`. Both are returned before any request is sent.
+
 ### Retry Integration
 
 The retry policy uses sentinel errors to determine retryability:
 
 ```go
 func isRetryable(err error) bool {
+    if errors.Is(err, context.Canceled) { return false }         // Caller gave up
+    if errors.Is(err, context.DeadlineExceeded) { return false } // Ctx or Iris timeout elapsed
     if errors.Is(err, ErrUnauthorized) { return false }  // Don't retry auth errors
     if errors.Is(err, ErrRateLimited) { return true }    // Retry rate limits
     if errors.Is(err, ErrServer) { return true }         // Retry server errors
     // ...
 }
 ```
+
+---
+
+## Default Execution Timeout
+
+### Decision
+`Chat`/`GetResponse` and `Stream` calls carry a default 120-second execution timeout (`core.DefaultTimeout`), applied automatically unless the caller already supplies a context deadline.
+
+### Rationale
+
+**Fail Fast by Default**: A hung provider connection or a stalled stream would otherwise block a caller indefinitely. A sane default timeout means "silently hangs forever" is not a failure mode users have to guard against manually.
+
+**Opt-In Escape Hatch**: Some workloads (long reasoning chains, large batch-style single calls) legitimately need more than 120 seconds, or none at all. `core.WithTimeout(d)` on the client and `.Timeout(d)` per call both allow raising the bound; `core.WithTimeout(0)` disables it entirely.
+
+**Scoped to Interactive Calls**: The timeout applies only to `Chat`/`Stream`. Embeddings, batch, file, and image calls are not bounded by it — those workloads have their own duration expectations (batch jobs can run for hours) and callers are expected to supply their own `context.WithTimeout` deadline when they want one.
+
+### Precedence
+
+```go
+func (b *ChatBuilder) effectiveTimeout(ctx context.Context) time.Duration {
+    if _, hasDeadline := ctx.Deadline(); hasDeadline {
+        return 0 // caller's ctx deadline always wins
+    }
+    if b.timeout > 0 {
+        return b.timeout // per-call ChatBuilder.Timeout() next
+    }
+    return b.client.timeout // client default (core.DefaultTimeout unless overridden)
+}
+```
+
+1. A deadline already present on the caller's `ctx` always wins — Iris never shortens or overrides it.
+2. Otherwise, a per-call `ChatBuilder.Timeout(d)` applies.
+3. Otherwise, the client's default (`core.DefaultTimeout`, or whatever `core.WithTimeout(d)` set at `NewClient` time) applies.
+
+When the Iris-applied timeout (not a caller-supplied ctx deadline) elapses, the call returns `core.ErrTimeout`, which wraps `context.DeadlineExceeded` so both `errors.Is(err, core.ErrTimeout)` and `errors.Is(err, context.DeadlineExceeded)` hold.
+
+### Migration Note
+
+Per-provider timeout options (e.g. `openai.WithTimeout`, `Config.Timeout` on each provider) are deprecated in favor of `core.WithTimeout` on the `Client`, which is provider-agnostic and composes with the precedence rules above.
+
+### Alternatives Considered
+
+**No Default Timeout**: Leave calls unbounded unless the caller sets a ctx deadline. Rejected because it silently reproduces the "hangs forever" failure mode that most callers don't think to guard against until it bites them in production.
+
+**Timeout Only at the Provider Level**: Keep timeout configuration per-provider only. Rejected because it's inconsistent across providers, doesn't compose with `core.ErrTimeout` classification, and forces callers to configure the same thing N times for N providers.
 
 ---
 

@@ -37,7 +37,7 @@ Iris solves these problems by providing:
 - Automatic retry with exponential backoff
 - Telemetry hooks for observability
 - Configurable non-fatal warning routing with `core.WithWarningHandler(...)`
-- Normalized error types across providers
+- Normalized error types across providers, including `core.ErrTimeout`, `core.ErrInvalidSchema`, and `core.ErrStructuredOutputUnsupported`, plus a `Body` field on `core.ProviderError` carrying the raw (truncated) response body
 
 ### CLI Features
 - `iris chat` - Send chat completions from the terminal
@@ -382,6 +382,31 @@ if resp.Reasoning != nil && len(resp.Reasoning.Summary) > 0 {
 }
 ```
 
+### Timeouts
+
+`Chat`/`GetResponse` and `Stream` calls have a default 120-second execution timeout (`core.DefaultTimeout`). Adjust it client-wide with `core.WithTimeout(d)`, or per-call with `.Timeout(d)`:
+
+```go
+// Client-wide: raise the default to 5 minutes
+client := core.NewClient(provider, core.WithTimeout(5*time.Minute))
+
+// Disable the default entirely (unbounded, unless ctx has its own deadline)
+client := core.NewClient(provider, core.WithTimeout(0))
+
+// Per-call override
+resp, err := client.Chat("gpt-4o").
+    User("Hello").
+    Timeout(30 * time.Second).
+    GetResponse(context.Background())
+
+if errors.Is(err, core.ErrTimeout) {
+    // errors.Is(err, context.DeadlineExceeded) also holds
+    fmt.Println("request timed out")
+}
+```
+
+Precedence: a deadline already on the caller's `ctx` always wins; otherwise the per-call `.Timeout(d)` applies; otherwise the client's default. This timeout only covers `Chat`/`Stream` — embeddings, batch, file, and image calls are not subject to it, so pass a `context.WithTimeout` deadline yourself for those. Per-provider `WithTimeout`/`Config.Timeout` options are deprecated in favor of `core.WithTimeout`.
+
 ### Streaming Responses
 
 ```go
@@ -484,6 +509,7 @@ schema := &core.JSONSchemaDefinition{
     Strict: true,
     Schema: json.RawMessage(`{
         "type": "object",
+        "additionalProperties": false,
         "properties": {
             "name": {"type": "string"},
             "age": {"type": "integer"}
@@ -499,6 +525,8 @@ resp, err := client.Chat("gpt-4o").
 
 // Output is guaranteed to match the schema
 ```
+
+`ResponseJSONSchema` is strict-by-default: it forces `schema.Strict = true` and validates the schema up front, so every object node in the schema must set `"additionalProperties": false` and list all of its properties in `"required"`. A schema that doesn't meet those constraints returns `core.ErrInvalidSchema` before any request is sent. Use `ResponseJSONSchemaNonStrict(schema)` to opt out and skip that validation. Requesting a schema against a provider or model that doesn't support structured output returns `core.ErrStructuredOutputUnsupported`, also before the call is made. Structured output is currently supported on OpenAI (both the Chat Completions and Responses API, GPT-5.x) and Google Gemini; other providers reject `ResponseJSONSchema` requests with that error. Plain `ResponseJSON()` (JSON mode) is not gated and works across providers that support `json_object`-style output.
 
 ### Conversation Management
 
@@ -803,6 +831,8 @@ secret := core.NewSecret(os.Getenv("OPENAI_API_KEY"))
 fmt.Println(secret)        // Prints: [REDACTED]
 apiKey := secret.Expose()  // Access actual value when needed
 ```
+
+`core.NewSecret` trims leading/trailing whitespace (including the trailing newlines some secret managers, like Azure Key Vault, append), so `Expose()` never returns a padded credential and `IsEmpty()` correctly treats whitespace-only values as empty. Passing an empty OpenAI key surfaces a descriptive `core.ErrUnauthorized` before any HTTP call is made.
 
 See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentation.
 

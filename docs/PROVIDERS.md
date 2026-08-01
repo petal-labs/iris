@@ -4,19 +4,21 @@ This document provides a comprehensive comparison of the AI providers supported 
 
 ## Feature Support Matrix
 
-| Provider | Chat | Streaming | Tool Calling | Reasoning | Built-in Tools | Response Chain | Embeddings | Reranking |
-|----------|------|-----------|--------------|-----------|----------------|----------------|------------|-----------|
-| OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | No | No |
-| Anthropic | Yes | Yes | Yes | No | No | No | No | No |
-| Gemini | Yes | Yes | Yes | Yes | No | No | No | No |
-| xAI (Grok) | Yes | Yes | Yes | Yes* | No | No | No | No |
-| Perplexity | Yes | Yes | Yes* | Yes* | No | No | No | No |
-| Z.ai (GLM) | Yes | Yes | Yes | Yes* | No | No | No | No |
-| Ollama | Yes | Yes | Yes* | Yes* | No | No | No | No |
-| HuggingFace | Yes | Yes | Yes | No | No | No | No | No |
-| VoyageAI | No | No | No | No | No | No | Yes | Yes |
+| Provider | Chat | Streaming | Tool Calling | Reasoning | Built-in Tools | Response Chain | Structured Output | Embeddings | Reranking |
+|----------|------|-----------|--------------|-----------|----------------|----------------|--------------------|------------|-----------|
+| OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | Yes | No | No |
+| Anthropic | Yes | Yes | Yes | No | No | No | No† | No | No |
+| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | No | No |
+| xAI (Grok) | Yes | Yes | Yes | Yes* | No | No | No† | No | No |
+| Perplexity | Yes | Yes | Yes* | Yes* | No | No | No† | No | No |
+| Z.ai (GLM) | Yes | Yes | Yes | Yes* | No | No | No† | No | No |
+| Ollama | Yes | Yes | Yes* | Yes* | No | No | No† | No | No |
+| HuggingFace | Yes | Yes | Yes | No | No | No | No† | No | No |
+| VoyageAI | No | No | No | No | No | No | N/A | Yes | Yes |
 
 *Feature availability varies by model. See model-specific tables below.
+
+†"No" means a `ResponseJSONSchema` request against this provider fails fast with `core.ErrStructuredOutputUnsupported` before being sent, rather than silently ignoring the schema (the prior behavior). Plain `ResponseJSON()` (`json_object` mode) is unaffected and is not gated by this check.
 
 ## Provider Details
 
@@ -63,6 +65,8 @@ This document provides a comprehensive comparison of the AI providers supported 
 | o1-pro | o1 Pro | Yes | No | Enhanced reasoning |
 
 **Image Generation Models**: gpt-image-1.5, gpt-image-1, gpt-image-1-mini, dall-e-3, dall-e-2, chatgpt-image-latest
+
+**Structured Output**: `ResponseJSONSchema` works on both the Chat Completions API and the Responses API (GPT-5.x), mapped to each API's native `response_format`/`text.format` shape respectively. Requesting it against a Chat Completions-only model that lacks `core.FeatureStructuredOutput` (e.g. gpt-3.5-turbo) fails with `core.ErrStructuredOutputUnsupported`.
 
 **Usage Example**:
 ```go
