@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-08-01
+
+### Added
+
+- `core.ProviderError.Body` field carrying the raw (truncated) response body, preserved when the parsed error message lacks detail
+- `core.ErrInvalidSchema` and `core.ErrStructuredOutputUnsupported` sentinel errors
+- `ChatBuilder.ResponseJSONSchemaNonStrict` to opt out of strict schema validation
+- Structured output support on the OpenAI Responses API (GPT-5.x models), previously silently dropped
+
+### Changed
+
+- `ResponseJSONSchema` is now strict by default: it forces `Strict = true` and validates the schema up front, returning `core.ErrInvalidSchema` when a schema is not strict-compatible (every object must set `additionalProperties: false` and list all properties in `required`). Opt out with `ResponseJSONSchemaNonStrict`.
+- Requesting schema-based structured output from a provider or model without support now returns `core.ErrStructuredOutputUnsupported` before the request, instead of silently returning unconstrained output. Plain `ResponseJSON()` (JSON mode) is not gated.
+- Provider error messages now include the real response body instead of generic HTTP status text
+- `core.NewSecret` trims surrounding whitespace (fixing trailing newlines from secret managers); `Secret.IsEmpty()` is whitespace-aware; an empty OpenAI API key returns a descriptive `core.ErrUnauthorized` before any request
+
+### Fixed
+
+- Preserve the wrapped error chain in provider normalization so `errors.Is` reaches `context.DeadlineExceeded` and `core.ErrTimeout` (restoring execution-timeout surfacing for real providers on both unary and streaming paths) and correctly classify timed-out requests as non-retryable
+- `core.DrainStream` no longer swallows a late streaming error and returns a false success
+- `BatchWaiter.Wait` bounds each poll by the remaining `maxWait` budget so a stuck poll cannot hang indefinitely
+
 ## [0.15.0] - 2026-07-31
 
 ### Added
