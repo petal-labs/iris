@@ -850,3 +850,39 @@ func TestGPT54MiniRoutesToResponsesAPI(t *testing.T) {
 		t.Errorf("Output = %q, want pong", resp.Output)
 	}
 }
+
+func TestResponsesAPISendsStrictSchema(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&body)
+		w.WriteHeader(200)
+		json.NewEncoder(w).Encode(responsesResponse{ID: "r", Status: "completed", OutputText: "{}"})
+	}))
+	defer srv.Close()
+
+	p := New("k", WithBaseURL(srv.URL))
+	_, err := p.Chat(context.Background(), &core.ChatRequest{
+		Model:          ModelGPT52,
+		Messages:       []core.Message{{Role: core.RoleUser, Content: "hi"}},
+		ResponseFormat: core.ResponseFormatJSONSchema,
+		JSONSchema: &core.JSONSchemaDefinition{
+			Name:   "person",
+			Strict: true,
+			Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"n":{"type":"string"}},"required":["n"]}`),
+		},
+	})
+	if err != nil {
+		t.Fatalf("Chat: %v", err)
+	}
+	text, _ := body["text"].(map[string]any)
+	format, _ := text["format"].(map[string]any)
+	if format["type"] != "json_schema" {
+		t.Fatalf("text.format.type = %v, want json_schema; body=%v", format["type"], body)
+	}
+	if format["strict"] != true {
+		t.Errorf("text.format.strict = %v, want true", format["strict"])
+	}
+	if format["name"] != "person" {
+		t.Errorf("text.format.name = %v, want person", format["name"])
+	}
+}

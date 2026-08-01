@@ -18,6 +18,22 @@ type responsesRequest struct {
 	Truncation         string                   `json:"truncation,omitempty"`
 	Stream             bool                     `json:"stream,omitempty"`
 	StreamOptions      *streamOptions           `json:"stream_options,omitempty"`
+	Text               *responsesText           `json:"text,omitempty"`
+}
+
+// responsesText configures structured output formatting for the Responses API.
+type responsesText struct {
+	Format *responsesTextFormat `json:"format,omitempty"`
+}
+
+// responsesTextFormat specifies the output format constraint sent as
+// text.format in a Responses API request. Type is "text", "json_object",
+// or "json_schema"; Name, Schema, and Strict apply only to json_schema.
+type responsesTextFormat struct {
+	Type   string          `json:"type"`
+	Name   string          `json:"name,omitempty"`
+	Schema json.RawMessage `json:"schema,omitempty"`
+	Strict *bool           `json:"strict,omitempty"`
 }
 
 // responsesToolResources contains configuration for built-in tools.

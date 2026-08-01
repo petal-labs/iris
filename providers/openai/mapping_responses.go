@@ -66,7 +66,36 @@ func buildResponsesRequest(req *core.ChatRequest, stream bool) *responsesRequest
 		}
 	}
 
+	// Map response format for structured output
+	if tf := mapResponsesTextFormat(req); tf != nil {
+		respReq.Text = &responsesText{Format: tf}
+	}
+
 	return respReq
+}
+
+// mapResponsesTextFormat converts Iris response format to the Responses API's
+// text.format shape. Mirrors mapResponseFormat in mapping.go for the Chat
+// Completions API, adjusted for the Responses API's flatter format object.
+func mapResponsesTextFormat(req *core.ChatRequest) *responsesTextFormat {
+	switch req.ResponseFormat {
+	case core.ResponseFormatJSON:
+		return &responsesTextFormat{Type: "json_object"}
+	case core.ResponseFormatJSONSchema:
+		if req.JSONSchema == nil {
+			return nil
+		}
+		strict := req.JSONSchema.Strict
+		return &responsesTextFormat{
+			Type:   "json_schema",
+			Name:   req.JSONSchema.Name,
+			Schema: req.JSONSchema.Schema,
+			Strict: &strict,
+		}
+	default:
+		// ResponseFormatText or empty: no format constraint
+		return nil
+	}
 }
 
 // buildResponsesInput creates the input for a Responses API request.
