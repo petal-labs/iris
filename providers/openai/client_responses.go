@@ -21,7 +21,7 @@ func (p *OpenAI) doResponsesChat(ctx context.Context, req *core.ChatRequest) (*c
 	// Marshal request body
 	body, err := json.Marshal(respReq)
 	if err != nil {
-		return nil, newDecodeError(err)
+		return nil, newDecodeError(err, nil)
 	}
 
 	// Create HTTP request
@@ -62,7 +62,7 @@ func (p *OpenAI) doResponsesChat(ctx context.Context, req *core.ChatRequest) (*c
 	// Parse response
 	var respResp responsesResponse
 	if err := json.Unmarshal(respBody, &respResp); err != nil {
-		return nil, newDecodeError(err)
+		return nil, newDecodeError(err, respBody)
 	}
 
 	// Map to Iris response

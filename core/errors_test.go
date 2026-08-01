@@ -246,6 +246,16 @@ func TestErrorChaining(t *testing.T) {
 	}
 }
 
+func TestProviderErrorCarriesBody(t *testing.T) {
+	e := &ProviderError{Provider: "openai", Status: 400, Message: "bad", Body: `{"detail":"nope"}`}
+	if e.Body == "" {
+		t.Fatal("Body should be populated")
+	}
+	if !strings.Contains(e.Error(), "openai") {
+		t.Errorf("Error() = %q", e.Error())
+	}
+}
+
 func TestNewTimeoutError(t *testing.T) {
 	err := newTimeoutError(120 * time.Second)
 

@@ -88,7 +88,7 @@ func (p *OpenAI) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core
 	// Marshal request body
 	body, err := json.Marshal(oaiReq)
 	if err != nil {
-		return nil, newDecodeError(err)
+		return nil, newDecodeError(err, nil)
 	}
 
 	// Create HTTP request
@@ -198,7 +198,7 @@ func (p *OpenAI) processSSEStream(
 		// Parse chunk
 		var chunk openAIStreamChunk
 		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
-			errCh <- newDecodeError(err)
+			errCh <- newDecodeError(err, []byte(payload))
 			return
 		}
 

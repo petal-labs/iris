@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/petal-labs/iris/core"
@@ -41,7 +42,7 @@ func TestOpenAIStyleProviderError(t *testing.T) {
 		{
 			name:         "fallback to status text",
 			status:       http.StatusBadGateway,
-			body:         []byte(`{}`),
+			body:         []byte{},
 			requestID:    "",
 			wantCode:     "",
 			wantMsg:      "Bad Gateway",
@@ -77,6 +78,19 @@ func TestOpenAIStyleProviderError(t *testing.T) {
 				t.Errorf("error should wrap %v", tt.wantSentinel)
 			}
 		})
+	}
+}
+
+func TestOpenAIStyleErrorFallsBackToBody(t *testing.T) {
+	// Body is valid text but NOT the {"error":{"message"}} envelope.
+	body := []byte(`{"detail":"model gpt-x does not exist"}`)
+	err := OpenAIStyleProviderError("openai", 404, body, "req-1")
+	var pe *core.ProviderError
+	if !errors.As(err, &pe) {
+		t.Fatal("want *core.ProviderError")
+	}
+	if !strings.Contains(pe.Message+pe.Body, "does not exist") {
+		t.Errorf("real body text lost: msg=%q body=%q", pe.Message, pe.Body)
 	}
 }
 

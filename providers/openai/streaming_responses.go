@@ -22,7 +22,7 @@ func (p *OpenAI) doResponsesStreamChat(ctx context.Context, req *core.ChatReques
 	// Marshal request body
 	body, err := json.Marshal(respReq)
 	if err != nil {
-		return nil, newDecodeError(err)
+		return nil, newDecodeError(err, nil)
 	}
 
 	// Create HTTP request
@@ -152,7 +152,7 @@ func (p *OpenAI) processResponsesStream(
 		// Parse event
 		var event responsesStreamEvent
 		if err := json.Unmarshal([]byte(payload), &event); err != nil {
-			errCh <- newDecodeError(err)
+			errCh <- newDecodeError(err, []byte(payload))
 			return
 		}
 

@@ -14,11 +14,16 @@ type ProviderError struct {
 	RequestID string
 	Code      string
 	Message   string
+	Body      string // raw response body (truncated); preserved when Message lacks detail
 	Err       error
 }
 
 // Error implements the error interface.
 func (e *ProviderError) Error() string {
+	// Omit the (status,code) suffix for pure network/decode errors.
+	if e.Status == 0 && e.Code == "" {
+		return fmt.Sprintf("%s: %s", e.Provider, e.Message)
+	}
 	if e.RequestID != "" {
 		return fmt.Sprintf("%s: %s (status=%d, code=%s, request_id=%s)",
 			e.Provider, e.Message, e.Status, e.Code, e.RequestID)

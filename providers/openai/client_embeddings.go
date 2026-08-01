@@ -53,7 +53,7 @@ func (p *OpenAI) CreateEmbeddings(ctx context.Context, req *core.EmbeddingReques
 
 	var oaiResp openAIEmbeddingResponse
 	if err := json.Unmarshal(respBody, &oaiResp); err != nil {
-		return nil, newDecodeError(err)
+		return nil, newDecodeError(err, respBody)
 	}
 
 	return mapEmbeddingResponse(&oaiResp, req), nil
