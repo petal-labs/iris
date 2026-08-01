@@ -1735,3 +1735,84 @@ func TestStructuredOutputUnsupportedGateRunsBeforeSchemaValidation(t *testing.T)
 		t.Error("err should not be ErrInvalidSchema; capability gate must run first")
 	}
 }
+
+// modelGatedProvider is a Provider that supports FeatureStructuredOutput at
+// the provider level, but whose per-model catalog (Models()) may declare
+// individual models that lack the capability. It is used to test the
+// model-aware structured output gate added on top of the provider-level gate.
+type modelGatedProvider struct {
+	models []ModelInfo
+}
+
+func (p modelGatedProvider) ID() string          { return "modelgated" }
+func (p modelGatedProvider) Models() []ModelInfo { return p.models }
+func (p modelGatedProvider) Supports(feature Feature) bool {
+	return feature == FeatureStructuredOutput
+}
+
+func (p modelGatedProvider) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+	return &ChatResponse{ID: "resp-1", Model: req.Model, Output: `{"name":"John"}`}, nil
+}
+
+func (p modelGatedProvider) StreamChat(ctx context.Context, req *ChatRequest) (*ChatStream, error) {
+	ch := make(chan ChatChunk, 1)
+	errCh := make(chan error, 1)
+	finalCh := make(chan *ChatResponse, 1)
+
+	go func() {
+		ch <- ChatChunk{Delta: "Hello"}
+		close(ch)
+		finalCh <- &ChatResponse{ID: "resp-1", Model: req.Model, Output: "Hello!"}
+		close(finalCh)
+		close(errCh)
+	}()
+
+	return &ChatStream{Ch: ch, Err: errCh, Final: finalCh}, nil
+}
+
+// modelGatedCatalog is shared by the model-aware structured output gate
+// tests below. "model-with-so" declares FeatureStructuredOutput;
+// "model-without-so" is in the catalog but lacks it.
+var modelGatedCatalog = []ModelInfo{
+	{ID: "model-with-so", DisplayName: "With Structured Output", Capabilities: []Feature{FeatureChat, FeatureStructuredOutput}},
+	{ID: "model-without-so", DisplayName: "Without Structured Output", Capabilities: []Feature{FeatureChat}},
+}
+
+func TestStructuredOutputUnsupportedForModelWithoutCapability(t *testing.T) {
+	// Provider supports structured output overall, but the specific
+	// requested model is in the catalog and does NOT declare the
+	// capability. This must be rejected even though the provider-level
+	// check passes.
+	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
+	_, err := c.Chat("model-without-so").User("hi").ResponseJSON().GetResponse(context.Background())
+	if !errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	}
+}
+
+func TestStructuredOutputAllowedForModelWithCapability(t *testing.T) {
+	// Provider supports structured output overall, and the specific
+	// requested model is in the catalog and DOES declare the capability.
+	// This must proceed without ErrStructuredOutputUnsupported.
+	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
+	_, err := c.Chat("model-with-so").User("hi").ResponseJSON().GetResponse(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestStructuredOutputAllowedForModelNotInCatalog(t *testing.T) {
+	// The requested model is unknown to the provider's static catalog
+	// (e.g. a brand-new or custom-deployment model). Since the
+	// provider-level check already passed, the model-level gate must NOT
+	// reject it purely for being absent from Models() -- it falls back to
+	// allowing the request.
+	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
+	_, err := c.Chat("model-unknown").User("hi").ResponseJSON().GetResponse(context.Background())
+	if errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want no ErrStructuredOutputUnsupported for unknown model", err)
+	}
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}

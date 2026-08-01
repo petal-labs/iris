@@ -510,6 +510,23 @@ func (b *ChatBuilder) validate() error {
 			return fmt.Errorf("%w: provider %s model %s",
 				ErrStructuredOutputUnsupported, b.client.provider.ID(), b.req.Model)
 		}
+
+		// Model-level gate: the provider supports structured output overall,
+		// but the specific requested model may not (e.g. OpenAI supports it,
+		// but gpt-3.5-turbo / gpt-4 do not). If the model is present in the
+		// provider's catalog and lacks the capability, reject it. If the
+		// model is NOT present in the catalog (unknown, brand-new, or a
+		// custom deployment not yet reflected in the static catalog), fall
+		// back to allowing it since the provider-level check already passed.
+		for _, m := range b.client.provider.Models() {
+			if m.ID == b.req.Model {
+				if !m.HasCapability(FeatureStructuredOutput) {
+					return fmt.Errorf("%w: provider %s model %s",
+						ErrStructuredOutputUnsupported, b.client.provider.ID(), b.req.Model)
+				}
+				break
+			}
+		}
 	}
 
 	// Strict structured output requires a schema shape the provider can
