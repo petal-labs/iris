@@ -1,5 +1,7 @@
 package core
 
+import "strings"
+
 // Secret wraps a sensitive string value with protection against accidental logging.
 // The underlying value is never exposed through String(), GoString(), or JSON marshaling.
 //
@@ -16,8 +18,11 @@ type Secret struct {
 }
 
 // NewSecret creates a new Secret from a string value.
+// Surrounding whitespace (including trailing newlines commonly introduced by
+// secret managers such as Azure Key Vault) is trimmed so downstream
+// comparisons and HTTP headers never carry accidental corruption.
 func NewSecret(value string) Secret {
-	return Secret{value: value}
+	return Secret{value: strings.TrimSpace(value)}
 }
 
 // String returns a redacted placeholder.
@@ -54,7 +59,7 @@ func (s Secret) Expose() string {
 	return s.value
 }
 
-// IsEmpty returns true if the secret value is empty.
+// IsEmpty returns true if the secret value is empty or whitespace-only.
 func (s Secret) IsEmpty() bool {
-	return s.value == ""
+	return strings.TrimSpace(s.value) == ""
 }

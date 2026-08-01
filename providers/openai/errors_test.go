@@ -118,9 +118,10 @@ func TestNormalizeErrorInvalidJSON(t *testing.T) {
 		t.Fatal("expected ProviderError")
 	}
 
-	// Should use HTTP status text as fallback
-	if pErr.Message != "Bad Request" {
-		t.Errorf("Message = %q, want %q", pErr.Message, "Bad Request")
+	// Should surface the real (non-empty) body instead of the generic
+	// HTTP status text.
+	if pErr.Message != "not json" {
+		t.Errorf("Message = %q, want %q", pErr.Message, "not json")
 	}
 }
 
@@ -176,7 +177,7 @@ func TestNewNetworkError(t *testing.T) {
 
 func TestNewDecodeError(t *testing.T) {
 	originalErr := errors.New("unexpected EOF")
-	err := newDecodeError(originalErr)
+	err := newDecodeError(originalErr, []byte(`{"malformed`))
 
 	var pErr *core.ProviderError
 	if !errors.As(err, &pErr) {
@@ -185,5 +186,9 @@ func TestNewDecodeError(t *testing.T) {
 
 	if !errors.Is(err, core.ErrDecode) {
 		t.Error("expected error to wrap ErrDecode")
+	}
+
+	if pErr.Body != `{"malformed` {
+		t.Errorf("Body = %q, want %q", pErr.Body, `{"malformed`)
 	}
 }

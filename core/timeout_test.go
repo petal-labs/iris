@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -238,5 +239,33 @@ func TestStreamCallerDeadlineNotRemapped(t *testing.T) {
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("err = %v, want context.DeadlineExceeded", err)
+	}
+}
+
+// wrappingTimeoutProvider simulates a real provider that wraps a timed-out
+// transport error the way normalize.NetworkError does.
+type wrappingTimeoutProvider struct{}
+
+func (wrappingTimeoutProvider) ID() string            { return "wrapping" }
+func (wrappingTimeoutProvider) Models() []ModelInfo   { return nil }
+func (wrappingTimeoutProvider) Supports(Feature) bool { return false }
+func (wrappingTimeoutProvider) Chat(ctx context.Context, _ *ChatRequest) (*ChatResponse, error) {
+	<-ctx.Done()
+	// Emulate NetworkError chain: sentinel + underlying ctx error.
+	return nil, &ProviderError{Provider: "wrapping", Message: ctx.Err().Error(),
+		Err: fmt.Errorf("%w: %w", ErrNetwork, ctx.Err())}
+}
+func (wrappingTimeoutProvider) StreamChat(ctx context.Context, _ *ChatRequest) (*ChatStream, error) {
+	<-ctx.Done()
+	return nil, &ProviderError{Provider: "wrapping", Message: ctx.Err().Error(),
+		Err: fmt.Errorf("%w: %w", ErrNetwork, ctx.Err())}
+}
+
+func TestGetResponseTimeoutSurfacesThroughWrappedNetworkError(t *testing.T) {
+	c := NewClient(wrappingTimeoutProvider{}, WithTimeout(50*time.Millisecond),
+		WithRetryPolicy(noRetryPolicy{}))
+	_, err := c.Chat("m").User("hi").GetResponse(context.Background())
+	if !errors.Is(err, ErrTimeout) {
+		t.Fatalf("err = %v, want ErrTimeout even when provider wraps via NetworkError", err)
 	}
 }

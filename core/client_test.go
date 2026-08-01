@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"sync"
@@ -30,7 +31,7 @@ func (m *mockProvider) Models() []ModelInfo {
 }
 
 func (m *mockProvider) Supports(feature Feature) bool {
-	return feature == FeatureChat || feature == FeatureChatStreaming
+	return feature == FeatureChat || feature == FeatureChatStreaming || feature == FeatureStructuredOutput
 }
 
 func (m *mockProvider) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
@@ -1554,5 +1555,322 @@ func TestCloneWithResponseFormatJSON(t *testing.T) {
 
 	if clone.req.ResponseFormat != ResponseFormatJSON {
 		t.Errorf("clone.ResponseFormat = %v, want %v", clone.req.ResponseFormat, ResponseFormatJSON)
+	}
+}
+
+func TestResponseJSONSchemaDefaultsStrict(t *testing.T) {
+	b := NewClient(&mockProvider{}).Chat("m").
+		ResponseJSONSchema(&JSONSchemaDefinition{Name: "x", Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{},"required":[]}`)})
+	if !b.req.JSONSchema.Strict {
+		t.Error("ResponseJSONSchema should default Strict=true")
+	}
+}
+
+func TestResponseJSONSchemaNonStrictOptOut(t *testing.T) {
+	b := NewClient(&mockProvider{}).Chat("m").
+		ResponseJSONSchemaNonStrict(&JSONSchemaDefinition{Name: "x", Schema: json.RawMessage(`{}`)})
+	if b.req.JSONSchema.Strict {
+		t.Error("ResponseJSONSchemaNonStrict should set Strict=false")
+	}
+}
+
+func TestResponseJSONSchemaForcesStrictEvenIfCallerSetFalse(t *testing.T) {
+	schema := &JSONSchemaDefinition{
+		Name:   "x",
+		Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{},"required":[]}`),
+		Strict: false,
+	}
+	NewClient(&mockProvider{}).Chat("m").ResponseJSONSchema(schema)
+	if !schema.Strict {
+		t.Error("ResponseJSONSchema should force Strict=true even if the caller passed false")
+	}
+}
+
+func TestResponseJSONSchemaNilSchemaDoesNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("ResponseJSONSchema(nil) panicked: %v", r)
+		}
+	}()
+	b := NewClient(&mockProvider{}).Chat("m").ResponseJSONSchema(nil)
+	if b.req.JSONSchema != nil {
+		t.Error("req.JSONSchema should remain nil when passed nil")
+	}
+}
+
+func TestResponseJSONSchemaNonStrictNilSchemaDoesNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("ResponseJSONSchemaNonStrict(nil) panicked: %v", r)
+		}
+	}()
+	b := NewClient(&mockProvider{}).Chat("m").ResponseJSONSchemaNonStrict(nil)
+	if b.req.JSONSchema != nil {
+		t.Error("req.JSONSchema should remain nil when passed nil")
+	}
+}
+
+func TestGetResponseRejectsNonStrictCompatibleSchema(t *testing.T) {
+	ctx := context.Background()
+	provider := &mockProvider{id: "test"}
+	client := NewClient(provider)
+
+	_, err := client.Chat("gpt-4").
+		User("Extract person info").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(ctx)
+
+	if !errors.Is(err, ErrInvalidSchema) {
+		t.Fatalf("err = %v, want ErrInvalidSchema", err)
+	}
+}
+
+func TestGetResponseAcceptsStrictCompatibleSchema(t *testing.T) {
+	ctx := context.Background()
+	provider := &mockProvider{id: "test", chatFunc: func(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+		return &ChatResponse{Output: `{"name":"John"}`}, nil
+	}}
+	client := NewClient(provider)
+
+	_, err := client.Chat("gpt-4").
+		User("Extract person info").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(ctx)
+
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestGetResponseSkipsValidationForNonStrictSchema(t *testing.T) {
+	ctx := context.Background()
+	provider := &mockProvider{id: "test", chatFunc: func(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+		return &ChatResponse{Output: `{"name":"John"}`}, nil
+	}}
+	client := NewClient(provider)
+
+	_, err := client.Chat("gpt-4").
+		User("Extract person info").
+		ResponseJSONSchemaNonStrict(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(ctx)
+
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+// nonStructuredProvider is a Provider whose Supports reports false for
+// FeatureStructuredOutput (and every other feature). Its Chat and StreamChat
+// methods fail the test if invoked, proving the capability gate in
+// validate() short-circuits before the provider is ever called.
+type nonStructuredProvider struct {
+	t *testing.T
+}
+
+func (p nonStructuredProvider) ID() string          { return "nonstructured" }
+func (p nonStructuredProvider) Models() []ModelInfo { return nil }
+func (p nonStructuredProvider) Supports(feature Feature) bool {
+	return false
+}
+
+func (p nonStructuredProvider) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+	if p.t != nil {
+		p.t.Fatal("Chat should not be called when the structured output capability gate fires")
+	}
+	return nil, errors.New("nonStructuredProvider.Chat should not be reached")
+}
+
+func (p nonStructuredProvider) StreamChat(ctx context.Context, req *ChatRequest) (*ChatStream, error) {
+	if p.t != nil {
+		p.t.Fatal("StreamChat should not be called when the structured output capability gate fires")
+	}
+	return nil, errors.New("nonStructuredProvider.StreamChat should not be reached")
+}
+
+// nonStructuredButChattyProvider reports false for FeatureStructuredOutput,
+// like nonStructuredProvider, but actually implements Chat/StreamChat so
+// requests that are NOT hard-gated (plain ResponseJSON) can complete and
+// prove the request reached the provider instead of erroring in validate().
+type nonStructuredButChattyProvider struct{}
+
+func (p nonStructuredButChattyProvider) ID() string          { return "nonstructured-chatty" }
+func (p nonStructuredButChattyProvider) Models() []ModelInfo { return nil }
+func (p nonStructuredButChattyProvider) Supports(feature Feature) bool {
+	return feature == FeatureChat
+}
+
+func (p nonStructuredButChattyProvider) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+	return &ChatResponse{ID: "resp-1", Model: req.Model, Output: `{"ok":true}`}, nil
+}
+
+func (p nonStructuredButChattyProvider) StreamChat(ctx context.Context, req *ChatRequest) (*ChatStream, error) {
+	ch := make(chan ChatChunk, 1)
+	errCh := make(chan error, 1)
+	finalCh := make(chan *ChatResponse, 1)
+
+	go func() {
+		ch <- ChatChunk{Delta: "ok"}
+		close(ch)
+		finalCh <- &ChatResponse{ID: "resp-1", Model: req.Model, Output: "ok"}
+		close(finalCh)
+		close(errCh)
+	}()
+
+	return &ChatStream{Ch: ch, Err: errCh, Final: finalCh}, nil
+}
+
+func TestResponseJSONNotGatedForUnsupportedProvider(t *testing.T) {
+	// Plain json_object mode has no schema/shape contract to violate, so it
+	// must NOT be hard-gated by the FeatureStructuredOutput capability check
+	// even when the provider lacks that feature. The request must reach the
+	// provider; any incompatibility surfaces as the provider's own error.
+	c := NewClient(nonStructuredButChattyProvider{})
+	_, err := c.Chat("m").User("hi").ResponseJSON().GetResponse(context.Background())
+	if errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want no ErrStructuredOutputUnsupported for ResponseJSON", err)
+	}
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestStructuredOutputUnsupportedIsHardErrorForJSONSchema(t *testing.T) {
+	c := NewClient(nonStructuredProvider{t: t})
+	_, err := c.Chat("m").User("hi").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(context.Background())
+	if !errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	}
+}
+
+func TestStructuredOutputUnsupportedGateRunsBeforeSchemaValidation(t *testing.T) {
+	// An invalid strict schema against an unsupported provider must surface
+	// ErrStructuredOutputUnsupported, not ErrInvalidSchema, proving the
+	// capability gate runs first.
+	c := NewClient(nonStructuredProvider{t: t})
+	_, err := c.Chat("m").User("hi").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(context.Background())
+	if !errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	}
+	if errors.Is(err, ErrInvalidSchema) {
+		t.Error("err should not be ErrInvalidSchema; capability gate must run first")
+	}
+}
+
+// modelGatedProvider is a Provider that supports FeatureStructuredOutput at
+// the provider level, but whose per-model catalog (Models()) may declare
+// individual models that lack the capability. It is used to test the
+// model-aware structured output gate added on top of the provider-level gate.
+type modelGatedProvider struct {
+	models []ModelInfo
+}
+
+func (p modelGatedProvider) ID() string          { return "modelgated" }
+func (p modelGatedProvider) Models() []ModelInfo { return p.models }
+func (p modelGatedProvider) Supports(feature Feature) bool {
+	return feature == FeatureStructuredOutput
+}
+
+func (p modelGatedProvider) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
+	return &ChatResponse{ID: "resp-1", Model: req.Model, Output: `{"name":"John"}`}, nil
+}
+
+func (p modelGatedProvider) StreamChat(ctx context.Context, req *ChatRequest) (*ChatStream, error) {
+	ch := make(chan ChatChunk, 1)
+	errCh := make(chan error, 1)
+	finalCh := make(chan *ChatResponse, 1)
+
+	go func() {
+		ch <- ChatChunk{Delta: "Hello"}
+		close(ch)
+		finalCh <- &ChatResponse{ID: "resp-1", Model: req.Model, Output: "Hello!"}
+		close(finalCh)
+		close(errCh)
+	}()
+
+	return &ChatStream{Ch: ch, Err: errCh, Final: finalCh}, nil
+}
+
+// modelGatedCatalog is shared by the model-aware structured output gate
+// tests below. "model-with-so" declares FeatureStructuredOutput;
+// "model-without-so" is in the catalog but lacks it.
+var modelGatedCatalog = []ModelInfo{
+	{ID: "model-with-so", DisplayName: "With Structured Output", Capabilities: []Feature{FeatureChat, FeatureStructuredOutput}},
+	{ID: "model-without-so", DisplayName: "Without Structured Output", Capabilities: []Feature{FeatureChat}},
+}
+
+func TestStructuredOutputUnsupportedForModelWithoutCapability(t *testing.T) {
+	// Provider supports structured output overall, but the specific
+	// requested model is in the catalog and does NOT declare the
+	// capability. Schema-based structured output (ResponseJSONSchema) must
+	// be rejected even though the provider-level check passes.
+	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
+	_, err := c.Chat("model-without-so").User("hi").
+		ResponseJSONSchema(&JSONSchemaDefinition{
+			Name:   "person",
+			Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"}},"required":["name"]}`),
+		}).
+		GetResponse(context.Background())
+	if !errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want ErrStructuredOutputUnsupported", err)
+	}
+}
+
+func TestResponseJSONNotGatedForModelWithoutCapability(t *testing.T) {
+	// Plain json_object mode (ResponseJSON) is not hard-gated by the
+	// model-level capability check either, even when the specific model is
+	// in the catalog and lacks FeatureStructuredOutput.
+	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
+	_, err := c.Chat("model-without-so").User("hi").ResponseJSON().GetResponse(context.Background())
+	if errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want no ErrStructuredOutputUnsupported for ResponseJSON", err)
+	}
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestStructuredOutputAllowedForModelWithCapability(t *testing.T) {
+	// Provider supports structured output overall, and the specific
+	// requested model is in the catalog and DOES declare the capability.
+	// This must proceed without ErrStructuredOutputUnsupported.
+	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
+	_, err := c.Chat("model-with-so").User("hi").ResponseJSON().GetResponse(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestStructuredOutputAllowedForModelNotInCatalog(t *testing.T) {
+	// The requested model is unknown to the provider's static catalog
+	// (e.g. a brand-new or custom-deployment model). Since the
+	// provider-level check already passed, the model-level gate must NOT
+	// reject it purely for being absent from Models() -- it falls back to
+	// allowing the request.
+	c := NewClient(modelGatedProvider{models: modelGatedCatalog})
+	_, err := c.Chat("model-unknown").User("hi").ResponseJSON().GetResponse(context.Background())
+	if errors.Is(err, ErrStructuredOutputUnsupported) {
+		t.Fatalf("err = %v, want no ErrStructuredOutputUnsupported for unknown model", err)
+	}
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
 	}
 }

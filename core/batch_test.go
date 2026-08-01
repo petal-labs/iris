@@ -116,6 +116,33 @@ func (m *mockBatchProvider) ListBatches(_ context.Context, _ int) ([]BatchInfo, 
 	return nil, nil
 }
 
+// stuckBatchProvider implements BatchProvider with a GetBatchStatus that
+// blocks until its context is cancelled, simulating a hung network call.
+// Used to verify that BatchWaiter.Wait bounds each poll by the remaining
+// maxWait budget instead of hanging indefinitely.
+type stuckBatchProvider struct{}
+
+func (s *stuckBatchProvider) CreateBatch(_ context.Context, _ []BatchRequest) (BatchID, error) {
+	return "batch_123", nil
+}
+
+func (s *stuckBatchProvider) GetBatchStatus(ctx context.Context, _ BatchID) (*BatchInfo, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func (s *stuckBatchProvider) GetBatchResults(_ context.Context, _ BatchID) ([]BatchResult, error) {
+	return nil, nil
+}
+
+func (s *stuckBatchProvider) CancelBatch(_ context.Context, _ BatchID) error {
+	return nil
+}
+
+func (s *stuckBatchProvider) ListBatches(_ context.Context, _ int) ([]BatchInfo, error) {
+	return nil, nil
+}
+
 func TestAsBatchProvider(t *testing.T) {
 	t.Run("supports batch", func(t *testing.T) {
 		mock := &fullBatchProvider{}
@@ -244,6 +271,25 @@ func TestBatchWaiter(t *testing.T) {
 			t.Errorf("Wait() error = %v, want %v", err, expectedErr)
 		}
 	})
+}
+
+func TestBatchWaiterDoesNotHangOnStuckPoll(t *testing.T) {
+	p := &stuckBatchProvider{}
+	w := NewBatchWaiter(p).
+		WithPollInterval(10 * time.Millisecond).
+		WithMaxWait(100 * time.Millisecond)
+
+	start := time.Now()
+	_, err := w.Wait(context.Background(), "batch-1")
+	if err == nil {
+		t.Fatal("want timeout error")
+	}
+	if elapsed := time.Since(start); elapsed > 2*time.Second {
+		t.Fatalf("Wait hung for %v; maxWait budget not enforced per-poll", elapsed)
+	}
+	if !errors.Is(err, ErrBatchTimeout) {
+		t.Errorf("Wait() error = %v, want ErrBatchTimeout", err)
+	}
 }
 
 func TestBatchWaiterWaitAndCollect(t *testing.T) {

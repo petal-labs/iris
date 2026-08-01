@@ -41,7 +41,7 @@ func (p *Ollama) doChat(ctx context.Context, req *core.ChatRequest) (*core.ChatR
 			Provider: "ollama",
 			Code:     "network_error",
 			Message:  err.Error(),
-			Err:      core.ErrNetwork,
+			Err:      fmt.Errorf("%w: %w", core.ErrNetwork, err),
 		}
 	}
 	defer resp.Body.Close()

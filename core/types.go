@@ -43,7 +43,8 @@ type JSONSchemaDefinition struct {
 	Schema json.RawMessage `json:"schema"`
 	// Strict enables strict schema validation (recommended).
 	// When true, the model will always output valid JSON matching the schema.
-	Strict bool `json:"strict,omitempty"`
+	// The tag omits omitempty so an explicit false is still marshaled.
+	Strict bool `json:"strict"`
 }
 
 // APIEndpoint represents which API endpoint a model uses.

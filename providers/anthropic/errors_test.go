@@ -77,7 +77,7 @@ func TestNormalizeError(t *testing.T) {
 			body:      []byte(`not json`),
 			requestID: "",
 			wantErr:   core.ErrServer,
-			wantMsg:   "Internal Server Error",
+			wantMsg:   "not json",
 			wantCode:  "unknown_error",
 		},
 	}

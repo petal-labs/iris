@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -79,6 +80,10 @@ func AsBatchProvider(p Provider) (BatchProvider, bool) {
 }
 
 // BatchWaiter provides utilities for waiting on batch completion.
+//
+// BatchWaiter polls BatchProvider directly and does not go through
+// core.Client, so core.WithTimeout does not apply; bound Wait via
+// WithMaxWait and/or a context deadline passed by the caller.
 type BatchWaiter struct {
 	provider     BatchProvider
 	pollInterval time.Duration
@@ -109,14 +114,36 @@ func (w *BatchWaiter) WithMaxWait(d time.Duration) *BatchWaiter {
 
 // Wait blocks until the batch completes or the context is cancelled.
 // Returns the final batch info, or an error if the wait times out or fails.
+//
+// Each poll is individually bounded by the remaining maxWait budget: a
+// GetBatchStatus call that hangs (e.g. a stuck network request) cannot
+// exceed the overall deadline, since the per-poll context is derived from
+// that deadline rather than from the caller's context alone.
 func (w *BatchWaiter) Wait(ctx context.Context, id BatchID) (*BatchInfo, error) {
 	deadline := time.Now().Add(w.maxWait)
 	ticker := time.NewTicker(w.pollInterval)
 	defer ticker.Stop()
 
 	for {
-		info, err := w.provider.GetBatchStatus(ctx, id)
+		// Bound this poll by the remaining maxWait budget (capped further
+		// by the caller's own ctx deadline, if any). context.WithDeadline
+		// automatically uses the earlier of the two deadlines, so a
+		// caller-supplied deadline shorter than maxWait still wins.
+		pollCtx, cancel := context.WithDeadline(ctx, deadline)
+		info, err := w.provider.GetBatchStatus(pollCtx, id)
+		cancel()
+
 		if err != nil {
+			// The caller's own context expiring/cancelling takes priority
+			// over our internally imposed deadline.
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			// pollCtx timed out against our maxWait deadline (this is what
+			// bounds a stuck/hanging GetBatchStatus call).
+			if errors.Is(err, context.DeadlineExceeded) {
+				return nil, ErrBatchTimeout
+			}
 			return nil, err
 		}
 

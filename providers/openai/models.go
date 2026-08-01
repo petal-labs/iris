@@ -89,6 +89,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.6",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -102,6 +103,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.6 Luna",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -115,6 +117,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.6 Sol",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -128,6 +131,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.6 Terra",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -142,6 +146,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.5",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -155,6 +160,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.5 Pro",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -169,6 +175,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.3 Codex",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -182,6 +189,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.3 Codex Spark",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -196,6 +204,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.4",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -209,6 +218,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.4 Pro",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -222,6 +232,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.4 Mini",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -235,6 +246,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.4 Nano",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -249,6 +261,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.2",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -262,6 +275,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.2 Pro",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -275,6 +289,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.2 Codex",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -289,6 +304,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.1",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -302,6 +318,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.1 Codex",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -315,6 +332,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.1 Codex Mini",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -328,6 +346,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5.1 Codex Max",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -342,6 +361,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -355,6 +375,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5 Mini",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -368,6 +389,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5 Nano",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -380,6 +402,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5 Pro",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -393,6 +416,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5 Codex",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -406,6 +430,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-5 Thinking",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -420,6 +445,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-4.1",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -432,6 +458,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-4.1 Mini",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -444,6 +471,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-4.1 Nano",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -457,6 +485,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-4o",
 		APIEndpoint: core.APIEndpointCompletions,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -467,6 +496,7 @@ var models = []core.ModelInfo{
 		DisplayName: "GPT-4o Mini",
 		APIEndpoint: core.APIEndpointCompletions,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -529,6 +559,7 @@ var models = []core.ModelInfo{
 		DisplayName: "o4-mini",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -542,6 +573,7 @@ var models = []core.ModelInfo{
 		DisplayName: "o4-mini Deep Research",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -555,6 +587,7 @@ var models = []core.ModelInfo{
 		DisplayName: "o3",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -568,6 +601,7 @@ var models = []core.ModelInfo{
 		DisplayName: "o3-pro",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -581,6 +615,7 @@ var models = []core.ModelInfo{
 		DisplayName: "o3-mini",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -594,6 +629,7 @@ var models = []core.ModelInfo{
 		DisplayName: "o1",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
@@ -606,6 +642,7 @@ var models = []core.ModelInfo{
 		DisplayName: "o1 Pro",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,

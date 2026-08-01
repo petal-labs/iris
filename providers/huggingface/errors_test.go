@@ -69,7 +69,7 @@ func TestNormalizeError(t *testing.T) {
 			body:         []byte(`{}`),
 			requestID:    "",
 			wantCode:     "",
-			wantMsg:      "Bad Gateway",
+			wantMsg:      "{}",
 			wantSentinel: core.ErrServer,
 		},
 		{
@@ -78,7 +78,7 @@ func TestNormalizeError(t *testing.T) {
 			body:         []byte(`not json`),
 			requestID:    "req-def",
 			wantCode:     "",
-			wantMsg:      "Bad Request",
+			wantMsg:      "not json",
 			wantSentinel: core.ErrBadRequest,
 		},
 		{
@@ -96,7 +96,7 @@ func TestNormalizeError(t *testing.T) {
 			body:         []byte(`{}`),
 			requestID:    "",
 			wantCode:     "",
-			wantMsg:      "I'm a teapot",
+			wantMsg:      "{}",
 			wantSentinel: core.ErrServer,
 		},
 	}

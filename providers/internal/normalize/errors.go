@@ -3,10 +3,26 @@ package normalize
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// maxBodyLen caps how much of a raw response body is retained on
+// ProviderError.Body so oversized error pages don't bloat logs.
+const maxBodyLen = 4096
+
+// truncateBody trims and caps a raw response body for inclusion on
+// ProviderError.Body.
+func truncateBody(body []byte) string {
+	s := strings.TrimSpace(string(body))
+	if len(s) > maxBodyLen {
+		return s[:maxBodyLen] + "…(truncated)"
+	}
+	return s
+}
 
 // openAIStyleErrorResponse represents providers that return:
 // {"error":{"message":"...","type":"...","code":"..."}}
@@ -24,8 +40,13 @@ func OpenAIStyleProviderError(provider string, status int, body []byte, requestI
 	_ = json.Unmarshal(body, &errResp)
 
 	message := errResp.Error.Message
+	bodyStr := truncateBody(body)
 	if message == "" {
-		message = http.StatusText(status)
+		if bodyStr != "" {
+			message = bodyStr // surface the real body instead of http.StatusText
+		} else {
+			message = http.StatusText(status)
+		}
 	}
 
 	code := errResp.Error.Code
@@ -33,7 +54,9 @@ func OpenAIStyleProviderError(provider string, status int, body []byte, requestI
 		code = errResp.Error.Type
 	}
 
-	return ProviderError(provider, status, requestID, code, message, SentinelForStatus(status))
+	pe := ProviderError(provider, status, requestID, code, message, SentinelForStatus(status))
+	pe.(*core.ProviderError).Body = bodyStr
+	return pe
 }
 
 // NetworkError wraps transport failures as provider-specific network errors.
@@ -41,7 +64,7 @@ func NetworkError(provider string, err error) error {
 	return &core.ProviderError{
 		Provider: provider,
 		Message:  err.Error(),
-		Err:      core.ErrNetwork,
+		Err:      fmt.Errorf("%w: %w", core.ErrNetwork, err),
 	}
 }
 
@@ -50,7 +73,20 @@ func DecodeError(provider string, err error) error {
 	return &core.ProviderError{
 		Provider: provider,
 		Message:  err.Error(),
-		Err:      core.ErrDecode,
+		Err:      fmt.Errorf("%w: %w", core.ErrDecode, err),
+	}
+}
+
+// DecodeErrorWithBody wraps decode/parsing failures as provider-specific
+// decode errors, additionally preserving the raw response body (truncated)
+// that failed to decode so callers can inspect what the provider actually
+// sent back.
+func DecodeErrorWithBody(provider string, err error, body []byte) error {
+	return &core.ProviderError{
+		Provider: provider,
+		Message:  err.Error(),
+		Body:     truncateBody(body),
+		Err:      fmt.Errorf("%w: %w", core.ErrDecode, err),
 	}
 }
 

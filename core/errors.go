@@ -14,11 +14,16 @@ type ProviderError struct {
 	RequestID string
 	Code      string
 	Message   string
+	Body      string // raw response body (truncated); preserved when Message lacks detail
 	Err       error
 }
 
 // Error implements the error interface.
 func (e *ProviderError) Error() string {
+	// Omit the (status,code) suffix for pure network/decode errors.
+	if e.Status == 0 && e.Code == "" {
+		return fmt.Sprintf("%s: %s", e.Provider, e.Message)
+	}
 	if e.RequestID != "" {
 		return fmt.Sprintf("%s: %s (status=%d, code=%s, request_id=%s)",
 			e.Provider, e.Message, e.Status, e.Code, e.RequestID)
@@ -56,6 +61,19 @@ var (
 	ErrModelRequired = errors.New("model required: pass a model ID to Client.Chat(), e.g., client.Chat(\"gpt-4\")")
 	ErrNoMessages    = errors.New("no messages: add at least one message using .System(), .User(), or .Assistant()")
 )
+
+// ErrInvalidSchema indicates a JSON Schema is not compatible with strict
+// structured output mode (e.g., missing "additionalProperties": false or a
+// "required" array that does not cover all declared properties).
+var ErrInvalidSchema = errors.New("invalid json schema for strict structured output")
+
+// ErrStructuredOutputUnsupported indicates a request asked for JSON or
+// JSON-Schema structured output (ResponseFormatJSON or
+// ResponseFormatJSONSchema) targeting a provider that does not support
+// core.FeatureStructuredOutput. validate() returns this before the request
+// is sent so callers fail fast instead of silently receiving unconstrained
+// output.
+var ErrStructuredOutputUnsupported = errors.New("structured output not supported by this provider or model")
 
 // ErrTimeout indicates an Iris-imposed execution timeout elapsed before the
 // provider call completed. It wraps context.DeadlineExceeded, so

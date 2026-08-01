@@ -29,7 +29,8 @@ func newNetworkError(err error) error {
 	return normalize.NetworkError("openai", err)
 }
 
-// newDecodeError creates a ProviderError for JSON decode failures.
-func newDecodeError(err error) error {
-	return normalize.DecodeError("openai", err)
+// newDecodeError creates a ProviderError for JSON decode failures, preserving
+// the raw body that failed to decode.
+func newDecodeError(err error, body []byte) error {
+	return normalize.DecodeErrorWithBody("openai", err, body)
 }

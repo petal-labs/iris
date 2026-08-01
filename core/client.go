@@ -349,18 +349,41 @@ func (b *ChatBuilder) ResponseJSON() *ChatBuilder {
 // This enables structured output mode where the model produces JSON conforming to the schema.
 // The schema parameter defines the structure the output must conform to.
 //
+// This always forces schema.Strict = true. Strict mode requires the schema to
+// set "additionalProperties": false and list every property in "required" at
+// every object node; validate() rejects non-compliant schemas with
+// ErrInvalidSchema before the request is sent. Use ResponseJSONSchemaNonStrict
+// to opt out of strict mode for schemas that cannot meet those constraints.
+//
 // Example:
 //
 //	schema := &core.JSONSchemaDefinition{
 //	    Name:   "person",
-//	    Strict: true,
-//	    Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"}},"required":["name","age"]}`),
+//	    Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"},"age":{"type":"integer"}},"required":["name","age"]}`),
 //	}
 //	resp, err := client.Chat(model).
 //	    User("Extract: John is 30 years old").
 //	    ResponseJSONSchema(schema).
 //	    GetResponse(ctx)
 func (b *ChatBuilder) ResponseJSONSchema(schema *JSONSchemaDefinition) *ChatBuilder {
+	if schema != nil {
+		schema.Strict = true
+	}
+	b.req.ResponseFormat = ResponseFormatJSONSchema
+	b.req.JSONSchema = schema
+	return b
+}
+
+// ResponseJSONSchemaNonStrict constrains the model output to match a specific
+// JSON Schema without enforcing strict mode. This forces schema.Strict = false,
+// skipping the strict-schema validation that ResponseJSONSchema applies. Use
+// this when a schema cannot satisfy strict mode's requirements (every object
+// node needs "additionalProperties": false and a "required" array covering
+// all declared properties) and the provider still accepts loose schemas.
+func (b *ChatBuilder) ResponseJSONSchemaNonStrict(schema *JSONSchemaDefinition) *ChatBuilder {
+	if schema != nil {
+		schema.Strict = false
+	}
 	b.req.ResponseFormat = ResponseFormatJSONSchema
 	b.req.JSONSchema = schema
 	return b
@@ -474,6 +497,51 @@ func (b *ChatBuilder) validate() error {
 		hasContent := msg.Content != "" || len(msg.Parts) > 0 || len(msg.ToolCalls) > 0 || len(msg.ToolResults) > 0
 		if !hasContent {
 			return ErrNoMessages
+		}
+	}
+
+	// Capability gate: reject schema-based structured output requests
+	// (ResponseFormatJSONSchema) against a provider/model that does not
+	// support core.FeatureStructuredOutput. This must run before the
+	// strict-schema check below so an unsupported provider fails with
+	// ErrStructuredOutputUnsupported rather than a schema validation error.
+	//
+	// Plain JSON mode (ResponseFormatJSON / json_object) is intentionally
+	// NOT hard-gated here: it has no schema/shape contract to silently
+	// violate, and many models support json_object without being tagged
+	// with FeatureStructuredOutput (e.g. OpenAI's gpt-3.5-turbo, gpt-4, and
+	// gpt-4-turbo). Gating it would reject requests that previously worked.
+	// If a provider genuinely can't do json_object, its descriptive API
+	// error surfaces instead.
+	if b.req.ResponseFormat == ResponseFormatJSONSchema {
+		if !b.client.provider.Supports(FeatureStructuredOutput) {
+			return fmt.Errorf("%w: provider %s model %s",
+				ErrStructuredOutputUnsupported, b.client.provider.ID(), b.req.Model)
+		}
+
+		// Model-level gate: the provider supports structured output overall,
+		// but the specific requested model may not (e.g. OpenAI supports it,
+		// but gpt-3.5-turbo / gpt-4 do not). If the model is present in the
+		// provider's catalog and lacks the capability, reject it. If the
+		// model is NOT present in the catalog (unknown, brand-new, or a
+		// custom deployment not yet reflected in the static catalog), fall
+		// back to allowing it since the provider-level check already passed.
+		for _, m := range b.client.provider.Models() {
+			if m.ID == b.req.Model {
+				if !m.HasCapability(FeatureStructuredOutput) {
+					return fmt.Errorf("%w: provider %s model %s",
+						ErrStructuredOutputUnsupported, b.client.provider.ID(), b.req.Model)
+				}
+				break
+			}
+		}
+	}
+
+	// Strict structured output requires a schema shape the provider can
+	// enforce exactly.
+	if b.req.ResponseFormat == ResponseFormatJSONSchema && b.req.JSONSchema != nil && b.req.JSONSchema.Strict {
+		if err := validateStrictSchema(b.req.JSONSchema.Schema); err != nil {
+			return err
 		}
 	}
 

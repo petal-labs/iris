@@ -72,7 +72,7 @@ func TestSecretIsEmpty(t *testing.T) {
 	}{
 		{"empty string", "", true},
 		{"non-empty string", "sk-abc123", false},
-		{"whitespace only", "  ", false}, // whitespace is not considered empty
+		{"whitespace only", "  ", true}, // whitespace-only is treated as empty
 	}
 
 	for _, tt := range tests {
@@ -83,6 +83,19 @@ func TestSecretIsEmpty(t *testing.T) {
 				t.Errorf("Secret.IsEmpty() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestNewSecretTrims(t *testing.T) {
+	s := NewSecret("  sk-abc\n")
+	if s.Expose() != "sk-abc" {
+		t.Errorf("Expose() = %q, want %q", s.Expose(), "sk-abc")
+	}
+}
+
+func TestIsEmptyTreatsWhitespaceAsEmpty(t *testing.T) {
+	if !NewSecret("   ").IsEmpty() {
+		t.Error("whitespace-only secret should be empty")
 	}
 }
 

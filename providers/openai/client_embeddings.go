@@ -14,7 +14,14 @@ import (
 const embeddingsPath = "/embeddings"
 
 // CreateEmbeddings generates embeddings for the given input texts.
+//
+// This call does not go through core.Client, so core.WithTimeout does not
+// apply; pass a context with a deadline if a bound is needed.
 func (p *OpenAI) CreateEmbeddings(ctx context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
+	if err := p.requireAPIKey(); err != nil {
+		return nil, err
+	}
+
 	oaiReq := buildEmbeddingRequest(req)
 
 	body, err := json.Marshal(oaiReq)
@@ -53,7 +60,7 @@ func (p *OpenAI) CreateEmbeddings(ctx context.Context, req *core.EmbeddingReques
 
 	var oaiResp openAIEmbeddingResponse
 	if err := json.Unmarshal(respBody, &oaiResp); err != nil {
-		return nil, newDecodeError(err)
+		return nil, newDecodeError(err, respBody)
 	}
 
 	return mapEmbeddingResponse(&oaiResp, req), nil

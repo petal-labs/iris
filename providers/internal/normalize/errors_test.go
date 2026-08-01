@@ -1,8 +1,11 @@
 package normalize
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/petal-labs/iris/core"
@@ -39,7 +42,7 @@ func TestOpenAIStyleProviderError(t *testing.T) {
 		{
 			name:         "fallback to status text",
 			status:       http.StatusBadGateway,
-			body:         []byte(`{}`),
+			body:         []byte{},
 			requestID:    "",
 			wantCode:     "",
 			wantMsg:      "Bad Gateway",
@@ -75,6 +78,19 @@ func TestOpenAIStyleProviderError(t *testing.T) {
 				t.Errorf("error should wrap %v", tt.wantSentinel)
 			}
 		})
+	}
+}
+
+func TestOpenAIStyleErrorFallsBackToBody(t *testing.T) {
+	// Body is valid text but NOT the {"error":{"message"}} envelope.
+	body := []byte(`{"detail":"model gpt-x does not exist"}`)
+	err := OpenAIStyleProviderError("openai", 404, body, "req-1")
+	var pe *core.ProviderError
+	if !errors.As(err, &pe) {
+		t.Fatal("want *core.ProviderError")
+	}
+	if !strings.Contains(pe.Message+pe.Body, "does not exist") {
+		t.Errorf("real body text lost: msg=%q body=%q", pe.Message, pe.Body)
 	}
 }
 
@@ -126,6 +142,28 @@ func TestProviderErrorDefaults(t *testing.T) {
 	}
 	if !errors.Is(err, core.ErrServer) {
 		t.Error("error should wrap core.ErrServer")
+	}
+}
+
+func TestNetworkErrorPreservesChain(t *testing.T) {
+	underlying := fmt.Errorf("dial tcp: %w", context.DeadlineExceeded)
+	err := NetworkError("openai", underlying)
+	if !errors.Is(err, core.ErrNetwork) {
+		t.Error("want errors.Is(err, core.ErrNetwork)")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Error("want errors.Is(err, context.DeadlineExceeded)")
+	}
+}
+
+func TestDecodeErrorPreservesChain(t *testing.T) {
+	underlying := errors.New("invalid character '<'")
+	err := DecodeError("openai", underlying)
+	if !errors.Is(err, core.ErrDecode) {
+		t.Error("want errors.Is(err, core.ErrDecode)")
+	}
+	if !errors.Is(err, underlying) {
+		t.Error("want errors.Is(err, underlying)")
 	}
 }
 
