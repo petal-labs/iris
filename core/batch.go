@@ -80,6 +80,10 @@ func AsBatchProvider(p Provider) (BatchProvider, bool) {
 }
 
 // BatchWaiter provides utilities for waiting on batch completion.
+//
+// BatchWaiter polls BatchProvider directly and does not go through
+// core.Client, so core.WithTimeout does not apply; bound Wait via
+// WithMaxWait and/or a context deadline passed by the caller.
 type BatchWaiter struct {
 	provider     BatchProvider
 	pollInterval time.Duration

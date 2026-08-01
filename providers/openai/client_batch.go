@@ -18,6 +18,9 @@ const batchesPath = "/batches"
 
 // CreateBatch submits requests for asynchronous batch processing.
 // The requests are serialized to JSONL, uploaded as a file, and submitted as a batch.
+//
+// This call does not go through core.Client, so core.WithTimeout does not
+// apply; pass a context with a deadline if a bound is needed.
 func (p *OpenAI) CreateBatch(ctx context.Context, requests []core.BatchRequest) (core.BatchID, error) {
 	if len(requests) == 0 {
 		return "", &core.ProviderError{
@@ -107,6 +110,12 @@ func (p *OpenAI) CreateBatch(ctx context.Context, requests []core.BatchRequest) 
 }
 
 // GetBatchStatus returns the current status of a batch.
+//
+// This call does not go through core.Client, so core.WithTimeout does not
+// apply; pass a context with a deadline if a bound is needed. This matters
+// in particular when polling via core.BatchWaiter.Wait, which bounds each
+// poll using the caller-supplied context combined with its own maxWait
+// budget rather than any core.Client timeout.
 func (p *OpenAI) GetBatchStatus(ctx context.Context, id core.BatchID) (*core.BatchInfo, error) {
 	url := p.config.BaseURL + batchesPath + "/" + string(id)
 
@@ -158,6 +167,9 @@ func (p *OpenAI) GetBatchStatus(ctx context.Context, id core.BatchID) (*core.Bat
 }
 
 // GetBatchResults retrieves completed batch results.
+//
+// This call does not go through core.Client, so core.WithTimeout does not
+// apply; pass a context with a deadline if a bound is needed.
 func (p *OpenAI) GetBatchResults(ctx context.Context, id core.BatchID) ([]core.BatchResult, error) {
 	// First get the batch to find the output file ID
 	info, err := p.GetBatchStatus(ctx, id)
@@ -194,6 +206,9 @@ func (p *OpenAI) GetBatchResults(ctx context.Context, id core.BatchID) ([]core.B
 }
 
 // CancelBatch cancels a pending or in-progress batch.
+//
+// This call does not go through core.Client, so core.WithTimeout does not
+// apply; pass a context with a deadline if a bound is needed.
 func (p *OpenAI) CancelBatch(ctx context.Context, id core.BatchID) error {
 	url := p.config.BaseURL + batchesPath + "/" + string(id) + "/cancel"
 
@@ -235,6 +250,9 @@ func (p *OpenAI) CancelBatch(ctx context.Context, id core.BatchID) error {
 }
 
 // ListBatches returns all batches for the account.
+//
+// This call does not go through core.Client, so core.WithTimeout does not
+// apply; pass a context with a deadline if a bound is needed.
 func (p *OpenAI) ListBatches(ctx context.Context, limit int) ([]core.BatchInfo, error) {
 	url := p.config.BaseURL + batchesPath
 	if limit > 0 {
