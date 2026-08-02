@@ -42,7 +42,7 @@ func main() {
 
 	// Example 1: JSON mode - model outputs valid JSON
 	fmt.Println("=== JSON Mode ===")
-	resp, err := client.Chat("gpt-4o-mini").
+	resp, err := client.Chat("gpt-5.4-mini").
 		System("You are a helpful assistant that responds in JSON format.").
 		User("List 3 programming languages with their name, year created, creator, and a brief description.").
 		ResponseJSON().
@@ -101,7 +101,7 @@ func main() {
 		}`),
 	}
 
-	resp, err = client.Chat("gpt-4o-mini").
+	resp, err = client.Chat("gpt-5.4-mini").
 		User("Extract information: Sarah is a 28-year-old software engineer who enjoys hiking, reading, and playing chess.").
 		ResponseJSONSchema(schema).
 		GetResponse(ctx)

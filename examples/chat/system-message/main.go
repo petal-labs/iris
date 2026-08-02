@@ -34,7 +34,7 @@ func main() {
 
 	// Example 1: Technical assistant
 	fmt.Println("=== Technical Assistant ===")
-	resp, err := client.Chat("gpt-4o-mini").
+	resp, err := client.Chat("gpt-5.4-mini").
 		System("You are a technical assistant. Provide concise, accurate answers focused on programming and technology. Use code examples when helpful.").
 		User("How do I read a file in Go?").
 		GetResponse(ctx)
@@ -48,7 +48,7 @@ func main() {
 
 	// Example 2: Friendly tutor
 	fmt.Println("=== Friendly Tutor ===")
-	resp, err = client.Chat("gpt-4o-mini").
+	resp, err = client.Chat("gpt-5.4-mini").
 		System("You are a friendly programming tutor. Explain concepts simply, as if teaching a beginner. Use analogies and encouraging language.").
 		User("How do I read a file in Go?").
 		GetResponse(ctx)
@@ -62,7 +62,7 @@ func main() {
 
 	// Example 3: Pirate personality
 	fmt.Println("=== Pirate Personality ===")
-	resp, err = client.Chat("gpt-4o-mini").
+	resp, err = client.Chat("gpt-5.4-mini").
 		System("You are a pirate programmer. Answer questions about code but speak like a pirate. Use nautical terms and pirate expressions.").
 		User("How do I read a file in Go?").
 		Temperature(0.9). // Higher temperature for more creative responses

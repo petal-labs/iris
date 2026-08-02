@@ -47,7 +47,7 @@ func main() {
 		{
 			CustomID: "translate-1",
 			Request: core.ChatRequest{
-				Model: "gpt-4o-mini",
+				Model: "gpt-5.4-mini",
 				Messages: []core.Message{
 					{Role: core.RoleSystem, Content: "You are a translator. Translate to French."},
 					{Role: core.RoleUser, Content: "Hello, how are you?"},
@@ -57,7 +57,7 @@ func main() {
 		{
 			CustomID: "translate-2",
 			Request: core.ChatRequest{
-				Model: "gpt-4o-mini",
+				Model: "gpt-5.4-mini",
 				Messages: []core.Message{
 					{Role: core.RoleSystem, Content: "You are a translator. Translate to Spanish."},
 					{Role: core.RoleUser, Content: "Good morning!"},
@@ -67,7 +67,7 @@ func main() {
 		{
 			CustomID: "translate-3",
 			Request: core.ChatRequest{
-				Model: "gpt-4o-mini",
+				Model: "gpt-5.4-mini",
 				Messages: []core.Message{
 					{Role: core.RoleSystem, Content: "You are a translator. Translate to German."},
 					{Role: core.RoleUser, Content: "Thank you very much."},

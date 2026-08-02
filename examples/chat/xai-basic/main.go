@@ -38,8 +38,8 @@ func main() {
 	defer cancel()
 
 	// Send chat request using fluent builder
-	// Using grok-4-1-fast-non-reasoning for quick responses
-	resp, err := client.Chat(xai.ModelGrok41FastNonReasoning).
+	// Using grok-4.5 for quick responses
+	resp, err := client.Chat(xai.ModelGrok45).
 		User("What is the capital of France? Please respond in one sentence.").
 		GetResponse(ctx)
 

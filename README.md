@@ -80,7 +80,7 @@ func main() {
     client := core.NewClient(provider)
 
     // Send a chat request
-    resp, err := client.Chat("gpt-4o").
+    resp, err := client.Chat("gpt-5.6").
         System("You are a helpful assistant.").
         User("What is the capital of France?").
         Temperature(0.7).
@@ -393,7 +393,7 @@ client := core.NewClient(provider, core.WithTimeout(5*time.Minute))
 client := core.NewClient(provider, core.WithTimeout(0))
 
 // Per-call override
-resp, err := client.Chat("gpt-4o").
+resp, err := client.Chat("gpt-5.6").
     User("Hello").
     Timeout(30 * time.Second).
     GetResponse(context.Background())
@@ -409,7 +409,7 @@ Precedence: a deadline already on the caller's `ctx` always wins; otherwise the 
 ### Streaming Responses
 
 ```go
-stream, err := client.Chat("gpt-4o").
+stream, err := client.Chat("gpt-5.6").
     User("Write a short poem about Go.").
     Stream(context.Background())
 
@@ -445,7 +445,7 @@ client := core.NewClient(provider,
 // Define a tool
 weatherTool := mytools.NewWeatherTool()
 
-resp, err := client.Chat("gpt-4o").
+resp, err := client.Chat("gpt-5.6").
     User("What's the weather in San Francisco?").
     Tools(weatherTool).
     GetResponse(ctx)
@@ -473,7 +473,7 @@ wrappedTool := tools.ApplyMiddleware(
     tools.WithLogging(logger),
 )
 
-resp, err := client.Chat("gpt-4o").
+resp, err := client.Chat("gpt-5.6").
     User("What's the weather in San Francisco?").
     Tools(wrappedTool).
     GetResponse(ctx)
@@ -487,7 +487,7 @@ Constrain model output to valid JSON or a specific JSON Schema:
 
 ```go
 // JSON mode - model outputs valid JSON
-resp, err := client.Chat("gpt-4o").
+resp, err := client.Chat("gpt-5.6").
     User("List 3 programming languages with their year created").
     ResponseJSON().
     GetResponse(ctx)
@@ -517,7 +517,7 @@ schema := &core.JSONSchemaDefinition{
     }`),
 }
 
-resp, err := client.Chat("gpt-4o").
+resp, err := client.Chat("gpt-5.6").
     User("Extract: John is 30 years old").
     ResponseJSONSchema(schema).
     GetResponse(ctx)
@@ -533,7 +533,7 @@ The `Conversation` type manages message history automatically:
 
 ```go
 // Create a conversation with a system prompt
-conv := core.NewConversation(client, "gpt-4o",
+conv := core.NewConversation(client, "gpt-5.6",
     core.WithSystemMessage("You are a helpful assistant."),
 )
 
@@ -561,8 +561,8 @@ if !ok {
 
 // Create batch requests
 requests := []core.BatchRequest{
-    {CustomID: "req-1", Request: core.ChatRequest{Model: "gpt-4o", Messages: msgs1}},
-    {CustomID: "req-2", Request: core.ChatRequest{Model: "gpt-4o", Messages: msgs2}},
+    {CustomID: "req-1", Request: core.ChatRequest{Model: "gpt-5.6", Messages: msgs1}},
+    {CustomID: "req-2", Request: core.ChatRequest{Model: "gpt-5.6", Messages: msgs2}},
 }
 
 // Submit batch
@@ -719,7 +719,7 @@ iris keys set zai
 iris keys set ollama  # Only needed for Ollama Cloud
 
 # Chat with OpenAI
-iris chat --provider openai --model gpt-4o --prompt "Hello, world!"
+iris chat --provider openai --model gpt-5.6 --prompt "Hello, world!"
 
 # Chat with Anthropic Claude
 iris chat --provider anthropic --model claude-sonnet-5 --prompt "Hello, world!"
@@ -740,11 +740,11 @@ iris chat --provider ollama --model llama3.2 --prompt "Hello, world!"
 iris chat --provider openai --model gpt-5 --prompt "Explain quantum entanglement"
 
 # Stream responses
-iris chat --provider openai --model gpt-4o --prompt "Tell me a story" --stream
+iris chat --provider openai --model gpt-5.6 --prompt "Tell me a story" --stream
 iris chat --provider anthropic --model claude-sonnet-5 --prompt "Tell me a story" --stream
 
 # Get JSON output
-iris chat --provider openai --model gpt-4o --prompt "Hello" --json
+iris chat --provider openai --model gpt-5.6 --prompt "Hello" --json
 
 # Initialize a new project
 iris init myproject

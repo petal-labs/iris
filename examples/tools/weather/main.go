@@ -112,7 +112,7 @@ func main() {
 
 	// Send request with tool
 	fmt.Println("Asking about weather...")
-	resp, err := client.Chat("gpt-4o-mini").
+	resp, err := client.Chat("gpt-5.4-mini").
 		User("What's the weather like in San Francisco and New York?").
 		Tools(wrappedWeatherTool).
 		GetResponse(ctx)

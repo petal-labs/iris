@@ -30,7 +30,7 @@ func main() {
 	client := core.NewClient(provider)
 
 	// Create a conversation with a system prompt
-	conv := core.NewConversation(client, "gpt-4o-mini",
+	conv := core.NewConversation(client, "gpt-5.4-mini",
 		core.WithSystemMessage("You are a helpful programming tutor. Keep responses concise. Remember our conversation context."),
 	)
 
