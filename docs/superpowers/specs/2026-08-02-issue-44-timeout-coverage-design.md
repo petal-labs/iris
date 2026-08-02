@@ -41,6 +41,11 @@ New package `providers/internal/timeoutx`:
 ```go
 package timeoutx
 
+// Default is the default per-provider timeout for non-chat unary operations.
+// Generous (10m) so it bounds a truly hung call without truncating legitimate
+// large uploads / batch-result downloads.
+const Default = 600 * time.Second
+
 // Apply returns a context bounded by d, unless d <= 0 or ctx already carries a
 // deadline (in which case the caller's deadline wins and the original ctx is
 // returned with a no-op cancel). Mirrors core's effectiveTimeout precedence.
@@ -58,7 +63,7 @@ func Apply(ctx context.Context, d time.Duration) (context.Context, context.Cance
 ### Per-provider wiring
 
 - **Un-deprecate** the `WithTimeout(d) Option` and `Config.Timeout` field on every provider. Replace the "Deprecated: ... inert" doc comments with: *"Sets the timeout applied to this provider's direct (non-chat) operations — embeddings, files, images, batch, vector stores. Chat and streaming honor `core.WithTimeout` and context deadlines instead."*
-- **Default:** each provider's `New` initializes `Config.Timeout` to `core.DefaultTimeout` (120s) — matching the chat default and closing the gap by default. `WithTimeout(0)` disables.
+- **Default:** each provider's `New` initializes `Config.Timeout` to `timeoutx.Default` (600s / 10m) — generous enough to tolerate legitimate large uploads and batch-result downloads while still bounding a truly hung call. `WithTimeout(0)` disables; a smaller value tightens it.
 - **Apply the guard** at the top of every unary non-chat method (before building the request):
   ```go
   ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
@@ -77,7 +82,7 @@ func Apply(ctx context.Context, d time.Duration) (context.Context, context.Cance
 
 ### Behavior change
 
-Non-chat unary calls now carry a **120s default timeout**. A caller doing a large file upload or batch-result download that legitimately exceeds 120s must either pass a `context` with a longer deadline or construct the provider with `provider.WithTimeout(0)` (disable) or a higher value. This mirrors the v0.15.0 chat-timeout tradeoff and is documented in the change doc's Breaking Changes.
+Non-chat unary calls now carry a **600s (10m) default timeout**. A caller with an operation that legitimately exceeds 10 minutes must pass a `context` with a longer deadline or construct the provider with `provider.WithTimeout(0)` (disable) or a higher value. The generous default bounds a truly hung call while avoiding truncation of realistic large uploads/downloads; documented in the change doc's Breaking Changes.
 
 ---
 
@@ -163,7 +168,7 @@ A provider transport error that wraps `DeadlineExceeded` but arrives before `max
 
 ## Breaking Changes & Migration
 
-- **120s default op-timeout on non-chat unary calls.** Large uploads/downloads exceeding 120s now fail with a deadline error unless the caller passes a longer ctx deadline or uses `provider.WithTimeout(0)`/a higher value. Per-provider `WithTimeout`/`Config.Timeout` are **un-deprecated** and now functional for these paths.
+- **600s (10m) default op-timeout on non-chat unary calls.** Operations exceeding 10 minutes now fail with a deadline error unless the caller passes a longer ctx deadline or uses `provider.WithTimeout(0)`/a higher value. Per-provider `WithTimeout`/`Config.Timeout` are **un-deprecated** and now functional for these paths.
 - New exported symbols: `core.WithStreamIdleTimeout`. No existing signatures change (`newTimeoutError` is unexported).
 
 ## Deferred / Out of Scope
