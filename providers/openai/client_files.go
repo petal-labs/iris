@@ -12,10 +12,14 @@ import (
 	"strings"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // UploadFile uploads a file to OpenAI.
 func (p *OpenAI) UploadFile(ctx context.Context, req *FileUploadRequest) (*File, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 
@@ -141,6 +145,9 @@ func (p *OpenAI) mapStatusToSentinel(status int) error {
 
 // ListFiles returns a list of files.
 func (p *OpenAI) ListFiles(ctx context.Context, req *FileListRequest) (*FileListResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/files"
 
 	// Build query parameters
@@ -204,6 +211,9 @@ func (p *OpenAI) ListFiles(ctx context.Context, req *FileListRequest) (*FileList
 
 // GetFile retrieves information about a specific file.
 func (p *OpenAI) GetFile(ctx context.Context, fileID string) (*File, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/files/" + fileID
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -281,6 +291,9 @@ func (p *OpenAI) DownloadFile(ctx context.Context, fileID string) (io.ReadCloser
 
 // DeleteFile deletes a file.
 func (p *OpenAI) DeleteFile(ctx context.Context, fileID string) error {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/files/" + fileID
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)

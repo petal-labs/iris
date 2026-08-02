@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // buildHeadersWithBeta returns headers with the OpenAI-Beta header set.
@@ -23,6 +24,9 @@ func (p *OpenAI) buildHeadersWithBeta() http.Header {
 
 // CreateVectorStore creates a new vector store.
 func (p *OpenAI) CreateVectorStore(ctx context.Context, req *VectorStoreCreateRequest) (*VectorStore, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -70,6 +74,9 @@ func (p *OpenAI) CreateVectorStore(ctx context.Context, req *VectorStoreCreateRe
 
 // ListVectorStores returns a list of vector stores.
 func (p *OpenAI) ListVectorStores(ctx context.Context, req *VectorStoreListRequest) (*VectorStoreListResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/vector_stores"
 
 	if req != nil {
@@ -132,6 +139,9 @@ func (p *OpenAI) ListVectorStores(ctx context.Context, req *VectorStoreListReque
 
 // GetVectorStore retrieves information about a specific vector store.
 func (p *OpenAI) GetVectorStore(ctx context.Context, vectorStoreID string) (*VectorStore, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/vector_stores/" + vectorStoreID
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -175,6 +185,9 @@ func (p *OpenAI) GetVectorStore(ctx context.Context, vectorStoreID string) (*Vec
 
 // DeleteVectorStore deletes a vector store.
 func (p *OpenAI) DeleteVectorStore(ctx context.Context, vectorStoreID string) error {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/vector_stores/" + vectorStoreID
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
@@ -227,6 +240,9 @@ func (p *OpenAI) DeleteVectorStore(ctx context.Context, vectorStoreID string) er
 
 // AddFileToVectorStore adds a file to a vector store.
 func (p *OpenAI) AddFileToVectorStore(ctx context.Context, vectorStoreID string, req *VectorStoreFileAddRequest) (*VectorStoreFile, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -274,6 +290,9 @@ func (p *OpenAI) AddFileToVectorStore(ctx context.Context, vectorStoreID string,
 
 // ListVectorStoreFiles returns a list of files in a vector store.
 func (p *OpenAI) ListVectorStoreFiles(ctx context.Context, vectorStoreID string, req *VectorStoreFileListRequest) (*VectorStoreFileListResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/vector_stores/" + vectorStoreID + "/files"
 
 	if req != nil {
@@ -339,6 +358,9 @@ func (p *OpenAI) ListVectorStoreFiles(ctx context.Context, vectorStoreID string,
 
 // GetVectorStoreFile retrieves information about a specific file in a vector store.
 func (p *OpenAI) GetVectorStoreFile(ctx context.Context, vectorStoreID, fileID string) (*VectorStoreFile, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/vector_stores/" + vectorStoreID + "/files/" + fileID
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -382,6 +404,9 @@ func (p *OpenAI) GetVectorStoreFile(ctx context.Context, vectorStoreID, fileID s
 
 // DeleteVectorStoreFile deletes a file from a vector store.
 func (p *OpenAI) DeleteVectorStoreFile(ctx context.Context, vectorStoreID, fileID string) error {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/vector_stores/" + vectorStoreID + "/files/" + fileID
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
