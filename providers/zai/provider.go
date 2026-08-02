@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 // DefaultAPIKeyEnvVar is the environment variable name for the Z.ai API key.
@@ -96,11 +97,17 @@ func (p *Zai) buildHeaders() http.Header {
 
 // Chat sends a non-streaming chat request.
 func (p *Zai) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
+	if err := normalize.RequireAPIKey("zai", p.config.APIKey); err != nil {
+		return nil, err
+	}
 	return p.doChat(ctx, req)
 }
 
 // StreamChat sends a streaming chat request.
 func (p *Zai) StreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
+	if err := normalize.RequireAPIKey("zai", p.config.APIKey); err != nil {
+		return nil, err
+	}
 	return p.doStreamChat(ctx, req)
 }
 

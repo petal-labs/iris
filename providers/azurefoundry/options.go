@@ -134,3 +134,10 @@ func WithTokenCredential(credential TokenCredential) Option {
 		c.TokenCredential = credential
 	}
 }
+
+// WithAPIKey sets the API key, overriding any value passed to New.
+func WithAPIKey(key string) Option {
+	return func(c *Config) {
+		c.APIKey = core.NewSecret(key)
+	}
+}

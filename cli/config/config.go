@@ -18,8 +18,7 @@ type Config struct {
 
 // ProviderConfig holds configuration for a specific provider.
 type ProviderConfig struct {
-	APIKeyRef string `yaml:"api_key_ref"`
-	BaseURL   string `yaml:"base_url,omitempty"`
+	BaseURL string `yaml:"base_url,omitempty"`
 }
 
 // DefaultConfigPath returns the default configuration file path for the current platform.

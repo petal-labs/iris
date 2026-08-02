@@ -3,6 +3,7 @@ package azurefoundry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -177,7 +178,7 @@ func (p *AzureFoundry) buildHeaders(ctx context.Context) (http.Header, error) {
 	} else if !p.config.APIKey.IsEmpty() {
 		headers.Set("api-key", p.config.APIKey.Expose())
 	} else {
-		return nil, ErrNoAuth
+		return nil, fmt.Errorf("%w: %w", core.ErrUnauthorized, ErrNoAuth)
 	}
 
 	// Copy any extra headers

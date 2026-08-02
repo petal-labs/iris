@@ -9,12 +9,17 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 const embeddingsPath = "/embeddings"
 
 // CreateEmbeddings generates embeddings for the given input texts.
 func (p *VoyageAI) CreateEmbeddings(ctx context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
+	if err := normalize.RequireAPIKey("voyageai", p.config.APIKey); err != nil {
+		return nil, err
+	}
+
 	voyageReq := buildEmbeddingRequest(req)
 
 	body, err := json.Marshal(voyageReq)

@@ -110,6 +110,21 @@ func ProviderError(provider string, status int, requestID, code, message string,
 	}
 }
 
+// RequireAPIKey returns a descriptive *core.ProviderError wrapping
+// core.ErrUnauthorized when the API key is empty (or whitespace-only), so a
+// provider can fail fast before making an unauthenticated request. Returns nil
+// when the key is present.
+func RequireAPIKey(provider string, key core.Secret) error {
+	if key.IsEmpty() {
+		return &core.ProviderError{
+			Provider: provider,
+			Message:  "API key is empty; provide a non-empty key to " + provider + ".New or configure your secret source",
+			Err:      core.ErrUnauthorized,
+		}
+	}
+	return nil
+}
+
 // SentinelForStatus maps an HTTP status code to a core sentinel error.
 func SentinelForStatus(status int) error {
 	return SentinelForStatusWithOverrides(status, nil)

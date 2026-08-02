@@ -175,3 +175,17 @@ func TestSentinelForStatusWithOverrides(t *testing.T) {
 		t.Errorf("sentinel = %v, want ErrNotFound", sentinel)
 	}
 }
+
+func TestRequireAPIKey(t *testing.T) {
+	if err := RequireAPIKey("acme", core.NewSecret("sk-x")); err != nil {
+		t.Fatalf("non-empty key should pass: %v", err)
+	}
+	err := RequireAPIKey("acme", core.NewSecret("  "))
+	if !errors.Is(err, core.ErrUnauthorized) {
+		t.Fatalf("empty key err = %v, want ErrUnauthorized", err)
+	}
+	var pe *core.ProviderError
+	if !errors.As(err, &pe) || pe.Provider != "acme" {
+		t.Errorf("want *core.ProviderError with Provider=acme, got %#v", err)
+	}
+}

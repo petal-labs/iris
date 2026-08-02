@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 // DefaultAPIKeyEnvVar is the environment variable name for the OpenAI API key.
@@ -87,14 +88,7 @@ func (p *OpenAI) Supports(feature core.Feature) bool {
 // HTTP request so misconfigured clients fail fast instead of round-tripping
 // to the API for a guaranteed 401.
 func (p *OpenAI) requireAPIKey() error {
-	if p.config.APIKey.IsEmpty() {
-		return &core.ProviderError{
-			Provider: "openai",
-			Message:  "API key is empty; pass it to openai.New(key) or configure your secret source",
-			Err:      core.ErrUnauthorized,
-		}
-	}
-	return nil
+	return normalize.RequireAPIKey("openai", p.config.APIKey)
 }
 
 // buildHeaders constructs the HTTP headers for an API request.

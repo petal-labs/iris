@@ -34,6 +34,13 @@ const DefaultBaseURL = "https://api.voyageai.com/v1"
 // Option configures the Voyage AI provider.
 type Option func(*Config)
 
+// WithAPIKey sets the API key, overriding any value passed to New.
+func WithAPIKey(key string) Option {
+	return func(c *Config) {
+		c.APIKey = core.NewSecret(key)
+	}
+}
+
 // WithBaseURL sets the API base URL.
 func WithBaseURL(url string) Option {
 	return func(c *Config) {
