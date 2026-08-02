@@ -19,7 +19,7 @@ func main() {
 	p := zai.New(apiKey)
 	c := core.NewClient(p)
 
-	resp, err := c.Chat(zai.ModelGLM47Flash).
+	resp, err := c.Chat(zai.ModelGLM52).
 		User("Hello, please introduce yourself.").
 		GetResponse(context.Background())
 	if err != nil {

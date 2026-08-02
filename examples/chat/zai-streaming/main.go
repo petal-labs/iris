@@ -19,7 +19,7 @@ func main() {
 	p := zai.New(apiKey)
 	c := core.NewClient(p)
 
-	stream, err := c.Chat(zai.ModelGLM47Flash).
+	stream, err := c.Chat(zai.ModelGLM52).
 		User("Write a short poem about artificial intelligence.").
 		Stream(context.Background())
 	if err != nil {

@@ -38,7 +38,7 @@ func main() {
 	defer cancel()
 
 	// Send chat request using fluent builder
-	resp, err := client.Chat("gpt-4o-mini").
+	resp, err := client.Chat("gpt-5.4-mini").
 		User("What is the capital of France? Please respond in one sentence.").
 		GetResponse(ctx)
 

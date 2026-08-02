@@ -147,7 +147,7 @@ func demonstrateRecordingProvider(ctx context.Context) {
 		mock := testing.NewMockProvider().
 			WithResponse(core.ChatResponse{
 				ID:     "recorded",
-				Model:  "gpt-4o-mini",
+				Model:  "gpt-5.4-mini",
 				Output: "The capital of France is Paris.",
 				Usage:  core.TokenUsage{TotalTokens: 25},
 			})
@@ -171,7 +171,7 @@ func demonstrateRecordingWithProvider(ctx context.Context, provider core.Provide
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	resp, err := client.Chat("gpt-4o-mini").
+	resp, err := client.Chat("gpt-5.4-mini").
 		User("What is the capital of France?").
 		GetResponse(ctxWithTimeout)
 	if err != nil {

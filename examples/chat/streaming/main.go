@@ -36,7 +36,7 @@ func main() {
 	fmt.Println("---")
 
 	// Start streaming request
-	stream, err := client.Chat("gpt-4o-mini").
+	stream, err := client.Chat("gpt-5.4-mini").
 		User("Write a short poem about programming in Go. Make it 4 lines.").
 		Stream(ctx)
 

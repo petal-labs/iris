@@ -93,7 +93,7 @@ func main() {
 	// Create conversation with system prompt
 	conv := NewConversation(
 		client,
-		"gpt-4o-mini",
+		"gpt-5.4-mini",
 		"You are a helpful programming tutor. Keep responses concise but informative. Remember the context of our conversation.",
 	)
 
