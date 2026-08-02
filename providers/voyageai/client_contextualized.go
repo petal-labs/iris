@@ -9,12 +9,17 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 const contextualizedEmbeddingsPath = "/contextualizedembeddings"
 
 // CreateContextualizedEmbeddings generates context-aware embeddings for document chunks.
 func (p *VoyageAI) CreateContextualizedEmbeddings(ctx context.Context, req *core.ContextualizedEmbeddingRequest) (*core.ContextualizedEmbeddingResponse, error) {
+	if err := normalize.RequireAPIKey("voyageai", p.config.APIKey); err != nil {
+		return nil, err
+	}
+
 	voyageReq := buildContextualizedRequest(req)
 
 	body, err := json.Marshal(voyageReq)

@@ -9,12 +9,17 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 const rerankPath = "/rerank"
 
 // Rerank scores and sorts documents by relevance to the query.
 func (p *VoyageAI) Rerank(ctx context.Context, req *core.RerankRequest) (*core.RerankResponse, error) {
+	if err := normalize.RequireAPIKey("voyageai", p.config.APIKey); err != nil {
+		return nil, err
+	}
+
 	voyageReq := buildRerankRequest(req)
 
 	body, err := json.Marshal(voyageReq)
