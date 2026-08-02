@@ -76,10 +76,8 @@ default_model: gpt-4o
 
 providers:
   openai:
-    api_key_ref: openai_key
     base_url: https://api.openai.com/v1
   anthropic:
-    api_key_ref: anthropic_key
 `
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "config.yaml")
@@ -103,9 +101,6 @@ providers:
 	}
 
 	openai := cfg.Providers["openai"]
-	if openai.APIKeyRef != "openai_key" {
-		t.Errorf("openai.APIKeyRef = %q, want openai_key", openai.APIKeyRef)
-	}
 	if openai.BaseURL != "https://api.openai.com/v1" {
 		t.Errorf("openai.BaseURL = %q, want https://api.openai.com/v1", openai.BaseURL)
 	}
@@ -172,8 +167,7 @@ func TestConfigGetProvider(t *testing.T) {
 	cfg := &Config{
 		Providers: map[string]ProviderConfig{
 			"openai": {
-				APIKeyRef: "openai_key",
-				BaseURL:   "https://api.openai.com/v1",
+				BaseURL: "https://api.openai.com/v1",
 			},
 		},
 	}
@@ -182,8 +176,8 @@ func TestConfigGetProvider(t *testing.T) {
 	if pc == nil {
 		t.Fatal("GetProvider(openai) returned nil")
 	}
-	if pc.APIKeyRef != "openai_key" {
-		t.Errorf("APIKeyRef = %q, want openai_key", pc.APIKeyRef)
+	if pc.BaseURL != "https://api.openai.com/v1" {
+		t.Errorf("BaseURL = %q, want https://api.openai.com/v1", pc.BaseURL)
 	}
 
 	pc = cfg.GetProvider("nonexistent")
