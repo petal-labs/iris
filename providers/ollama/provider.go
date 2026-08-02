@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // Environment variable names for Ollama configuration.
@@ -68,6 +69,7 @@ func New(opts ...Option) *Ollama {
 	cfg := Config{
 		BaseURL:    DefaultLocalURL,
 		HTTPClient: http.DefaultClient,
+		Timeout:    timeoutx.Default,
 	}
 
 	for _, opt := range opts {

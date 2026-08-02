@@ -13,10 +13,14 @@ import (
 	"strings"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // GenerateImage generates images from a text prompt using the Image API.
 func (p *OpenAI) GenerateImage(ctx context.Context, req *core.ImageGenerateRequest) (*core.ImageResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	openaiReq := mapImageGenerateRequest(req)
 
 	body, err := json.Marshal(openaiReq)
@@ -76,6 +80,9 @@ func (p *OpenAI) GenerateImage(ctx context.Context, req *core.ImageGenerateReque
 
 // EditImage edits images using the Image API edits endpoint.
 func (p *OpenAI) EditImage(ctx context.Context, req *core.ImageEditRequest) (*core.ImageResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	if len(req.Images) == 0 {
 		return nil, &core.ProviderError{
 			Provider: "openai",

@@ -13,12 +13,9 @@ import (
 
 // doChat performs a non-streaming chat completion request.
 func (p *AzureFoundry) doChat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
-	// Apply timeout if configured
-	if p.config.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.config.Timeout)
-		defer cancel()
-	}
+	// Chat/stream honor core.WithTimeout (applied by core.Client) and any
+	// caller-supplied context deadline only. p.config.Timeout is reserved
+	// for non-chat unary operations (see CreateEmbeddings).
 
 	// Build Azure request
 	azReq := buildRequest(req, false)
@@ -93,12 +90,10 @@ func (p *AzureFoundry) doChat(ctx context.Context, req *core.ChatRequest) (*core
 
 // doStreamChat performs a streaming chat completion request.
 func (p *AzureFoundry) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
-	// Apply timeout if configured
-	if p.config.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.config.Timeout)
-		defer cancel()
-	}
+	// Chat/stream honor core.WithTimeout (applied by core.Client) and any
+	// caller-supplied context deadline only. p.config.Timeout is reserved
+	// for non-chat unary operations (see CreateEmbeddings), so the passed-in
+	// ctx is used directly here with no additional timeout applied.
 
 	// Build Azure request with streaming enabled
 	azReq := buildRequest(req, true)
@@ -151,7 +146,8 @@ func (p *AzureFoundry) doStreamChat(ctx context.Context, req *core.ChatRequest) 
 		return nil, normalizeError(resp.StatusCode, respBody, requestID)
 	}
 
-	// Process SSE stream
+	// Process SSE stream using the passed-in ctx; the reader goroutine
+	// closes resp.Body when it finishes.
 	return p.processSSEStream(ctx, resp, req.Model)
 }
 

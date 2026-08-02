@@ -9,10 +9,14 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // GenerateImage generates images from a text prompt.
 func (p *Gemini) GenerateImage(ctx context.Context, req *core.ImageGenerateRequest) (*core.ImageResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	gemReq := mapImageGenerateRequest(req)
 
 	body, err := json.Marshal(gemReq)
@@ -57,6 +61,9 @@ func (p *Gemini) GenerateImage(ctx context.Context, req *core.ImageGenerateReque
 
 // EditImage edits images using a prompt and input images.
 func (p *Gemini) EditImage(ctx context.Context, req *core.ImageEditRequest) (*core.ImageResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	gemReq := mapImageEditRequest(req)
 
 	body, err := json.Marshal(gemReq)

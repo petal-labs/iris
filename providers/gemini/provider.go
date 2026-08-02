@@ -8,6 +8,7 @@ import (
 
 	"github.com/petal-labs/iris/core"
 	"github.com/petal-labs/iris/providers/internal/normalize"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // Environment variable names for the Gemini API key.
@@ -52,6 +53,7 @@ func New(apiKey string, opts ...Option) *Gemini {
 		APIKey:     core.NewSecret(apiKey),
 		BaseURL:    DefaultBaseURL,
 		HTTPClient: http.DefaultClient,
+		Timeout:    timeoutx.Default,
 	}
 
 	for _, opt := range opts {

@@ -257,7 +257,7 @@ func TestProviderErrorCarriesBody(t *testing.T) {
 }
 
 func TestNewTimeoutError(t *testing.T) {
-	err := newTimeoutError(120 * time.Second)
+	err := newTimeoutError(120*time.Second, "openai", "gpt-4o")
 
 	if !errors.Is(err, ErrTimeout) {
 		t.Errorf("errors.Is(err, ErrTimeout) = false, want true")
@@ -267,6 +267,12 @@ func TestNewTimeoutError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "2m0s") {
 		t.Errorf("err.Error() = %q, want it to contain the duration", err.Error())
+	}
+	if !strings.Contains(err.Error(), "openai") {
+		t.Errorf("err.Error() = %q, want it to contain the provider", err.Error())
+	}
+	if !strings.Contains(err.Error(), "gpt-4o") {
+		t.Errorf("err.Error() = %q, want it to contain the model", err.Error())
 	}
 }
 

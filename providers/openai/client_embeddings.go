@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 const embeddingsPath = "/embeddings"
@@ -16,11 +17,15 @@ const embeddingsPath = "/embeddings"
 // CreateEmbeddings generates embeddings for the given input texts.
 //
 // This call does not go through core.Client, so core.WithTimeout does not
-// apply; pass a context with a deadline if a bound is needed.
+// apply; it is bounded instead by p.config.Timeout (see WithTimeout), unless
+// the caller's context already carries a deadline.
 func (p *OpenAI) CreateEmbeddings(ctx context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
 	if err := p.requireAPIKey(); err != nil {
 		return nil, err
 	}
+
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
 
 	oaiReq := buildEmbeddingRequest(req)
 

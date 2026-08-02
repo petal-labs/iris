@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // batchesPath is the API path for batch operations.
@@ -20,8 +21,12 @@ const batchesPath = "/batches"
 // The requests are serialized to JSONL, uploaded as a file, and submitted as a batch.
 //
 // This call does not go through core.Client, so core.WithTimeout does not
-// apply; pass a context with a deadline if a bound is needed.
+// apply; it is bounded instead by p.config.Timeout (see WithTimeout), unless
+// the caller's context already carries a deadline.
 func (p *OpenAI) CreateBatch(ctx context.Context, requests []core.BatchRequest) (core.BatchID, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	if len(requests) == 0 {
 		return "", &core.ProviderError{
 			Provider: "openai",
@@ -112,11 +117,15 @@ func (p *OpenAI) CreateBatch(ctx context.Context, requests []core.BatchRequest) 
 // GetBatchStatus returns the current status of a batch.
 //
 // This call does not go through core.Client, so core.WithTimeout does not
-// apply; pass a context with a deadline if a bound is needed. This matters
-// in particular when polling via core.BatchWaiter.Wait, which bounds each
-// poll using the caller-supplied context combined with its own maxWait
-// budget rather than any core.Client timeout.
+// apply; each poll is bounded instead by p.config.Timeout (see WithTimeout),
+// unless the caller's context already carries a deadline. This matters in
+// particular when polling via core.BatchWaiter.Wait, which bounds each poll
+// using the caller-supplied context combined with its own maxWait budget
+// rather than any core.Client timeout.
 func (p *OpenAI) GetBatchStatus(ctx context.Context, id core.BatchID) (*core.BatchInfo, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + batchesPath + "/" + string(id)
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -169,8 +178,12 @@ func (p *OpenAI) GetBatchStatus(ctx context.Context, id core.BatchID) (*core.Bat
 // GetBatchResults retrieves completed batch results.
 //
 // This call does not go through core.Client, so core.WithTimeout does not
-// apply; pass a context with a deadline if a bound is needed.
+// apply; it is bounded instead by p.config.Timeout (see WithTimeout), unless
+// the caller's context already carries a deadline.
 func (p *OpenAI) GetBatchResults(ctx context.Context, id core.BatchID) ([]core.BatchResult, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	// First get the batch to find the output file ID
 	info, err := p.GetBatchStatus(ctx, id)
 	if err != nil {
@@ -208,8 +221,12 @@ func (p *OpenAI) GetBatchResults(ctx context.Context, id core.BatchID) ([]core.B
 // CancelBatch cancels a pending or in-progress batch.
 //
 // This call does not go through core.Client, so core.WithTimeout does not
-// apply; pass a context with a deadline if a bound is needed.
+// apply; it is bounded instead by p.config.Timeout (see WithTimeout), unless
+// the caller's context already carries a deadline.
 func (p *OpenAI) CancelBatch(ctx context.Context, id core.BatchID) error {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + batchesPath + "/" + string(id) + "/cancel"
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
@@ -252,8 +269,12 @@ func (p *OpenAI) CancelBatch(ctx context.Context, id core.BatchID) error {
 // ListBatches returns all batches for the account.
 //
 // This call does not go through core.Client, so core.WithTimeout does not
-// apply; pass a context with a deadline if a bound is needed.
+// apply; it is bounded instead by p.config.Timeout (see WithTimeout), unless
+// the caller's context already carries a deadline.
 func (p *OpenAI) ListBatches(ctx context.Context, limit int) ([]core.BatchInfo, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + batchesPath
 	if limit > 0 {
 		url += "?limit=" + strconv.Itoa(limit)

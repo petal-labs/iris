@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // ----------------------------------------------------------------------------
@@ -52,12 +53,10 @@ type azureEmbeddingUsage struct {
 // CreateEmbeddings generates embeddings for the given input texts.
 // Implements core.EmbeddingProvider.
 func (p *AzureFoundry) CreateEmbeddings(ctx context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
-	// Apply timeout if configured
-	if p.config.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.config.Timeout)
-		defer cancel()
-	}
+	// Apply timeout if configured, unless the caller's context already
+	// carries a deadline.
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
 
 	// Build Azure request
 	azReq := buildEmbeddingRequest(req)

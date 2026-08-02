@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"errors"
 	"time"
 )
 
@@ -134,14 +133,10 @@ func (w *BatchWaiter) Wait(ctx context.Context, id BatchID) (*BatchInfo, error) 
 		cancel()
 
 		if err != nil {
-			// The caller's own context expiring/cancelling takes priority
-			// over our internally imposed deadline.
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
-			// pollCtx timed out against our maxWait deadline (this is what
-			// bounds a stuck/hanging GetBatchStatus call).
-			if errors.Is(err, context.DeadlineExceeded) {
+			if !time.Now().Before(deadline) {
 				return nil, ErrBatchTimeout
 			}
 			return nil, err

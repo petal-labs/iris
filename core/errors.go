@@ -80,9 +80,17 @@ var ErrStructuredOutputUnsupported = errors.New("structured output not supported
 // errors.Is(err, context.DeadlineExceeded) also holds.
 var ErrTimeout = errors.New("execution timeout")
 
-// newTimeoutError builds a timeout error carrying the elapsed budget. The
+// newTimeoutError builds a timeout error carrying the elapsed budget, provider, and model. The
 // returned error satisfies errors.Is for both ErrTimeout and
 // context.DeadlineExceeded.
-func newTimeoutError(d time.Duration) error {
-	return fmt.Errorf("iris: %w after %s: %w", ErrTimeout, d, context.DeadlineExceeded)
+func newTimeoutError(d time.Duration, provider string, model ModelID) error {
+	return fmt.Errorf("iris: %w after %s (provider=%s, model=%s): %w",
+		ErrTimeout, d, provider, model, context.DeadlineExceeded)
+}
+
+// newStreamIdleError builds an error reported when a stream produces no
+// chunks for at least d (see WithStreamIdleTimeout). The returned error
+// satisfies errors.Is for both ErrTimeout and context.DeadlineExceeded.
+func newStreamIdleError(d time.Duration) error {
+	return fmt.Errorf("iris: stream idle %w after %s: %w", ErrTimeout, d, context.DeadlineExceeded)
 }

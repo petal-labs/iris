@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // Environment variable names for configuration.
@@ -55,6 +56,7 @@ func New(endpoint, apiKey string, opts ...Option) *AzureFoundry {
 		APIKey:     core.NewSecret(apiKey),
 		APIVersion: DefaultAPIVersion,
 		HTTPClient: http.DefaultClient,
+		Timeout:    timeoutx.Default,
 	}
 
 	for _, opt := range opts {
@@ -119,6 +121,7 @@ func NewWithCredential(endpoint string, credential TokenCredential, opts ...Opti
 		TokenCredential: credential,
 		APIVersion:      DefaultAPIVersion,
 		HTTPClient:      http.DefaultClient,
+		Timeout:         timeoutx.Default,
 	}
 
 	for _, opt := range opts {
