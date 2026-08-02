@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -331,4 +332,35 @@ func TestBatchWaiterWaitAndCollect(t *testing.T) {
 			t.Errorf("WaitAndCollect() error = %v, want %v", err, expectedErr)
 		}
 	})
+}
+
+func TestBatchWaiterPreservesProviderErrorOverTimeout(t *testing.T) {
+	providerErr := &ProviderError{
+		Provider: "test-provider",
+		Message:  "transport error",
+		Err:      fmt.Errorf("%w: %w", ErrNetwork, context.DeadlineExceeded),
+	}
+
+	mock := &mockBatchProvider{
+		statusErr: providerErr,
+	}
+
+	waiter := NewBatchWaiter(mock).
+		WithPollInterval(1 * time.Millisecond).
+		WithMaxWait(5 * time.Second)
+
+	_, err := waiter.Wait(context.Background(), "batch_1")
+
+	var got *ProviderError
+	if !errors.As(err, &got) {
+		t.Fatalf("Wait() error = %v, want *ProviderError", err)
+	}
+
+	if errors.Is(err, ErrBatchTimeout) {
+		t.Error("Wait() should not return ErrBatchTimeout for provider error that wraps DeadlineExceeded")
+	}
+
+	if got.Message != "transport error" {
+		t.Errorf("ProviderError.Message = %s, want transport error", got.Message)
+	}
 }
