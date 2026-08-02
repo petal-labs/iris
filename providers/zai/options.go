@@ -35,6 +35,13 @@ type Config struct {
 // Option is a functional option for configuring the Z.ai provider.
 type Option func(*Config)
 
+// WithAPIKey sets the API key, overriding any value passed to New.
+func WithAPIKey(key string) Option {
+	return func(c *Config) {
+		c.APIKey = core.NewSecret(key)
+	}
+}
+
 // WithBaseURL sets the base URL for the API.
 func WithBaseURL(url string) Option {
 	return func(c *Config) {

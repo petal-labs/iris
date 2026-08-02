@@ -61,6 +61,13 @@ type Config struct {
 // Option configures the Hugging Face provider.
 type Option func(*Config)
 
+// WithAPIKey sets the API key, overriding any value passed to New.
+func WithAPIKey(key string) Option {
+	return func(c *Config) {
+		c.APIKey = core.NewSecret(key)
+	}
+}
+
 // WithBaseURL sets the inference API base URL.
 func WithBaseURL(url string) Option {
 	return func(c *Config) {
