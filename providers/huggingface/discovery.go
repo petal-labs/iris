@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // ModelStatus represents the inference status of a model on Hugging Face.
@@ -91,6 +93,9 @@ func (p *HuggingFace) hubAPIURL(path string) string {
 // GetModelStatus checks if a model has available inference providers.
 // Returns ModelStatusWarm if providers are available, ModelStatusUnknown otherwise.
 func (p *HuggingFace) GetModelStatus(ctx context.Context, modelID string) (ModelStatus, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	// Model IDs contain slashes (e.g., "google/gemma-2-2b-it") which should NOT be encoded
 	apiURL := p.hubAPIURL("/models/" + modelID + "?expand=inference")
 
@@ -129,6 +134,9 @@ func (p *HuggingFace) GetModelStatus(ctx context.Context, modelID string) (Model
 
 // GetModelProviders returns the list of providers serving a specific model.
 func (p *HuggingFace) GetModelProviders(ctx context.Context, modelID string) ([]InferenceProvider, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	// Model IDs contain slashes (e.g., "google/gemma-2-2b-it") which should NOT be encoded
 	apiURL := p.hubAPIURL("/models/" + modelID + "?expand=inferenceProviderMapping")
 
@@ -173,6 +181,9 @@ func (p *HuggingFace) GetModelProviders(ctx context.Context, modelID string) ([]
 
 // ListModels queries available models with optional filters.
 func (p *HuggingFace) ListModels(ctx context.Context, opts ListModelsOptions) ([]HubModelInfo, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	// Build query parameters
 	params := url.Values{}
 

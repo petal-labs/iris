@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // embedPath is the Ollama native embeddings endpoint.
@@ -33,6 +34,9 @@ type ollamaEmbedResponse struct {
 // Ollama /api/embed endpoint. All inputs are sent as a single batch and the
 // returned vectors preserve input order, IDs, and metadata.
 func (p *Ollama) CreateEmbeddings(ctx context.Context, req *core.EmbeddingRequest) (*core.EmbeddingResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	ollamaReq := buildEmbedRequest(req)
 
 	body, err := json.Marshal(ollamaReq)

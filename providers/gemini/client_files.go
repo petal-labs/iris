@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 const (
@@ -22,6 +23,9 @@ const (
 // UploadFile uploads a file to Gemini using resumable upload protocol.
 // Files are stored for 48 hours before automatic deletion.
 func (p *Gemini) UploadFile(ctx context.Context, req *FileUploadRequest) (*File, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	// Step 1: Initiate resumable upload
 	uploadURL, err := p.initiateResumableUpload(ctx, req)
 	if err != nil {
@@ -118,6 +122,9 @@ func (p *Gemini) uploadFileContent(ctx context.Context, uploadURL string, req *F
 
 // GetFile retrieves metadata for a specific file.
 func (p *Gemini) GetFile(ctx context.Context, name string) (*File, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/v1beta/" + name
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -152,6 +159,9 @@ func (p *Gemini) GetFile(ctx context.Context, name string) (*File, error) {
 
 // ListFiles returns a paginated list of files.
 func (p *Gemini) ListFiles(ctx context.Context, req *FileListRequest) (*FileListResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + filesPath
 
 	if req != nil {
@@ -199,6 +209,9 @@ func (p *Gemini) ListFiles(ctx context.Context, req *FileListRequest) (*FileList
 
 // ListAllFiles returns all files, handling pagination automatically.
 func (p *Gemini) ListAllFiles(ctx context.Context) ([]File, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	var allFiles []File
 	var pageToken string
 
@@ -226,6 +239,9 @@ func (p *Gemini) ListAllFiles(ctx context.Context) ([]File, error) {
 
 // DeleteFile deletes a file.
 func (p *Gemini) DeleteFile(ctx context.Context, name string) error {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + "/v1beta/" + name
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)

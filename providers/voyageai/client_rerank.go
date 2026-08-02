@@ -10,6 +10,7 @@ import (
 
 	"github.com/petal-labs/iris/core"
 	"github.com/petal-labs/iris/providers/internal/normalize"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 const rerankPath = "/rerank"
@@ -19,6 +20,9 @@ func (p *VoyageAI) Rerank(ctx context.Context, req *core.RerankRequest) (*core.R
 	if err := normalize.RequireAPIKey("voyageai", p.config.APIKey); err != nil {
 		return nil, err
 	}
+
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
 
 	voyageReq := buildRerankRequest(req)
 

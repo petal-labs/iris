@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // filesPath is the API endpoint for files.
@@ -32,6 +33,9 @@ func (p *Anthropic) buildFilesHeaders() http.Header {
 
 // UploadFile uploads a file to Anthropic.
 func (p *Anthropic) UploadFile(ctx context.Context, req *FileUploadRequest) (*File, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 
@@ -85,6 +89,9 @@ func (p *Anthropic) UploadFile(ctx context.Context, req *FileUploadRequest) (*Fi
 
 // GetFile retrieves metadata for a specific file.
 func (p *Anthropic) GetFile(ctx context.Context, fileID string) (*File, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + filesPath + "/" + fileID
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -123,6 +130,9 @@ func (p *Anthropic) GetFile(ctx context.Context, fileID string) (*File, error) {
 
 // ListFiles returns a paginated list of files.
 func (p *Anthropic) ListFiles(ctx context.Context, req *FileListRequest) (*FileListResponse, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + filesPath
 
 	if req != nil {
@@ -177,6 +187,9 @@ func (p *Anthropic) ListFiles(ctx context.Context, req *FileListRequest) (*FileL
 
 // ListAllFiles returns all files, handling pagination automatically.
 func (p *Anthropic) ListAllFiles(ctx context.Context) ([]File, error) {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	var allFiles []File
 	var afterID *string
 	limit := 1000
@@ -251,6 +264,9 @@ func (p *Anthropic) DownloadFile(ctx context.Context, fileID string) (io.ReadClo
 
 // DeleteFile deletes a file.
 func (p *Anthropic) DeleteFile(ctx context.Context, fileID string) error {
+	ctx, cancel := timeoutx.Apply(ctx, p.config.Timeout)
+	defer cancel()
+
 	url := p.config.BaseURL + filesPath + "/" + fileID
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
