@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/petal-labs/iris/core"
 )
 
 // WithTimeout creates middleware that enforces a timeout on tool execution.
@@ -30,7 +32,8 @@ func WithTimeout(d time.Duration) Middleware {
 			case r := <-ch:
 				return r.value, r.err
 			case <-ctx.Done():
-				return nil, fmt.Errorf("tool execution timeout after %v", d)
+				return nil, fmt.Errorf("tool execution timeout after %v: %w: %w",
+					d, core.ErrTimeout, context.DeadlineExceeded)
 			}
 		}
 	}
