@@ -48,11 +48,12 @@ type ImageGenerator interface {
 // Client is the main entry point for interacting with LLM providers.
 // Client is safe for concurrent use.
 type Client struct {
-	provider       Provider
-	telemetry      TelemetryHook
-	retry          RetryPolicy
-	warningHandler WarningHandler
-	timeout        time.Duration
+	provider          Provider
+	telemetry         TelemetryHook
+	retry             RetryPolicy
+	warningHandler    WarningHandler
+	timeout           time.Duration
+	streamIdleTimeout time.Duration
 }
 
 // ClientOption configures a Client.
@@ -111,6 +112,21 @@ func WithWarningHandler(h WarningHandler) ClientOption {
 func WithTimeout(d time.Duration) ClientOption {
 	return func(c *Client) {
 		c.timeout = d
+	}
+}
+
+// WithStreamIdleTimeout sets a stall/idle timeout for streaming calls: if a
+// stream produces no chunk for at least d, it is terminated and the
+// resulting error (delivered on the stream's Err channel, and returned by
+// DrainStream) satisfies errors.Is(err, ErrTimeout). This is independent of
+// WithTimeout, which bounds the overall call; WithStreamIdleTimeout instead
+// bounds the gap between successive chunks, so a provider that goes silent
+// mid-stream is caught well before a long overall timeout would elapse.
+//
+// Pass 0 (the default) to disable idle detection.
+func WithStreamIdleTimeout(d time.Duration) ClientOption {
+	return func(c *Client) {
+		c.streamIdleTimeout = d
 	}
 }
 
@@ -688,8 +704,20 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 		b.client.telemetry.OnRequestStart(startEvent)
 	}
 
+	// A configured idle timeout needs a context the watchdog can cancel
+	// on its own, independent of (and nested inside) any execution-timeout
+	// deadline established above, so a stall can be terminated immediately
+	// without waiting for the full execution timeout to elapse.
+	var idleCancel context.CancelFunc
+	if b.client.streamIdleTimeout > 0 {
+		ctx, idleCancel = context.WithCancel(ctx)
+	}
+
 	stream, err := b.client.provider.StreamChat(ctx, &b.req)
 	if err != nil {
+		if idleCancel != nil {
+			idleCancel()
+		}
 		if cancel != nil {
 			cancel()
 		}
@@ -713,17 +741,39 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 		return nil, err
 	}
 
-	// onDone releases the timeout context exactly once, when the stream
-	// completes (success or error) or the deadline fires — never when
-	// Stream itself returns.
+	// Wrap with the idle watchdog BEFORE wrapStreamWithTelemetry so telemetry
+	// observes the idle-wrapped Ch/Err/Final (and thus still fires its
+	// end-of-stream event correctly whether the stream finishes normally or
+	// is cut short by an idle timeout).
+	if idleCancel != nil {
+		stream = wrapStreamWithIdleTimeout(stream, b.client.streamIdleTimeout, idleCancel)
+	}
+
+	// onDone releases the timeout and idle contexts exactly once, when the
+	// stream completes (success or error) or a deadline/idle fires — never
+	// when Stream itself returns. context.CancelFunc is idempotent, so
+	// calling idleCancel here is safe even if the idle watchdog already
+	// called it itself on an idle fire.
 	onDone := func() {
+		if idleCancel != nil {
+			idleCancel()
+		}
 		if cancel != nil {
 			cancel()
 		}
 	}
 	// mapErr remaps a mid-stream Iris-applied deadline to ErrTimeout while
-	// leaving caller-supplied deadlines and all other errors untouched.
+	// leaving caller-supplied deadlines and all other errors untouched. An
+	// error that already satisfies errors.Is(_, ErrTimeout) — such as the
+	// stream idle error, which also wraps context.DeadlineExceeded to signal
+	// a real deadline was involved — is returned unchanged so it is not
+	// overwritten by a misleading "execution timeout" message: the overall
+	// execution timeout (if any) has not necessarily elapsed at all when the
+	// idle watchdog fires.
 	mapErr := func(e error) error {
+		if errors.Is(e, ErrTimeout) {
+			return e
+		}
 		if timeout > 0 && errors.Is(e, context.DeadlineExceeded) {
 			return newTimeoutError(timeout, providerID, b.req.Model)
 		}
