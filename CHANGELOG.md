@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-08-02
+
+### Added
+
+- Per-provider empty-key preflight: chat providers now return `core.ErrUnauthorized` before any HTTP request when the API key is empty (openai, anthropic, gemini, xai, perplexity, huggingface, zai on `Chat`/`StreamChat`; voyageai on its embedding methods; azurefoundry's no-auth error now also satisfies `errors.Is(err, core.ErrUnauthorized)`) (#47)
+- `WithAPIKey(key string)` option on all providers, overriding the constructor argument (last-wins) (#47)
+- `core.WithStreamIdleTimeout(d)` client option: terminates a stream that produces no data for the idle window with an `ErrTimeout`-satisfying error (#44)
+- `providers/internal/timeoutx` helper and a per-provider operation timeout (default 600s) bounding non-chat unary calls — embeddings, files, images, batch, and vector stores (#44)
+
+### Changed
+
+- Per-provider `WithTimeout`/`Config.Timeout` **un-deprecated** and now functional: it bounds each provider's non-chat unary operations (default 600s). Chat and streaming continue to honor `core.WithTimeout` and context deadlines (#44)
+- `core.ErrTimeout` messages now name the provider and model in flight (#44)
+- `tools.WithTimeout` timeout error now satisfies `errors.Is` for both `core.ErrTimeout` and `context.DeadlineExceeded` (#44)
+- API keys are now trimmed of surrounding whitespace globally via `core.NewSecret` (already shipped groundwork); empty/whitespace keys are treated as empty (#47)
+
+### Fixed
+
+- `core.BatchWaiter.Wait` now keys `ErrBatchTimeout` on the wall-clock `maxWait` deadline instead of any `context.DeadlineExceeded`, preserving a provider's own transport error and its detail (#44)
+- azurefoundry chat/stream honor `core.WithTimeout` only and are no longer capped by the per-provider timeout default (#44)
+
+### Removed
+
+- Unused `ProviderConfig.APIKeyRef` field from the CLI config (it was parsed but never resolved) (#47)
+
 ## [0.16.0] - 2026-08-01
 
 ### Added
@@ -181,7 +206,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telemetry hooks and retry policies
 - Typed error handling
 
-[Unreleased]: https://github.com/petal-labs/iris/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/petal-labs/iris/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/petal-labs/iris/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/petal-labs/iris/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/petal-labs/iris/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/petal-labs/iris/compare/v0.13.0...v0.14.0
