@@ -611,7 +611,7 @@ retryLoop:
 
 	// Map an Iris-applied deadline to a legible typed error.
 	if timedOut > 0 && err != nil && errors.Is(err, context.DeadlineExceeded) {
-		err = newTimeoutError(timedOut)
+		err = newTimeoutError(timedOut, providerID, b.req.Model)
 	}
 
 	// Emit telemetry end
@@ -695,7 +695,7 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 		}
 		// Map an Iris-applied deadline to a legible typed error.
 		if timeout > 0 && errors.Is(err, context.DeadlineExceeded) {
-			err = newTimeoutError(timeout)
+			err = newTimeoutError(timeout, providerID, b.req.Model)
 		}
 		// Emit telemetry end on immediate error
 		endEvent := RequestEndEvent{
@@ -725,7 +725,7 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 	// leaving caller-supplied deadlines and all other errors untouched.
 	mapErr := func(e error) error {
 		if timeout > 0 && errors.Is(e, context.DeadlineExceeded) {
-			return newTimeoutError(timeout)
+			return newTimeoutError(timeout, providerID, b.req.Model)
 		}
 		return e
 	}
