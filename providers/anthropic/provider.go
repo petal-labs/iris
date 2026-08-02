@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 // DefaultAPIKeyEnvVar is the environment variable name for the Anthropic API key.
@@ -100,11 +101,17 @@ func (p *Anthropic) buildHeaders() http.Header {
 
 // Chat sends a non-streaming chat request.
 func (p *Anthropic) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
+	if err := normalize.RequireAPIKey("anthropic", p.config.APIKey); err != nil {
+		return nil, err
+	}
 	return p.doChat(ctx, req)
 }
 
 // StreamChat sends a streaming chat request.
 func (p *Anthropic) StreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
+	if err := normalize.RequireAPIKey("anthropic", p.config.APIKey); err != nil {
+		return nil, err
+	}
 	return p.doStreamChat(ctx, req)
 }
 

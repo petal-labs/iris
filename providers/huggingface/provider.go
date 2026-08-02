@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 // Environment variable names for the Hugging Face API token.
@@ -103,11 +104,17 @@ func (p *HuggingFace) buildHeaders() http.Header {
 
 // Chat sends a non-streaming chat request.
 func (p *HuggingFace) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
+	if err := normalize.RequireAPIKey("huggingface", p.config.APIKey); err != nil {
+		return nil, err
+	}
 	return p.doChat(ctx, req)
 }
 
 // StreamChat sends a streaming chat request.
 func (p *HuggingFace) StreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
+	if err := normalize.RequireAPIKey("huggingface", p.config.APIKey); err != nil {
+		return nil, err
+	}
 	return p.doStreamChat(ctx, req)
 }
 

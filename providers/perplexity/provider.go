@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 )
 
 // DefaultAPIKeyEnvVar is the environment variable name for the Perplexity API key.
@@ -95,11 +96,17 @@ func (p *Perplexity) buildHeaders() http.Header {
 
 // Chat sends a non-streaming chat request.
 func (p *Perplexity) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
+	if err := normalize.RequireAPIKey("perplexity", p.config.APIKey); err != nil {
+		return nil, err
+	}
 	return p.doChat(ctx, req)
 }
 
 // StreamChat sends a streaming chat request.
 func (p *Perplexity) StreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
+	if err := normalize.RequireAPIKey("perplexity", p.config.APIKey); err != nil {
+		return nil, err
+	}
 	return p.doStreamChat(ctx, req)
 }
 
