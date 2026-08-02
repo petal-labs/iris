@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // DefaultAPIKeyEnvVar is the environment variable name for the Voyage AI API key.
@@ -43,6 +44,7 @@ func New(apiKey string, opts ...Option) *VoyageAI {
 		APIKey:     core.NewSecret(apiKey),
 		BaseURL:    DefaultBaseURL,
 		HTTPClient: http.DefaultClient,
+		Timeout:    timeoutx.Default,
 	}
 
 	for _, opt := range opts {

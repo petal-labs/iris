@@ -11,6 +11,21 @@ import (
 	"github.com/petal-labs/iris/core"
 )
 
+// cancelOnCloseBody wraps a response body so that Close also releases an
+// associated context.CancelFunc. Used to tie a per-request timeout context
+// to the lifetime of a streamed response body, which is read and closed by
+// a goroutine started after the originating call returns.
+type cancelOnCloseBody struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+// Close closes the underlying body and then calls cancel.
+func (c *cancelOnCloseBody) Close() error {
+	defer c.cancel()
+	return c.ReadCloser.Close()
+}
+
 // doChat performs a non-streaming chat completion request.
 func (p *AzureFoundry) doChat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
 	// Apply timeout if configured
@@ -93,11 +108,15 @@ func (p *AzureFoundry) doChat(ctx context.Context, req *core.ChatRequest) (*core
 
 // doStreamChat performs a streaming chat completion request.
 func (p *AzureFoundry) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
-	// Apply timeout if configured
+	// Apply timeout if configured. The timeout must outlive this function:
+	// the SSE stream is read by a goroutine started after doStreamChat
+	// returns, so cancel is NOT deferred here (that would cancel the
+	// context before the goroutine finishes). Instead, cancel is attached
+	// to the response body's Close, which the reader goroutine calls when
+	// it is done (success, error, or context cancellation).
+	var cancel context.CancelFunc
 	if p.config.Timeout > 0 {
-		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, p.config.Timeout)
-		defer cancel()
 	}
 
 	// Build Azure request with streaming enabled
@@ -106,24 +125,36 @@ func (p *AzureFoundry) doStreamChat(ctx context.Context, req *core.ChatRequest) 
 	// Marshal request body
 	body, err := json.Marshal(azReq)
 	if err != nil {
+		if cancel != nil {
+			cancel()
+		}
 		return nil, newDecodeError(err)
 	}
 
 	// Build URL
 	url, err := p.buildChatURL(req.Model)
 	if err != nil {
+		if cancel != nil {
+			cancel()
+		}
 		return nil, err
 	}
 
 	// Create HTTP request
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
+		if cancel != nil {
+			cancel()
+		}
 		return nil, newNetworkError(err)
 	}
 
 	// Set headers
 	headers, err := p.buildHeaders(ctx)
 	if err != nil {
+		if cancel != nil {
+			cancel()
+		}
 		return nil, err
 	}
 	for key, values := range headers {
@@ -135,7 +166,13 @@ func (p *AzureFoundry) doStreamChat(ctx context.Context, req *core.ChatRequest) 
 	// Execute request
 	resp, err := p.config.HTTPClient.Do(httpReq)
 	if err != nil {
+		if cancel != nil {
+			cancel()
+		}
 		return nil, newNetworkError(err)
+	}
+	if cancel != nil {
+		resp.Body = &cancelOnCloseBody{ReadCloser: resp.Body, cancel: cancel}
 	}
 
 	// Extract request ID
@@ -151,7 +188,8 @@ func (p *AzureFoundry) doStreamChat(ctx context.Context, req *core.ChatRequest) 
 		return nil, normalizeError(resp.StatusCode, respBody, requestID)
 	}
 
-	// Process SSE stream
+	// Process SSE stream. The stream-reading goroutine closes resp.Body
+	// when it finishes, which releases the timeout context via cancel.
 	return p.processSSEStream(ctx, resp, req.Model)
 }
 

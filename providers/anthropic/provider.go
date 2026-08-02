@@ -8,6 +8,7 @@ import (
 
 	"github.com/petal-labs/iris/core"
 	"github.com/petal-labs/iris/providers/internal/normalize"
+	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
 // DefaultAPIKeyEnvVar is the environment variable name for the Anthropic API key.
@@ -48,6 +49,7 @@ func New(apiKey string, opts ...Option) *Anthropic {
 		HTTPClient:   http.DefaultClient,
 		Version:      DefaultVersion,
 		FilesAPIBeta: DefaultFilesAPIBeta,
+		Timeout:      timeoutx.Default,
 	}
 
 	for _, opt := range opts {

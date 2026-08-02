@@ -22,9 +22,9 @@ type Config struct {
 	// Headers contains optional extra headers to include in requests.
 	Headers http.Header
 
-	// Timeout is retained for compatibility but is not applied by this provider.
-	//
-	// Deprecated: use core.WithTimeout on the Client instead.
+	// Timeout sets the timeout for this provider's direct (non-chat)
+	// operations — embeddings, files, images, batch, and vector stores.
+	// Chat and streaming honor core.WithTimeout and context deadlines.
 	Timeout time.Duration
 }
 
@@ -65,11 +65,9 @@ func WithHeader(key, value string) Option {
 	}
 }
 
-// WithTimeout sets the request timeout.
-//
-// Deprecated: this option is currently inert for this provider and has no
-// effect on requests. Use core.WithTimeout on the Client (or a context
-// deadline) to bound execution. Retained for API compatibility.
+// WithTimeout sets the timeout for this provider's direct (non-chat)
+// operations — embeddings, files, images, batch, and vector stores. Chat and
+// streaming honor core.WithTimeout and context deadlines.
 func WithTimeout(d time.Duration) Option {
 	return func(c *Config) {
 		c.Timeout = d
