@@ -115,6 +115,27 @@ func DefaultKeystorePath() string {
 }
 
 // NewKeystore creates a new keystore using file-based encrypted storage.
+//
+// It is master-key aware: when DefaultMasterKeyEnvVar (IRIS_KEYSTORE_KEY) is
+// set, the store is encrypted with that master key (v2 format, Argon2id +
+// AES-256-GCM) and legacy stores written by older versions remain readable
+// via a decryption fallback, so they can be migrated with MigrateToV2 (or
+// transparently on the next write). When the environment variable is not set,
+// it falls back to the legacy machine-derived key (v1 mode), which is
+// convenient for development but predictable; callers can detect this via
+// FileKeystore.UsesLegacyKey.
 func NewKeystore() (Keystore, error) {
-	return NewFileKeystore(DefaultKeystorePath())
+	return NewKeystoreAtPath(DefaultKeystorePath())
+}
+
+// NewKeystoreAtPath is like NewKeystore but opens the store at path.
+func NewKeystoreAtPath(path string) (Keystore, error) {
+	if os.Getenv(DefaultMasterKeyEnvVar) != "" {
+		ks, err := NewFileKeystoreWithSource(path, &EnvMasterKeySource{})
+		if err != nil {
+			return nil, err
+		}
+		return ks.WithLegacyKeyFallback(), nil
+	}
+	return NewFileKeystore(path)
 }

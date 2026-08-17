@@ -73,22 +73,30 @@ If `IRIS_KEYSTORE_KEY` is not set, Iris falls back to V1 mode which derives the 
 - Current username
 - A static salt
 
-**Security Note**: V1 is convenient for development but the key is predictable. Anyone with access to your machine can derive the same key. Use V2 with `IRIS_KEYSTORE_KEY` for production.
+**Security Note**: V1 is convenient for development but the key is predictable. Anyone with access to your machine can derive the same key. Use V2 with `IRIS_KEYSTORE_KEY` for production. The CLI prints a warning on every keystore operation while in V1 mode.
 
 ### Migrating from V1 to V2
 
-Existing V1 keystores are automatically read when you set `IRIS_KEYSTORE_KEY`. On the next write operation, the keystore is upgraded to V2 format. A backup of the V1 file is created at `~/.iris/keys.enc.v1.bak`.
+All CLI commands (`iris keys`, `iris chat`) honor `IRIS_KEYSTORE_KEY`. Existing stores written in legacy mode remain readable after you set it: decryption falls back to the machine-derived key, and the store is re-encrypted under your master key on the next write.
 
-To manually migrate:
+To migrate explicitly (recommended):
+
+```bash
+export IRIS_KEYSTORE_KEY=$(openssl rand -base64 32)
+iris keys migrate
+```
+
+`iris keys migrate` re-encrypts `~/.iris/keys.enc` in V2 format under the master key and preserves the previous file at `~/.iris/keys.enc.bak`. Delete the backup once you have verified the migration (`rm ~/.iris/keys.enc.bak`) — it still contains the weakly-encrypted data. `iris keys list` reports the keystore format and warns when a migration is pending.
+
+The same operation is available programmatically:
 
 ```go
 import "github.com/petal-labs/iris/cli/keystore"
 
-ks, _ := keystore.NewFileKeystoreWithSource(
-    keystore.DefaultKeystorePath(),
-    &keystore.EnvMasterKeySource{},
-)
-ks.MigrateToV2()
+ks, _ := keystore.NewKeystoreAtPath(keystore.DefaultKeystorePath())
+if fk, ok := ks.(*keystore.FileKeystore); ok {
+    result, err := fk.MigrateToV2() // keystore.MigrateRekeyed on success
+}
 ```
 
 ## Secret Type
