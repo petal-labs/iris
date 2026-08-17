@@ -1,6 +1,11 @@
 package keystore
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -643,5 +648,324 @@ func TestIsV2Format(t *testing.T) {
 				t.Errorf("isV2Format() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+// --- Master-key-aware NewKeystore Tests ---
+
+// redirectHome points DefaultKeystorePath at a temp directory for the test.
+func redirectHome(t *testing.T) string {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", home)
+	}
+	return home
+}
+
+func TestNewKeystoreEnvAware(t *testing.T) {
+	redirectHome(t)
+	t.Setenv(DefaultMasterKeyEnvVar, "env-master-key")
+
+	ks, err := NewKeystore()
+	if err != nil {
+		t.Fatalf("NewKeystore() error = %v", err)
+	}
+
+	fk, ok := ks.(*FileKeystore)
+	if !ok {
+		t.Fatalf("NewKeystore() returned %T, want *FileKeystore", ks)
+	}
+	if fk.UsesLegacyKey() {
+		t.Error("UsesLegacyKey() = true with IRIS_KEYSTORE_KEY set, want false")
+	}
+
+	if err := ks.Set("openai", "sk-env-mode"); err != nil {
+		t.Fatalf("Set() error = %v", err)
+	}
+
+	// A strict env-keyed store (no legacy fallback) must be able to read it.
+	strict, err := NewFileKeystoreWithSource(DefaultKeystorePath(), &staticMasterKeySource{key: []byte("env-master-key")})
+	if err != nil {
+		t.Fatalf("NewFileKeystoreWithSource() error = %v", err)
+	}
+	value, err := strict.Get("openai")
+	if err != nil {
+		t.Fatalf("strict Get() error = %v", err)
+	}
+	if value != "sk-env-mode" {
+		t.Errorf("strict Get() = %q, want sk-env-mode", value)
+	}
+
+	needs, err := fk.NeedsMigration()
+	if err != nil {
+		t.Fatalf("NeedsMigration() error = %v", err)
+	}
+	if needs {
+		t.Error("NeedsMigration() = true for a store written under the current master key, want false")
+	}
+}
+
+func TestNewKeystoreLegacyMode(t *testing.T) {
+	redirectHome(t)
+
+	ks, err := NewKeystore()
+	if err != nil {
+		t.Fatalf("NewKeystore() error = %v", err)
+	}
+
+	fk, ok := ks.(*FileKeystore)
+	if !ok {
+		t.Fatalf("NewKeystore() returned %T, want *FileKeystore", ks)
+	}
+	if !fk.UsesLegacyKey() {
+		t.Error("UsesLegacyKey() = false without IRIS_KEYSTORE_KEY, want true")
+	}
+
+	if err := ks.Set("openai", "sk-legacy-mode"); err != nil {
+		t.Fatalf("Set() error = %v", err)
+	}
+
+	needs, err := fk.NeedsMigration()
+	if err != nil {
+		t.Fatalf("NeedsMigration() error = %v", err)
+	}
+	if needs {
+		t.Error("NeedsMigration() = true in legacy mode (same key), want false")
+	}
+}
+
+// writeLegacyMachineKeyedStore writes a v2-format file encrypted under the
+// machine-derived key, i.e. what stores written by older CLI versions contain.
+func writeLegacyMachineKeyedStore(t *testing.T, path string, entries map[string]string) {
+	t.Helper()
+
+	legacy, err := NewFileKeystore(path)
+	if err != nil {
+		t.Fatalf("NewFileKeystore() error = %v", err)
+	}
+	for name, value := range entries {
+		if err := legacy.Set(name, value); err != nil {
+			t.Fatalf("legacy Set(%q) error = %v", name, err)
+		}
+	}
+}
+
+// writeV1FormatStore writes a file in the original v1 wire format (nonce ||
+// ciphertext, AES-256-GCM with the machine-derived key used directly).
+func writeV1FormatStore(t *testing.T, path string, entries map[string]string) {
+	t.Helper()
+
+	key, err := deriveKeyV1()
+	if err != nil {
+		t.Fatalf("deriveKeyV1() error = %v", err)
+	}
+	plaintext, err := json.Marshal(entries)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatalf("NewCipher() error = %v", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		t.Fatalf("NewGCM() error = %v", err)
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		t.Fatalf("rand error = %v", err)
+	}
+	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
+	if err := os.WriteFile(path, ciphertext, 0600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+}
+
+func openEnvKeyedWithFallback(t *testing.T, path, masterKey string) *FileKeystore {
+	t.Helper()
+
+	ks, err := NewFileKeystoreWithSource(path, &staticMasterKeySource{key: []byte(masterKey)})
+	if err != nil {
+		t.Fatalf("NewFileKeystoreWithSource() error = %v", err)
+	}
+	return ks.WithLegacyKeyFallback()
+}
+
+func TestLegacyFallbackReadAndAutoUpgrade(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "keys.enc")
+	writeLegacyMachineKeyedStore(t, path, map[string]string{"openai": "sk-old-key"})
+
+	ks := openEnvKeyedWithFallback(t, path, "new-master-key")
+
+	needs, err := ks.NeedsMigration()
+	if err != nil {
+		t.Fatalf("NeedsMigration() error = %v", err)
+	}
+	if !needs {
+		t.Fatal("NeedsMigration() = false for machine-keyed store, want true")
+	}
+
+	// Fallback read must succeed before migration.
+	value, err := ks.Get("openai")
+	if err != nil {
+		t.Fatalf("Get() with legacy fallback error = %v", err)
+	}
+	if value != "sk-old-key" {
+		t.Errorf("Get() = %q, want sk-old-key", value)
+	}
+
+	// Any write re-encrypts under the master key.
+	if err := ks.Set("anthropic", "sk-new-entry"); err != nil {
+		t.Fatalf("Set() error = %v", err)
+	}
+
+	needs, err = ks.NeedsMigration()
+	if err != nil {
+		t.Fatalf("NeedsMigration() error = %v", err)
+	}
+	if needs {
+		t.Error("NeedsMigration() = true after write, want false")
+	}
+
+	// A strict store (no fallback) can now read everything.
+	strict, err := NewFileKeystoreWithSource(path, &staticMasterKeySource{key: []byte("new-master-key")})
+	if err != nil {
+		t.Fatalf("NewFileKeystoreWithSource() error = %v", err)
+	}
+	for name, want := range map[string]string{"openai": "sk-old-key", "anthropic": "sk-new-entry"} {
+		got, err := strict.Get(name)
+		if err != nil {
+			t.Fatalf("strict Get(%q) error = %v", name, err)
+		}
+		if got != want {
+			t.Errorf("strict Get(%q) = %q, want %q", name, got, want)
+		}
+	}
+}
+
+func TestMigrateToV2RekeysMachineKeyedStore(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "keys.enc")
+	writeLegacyMachineKeyedStore(t, path, map[string]string{"openai": "sk-old-key", "zai": "sk-zai"})
+
+	ks := openEnvKeyedWithFallback(t, path, "new-master-key")
+
+	result, err := ks.MigrateToV2()
+	if err != nil {
+		t.Fatalf("MigrateToV2() error = %v", err)
+	}
+	if result != MigrateRekeyed {
+		t.Fatalf("MigrateToV2() = %v, want MigrateRekeyed", result)
+	}
+
+	// Backup preserved.
+	backup := path + ".bak"
+	if _, err := os.Stat(backup); err != nil {
+		t.Fatalf("backup not created: %v", err)
+	}
+
+	// Strict store (no fallback) can read the migrated file.
+	strict, err := NewFileKeystoreWithSource(path, &staticMasterKeySource{key: []byte("new-master-key")})
+	if err != nil {
+		t.Fatalf("NewFileKeystoreWithSource() error = %v", err)
+	}
+	value, err := strict.Get("openai")
+	if err != nil {
+		t.Fatalf("strict Get() error = %v", err)
+	}
+	if value != "sk-old-key" {
+		t.Errorf("strict Get() = %q, want sk-old-key", value)
+	}
+
+	// Idempotent.
+	result, err = ks.MigrateToV2()
+	if err != nil {
+		t.Fatalf("second MigrateToV2() error = %v", err)
+	}
+	if result != MigrateAlreadyCurrent {
+		t.Errorf("second MigrateToV2() = %v, want MigrateAlreadyCurrent", result)
+	}
+}
+
+func TestMigrateToV2FromV1Format(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "keys.enc")
+	writeV1FormatStore(t, path, map[string]string{"openai": "sk-ancient-key"})
+
+	ks := openEnvKeyedWithFallback(t, path, "new-master-key")
+
+	// Fallback read of the original v1 wire format.
+	value, err := ks.Get("openai")
+	if err != nil {
+		t.Fatalf("Get() on v1-format file error = %v", err)
+	}
+	if value != "sk-ancient-key" {
+		t.Errorf("Get() = %q, want sk-ancient-key", value)
+	}
+
+	result, err := ks.MigrateToV2()
+	if err != nil {
+		t.Fatalf("MigrateToV2() error = %v", err)
+	}
+	if result != MigrateRekeyed {
+		t.Fatalf("MigrateToV2() = %v, want MigrateRekeyed", result)
+	}
+
+	strict, err := NewFileKeystoreWithSource(path, &staticMasterKeySource{key: []byte("new-master-key")})
+	if err != nil {
+		t.Fatalf("NewFileKeystoreWithSource() error = %v", err)
+	}
+	if value, err := strict.Get("openai"); err != nil || value != "sk-ancient-key" {
+		t.Errorf("strict Get() = %q, %v; want sk-ancient-key, nil", value, err)
+	}
+}
+
+func TestMigrateToV2NoStore(t *testing.T) {
+	tmpDir := t.TempDir()
+	ks := openEnvKeyedWithFallback(t, filepath.Join(tmpDir, "missing.enc"), "new-master-key")
+
+	result, err := ks.MigrateToV2()
+	if err != nil {
+		t.Fatalf("MigrateToV2() error = %v", err)
+	}
+	if result != MigrateNone {
+		t.Errorf("MigrateToV2() = %v, want MigrateNone", result)
+	}
+}
+
+func TestMigrateToV2WrongKeyFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "keys.enc")
+
+	// Store encrypted with an unrelated master key (not the machine key).
+	other, err := NewFileKeystoreWithSource(path, &staticMasterKeySource{key: []byte("someone-elses-key")})
+	if err != nil {
+		t.Fatalf("NewFileKeystoreWithSource() error = %v", err)
+	}
+	if err := other.Set("openai", "sk-locked"); err != nil {
+		t.Fatalf("Set() error = %v", err)
+	}
+
+	ks := openEnvKeyedWithFallback(t, path, "new-master-key")
+	if _, err := ks.MigrateToV2(); err == nil {
+		t.Error("MigrateToV2() should fail for a store encrypted with an unrelated master key")
+	}
+}
+
+func TestStrictStoreCannotReadLegacyWithoutFallback(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "keys.enc")
+	writeLegacyMachineKeyedStore(t, path, map[string]string{"openai": "sk-old-key"})
+
+	strict, err := NewFileKeystoreWithSource(path, &staticMasterKeySource{key: []byte("new-master-key")})
+	if err != nil {
+		t.Fatalf("NewFileKeystoreWithSource() error = %v", err)
+	}
+	if _, err := strict.Get("openai"); err == nil {
+		t.Error("Get() without legacy fallback should fail for machine-keyed store")
 	}
 }

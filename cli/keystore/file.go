@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -42,7 +43,12 @@ const (
 type FileKeystore struct {
 	path      string
 	masterKey []byte
-	mu        sync.RWMutex
+	// legacyKey, when set, is tried when decryption with masterKey fails so
+	// stores written by older versions remain readable during migration.
+	legacyKey []byte
+	// legacyMode reports whether masterKey is the machine-derived v1 key.
+	legacyMode bool
+	mu         sync.RWMutex
 }
 
 // NewFileKeystore creates a new file-based keystore at the given path.
@@ -55,8 +61,9 @@ func NewFileKeystore(path string) (*FileKeystore, error) {
 	}
 
 	return &FileKeystore{
-		path:      path,
-		masterKey: key,
+		path:       path,
+		masterKey:  key,
+		legacyMode: true,
 	}, nil
 }
 
@@ -72,6 +79,53 @@ func NewFileKeystoreWithSource(path string, source MasterKeySource) (*FileKeysto
 		path:      path,
 		masterKey: masterKey,
 	}, nil
+}
+
+// WithLegacyKeyFallback enables reading stores encrypted by older versions:
+// v1-format files and v2-format files keyed with the machine-derived legacy
+// key. Decryption is attempted with the master key first; the legacy key is
+// only tried when that fails. Writes always use the master key, so any
+// Set or Delete transparently re-encrypts the store.
+func (f *FileKeystore) WithLegacyKeyFallback() *FileKeystore {
+	if key, err := deriveKeyV1(); err == nil {
+		f.legacyKey = key
+	}
+	return f
+}
+
+// UsesLegacyKey reports whether the keystore was opened with the insecure
+// machine-derived v1 key (i.e., no master key source was provided).
+func (f *FileKeystore) UsesLegacyKey() bool {
+	return f.legacyMode
+}
+
+// NeedsMigration reports whether the store file cannot be decrypted with the
+// current master key alone, meaning it is v1-format or was encrypted under
+// the legacy machine-derived key. Running MigrateToV2 re-encrypts it.
+func (f *FileKeystore) NeedsMigration() (bool, error) {
+	ciphertext, err := os.ReadFile(f.path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	if len(ciphertext) == 0 {
+		return false, nil
+	}
+
+	if isV2Format(ciphertext) {
+		_, err := decryptV2WithKey(f.masterKey, ciphertext)
+		return err != nil, nil
+	}
+	_, err = decryptV1WithKey(f.masterKey, ciphertext)
+	return err != nil, nil
+}
+
+// Path returns the keystore file path.
+func (f *FileKeystore) Path() string {
+	return f.path
 }
 
 // Set stores a key-value pair.
@@ -160,13 +214,22 @@ func (f *FileKeystore) loadData() (map[string]string, error) {
 		return data, nil
 	}
 
-	// Detect format version
+	// Detect format version and decrypt. The master key is tried first; if it
+	// fails and a legacy fallback key is configured (see WithLegacyKeyFallback),
+	// the legacy machine-derived key is tried so pre-migration stores remain
+	// readable. Writes always re-encrypt under the master key.
 	var plaintext []byte
 	if isV2Format(ciphertext) {
-		plaintext, err = f.decryptV2(ciphertext)
+		plaintext, err = decryptV2WithKey(f.masterKey, ciphertext)
+		if err != nil && len(f.legacyKey) > 0 {
+			plaintext, err = decryptV2WithKey(f.legacyKey, ciphertext)
+		}
 	} else {
 		// Legacy v1 format
-		plaintext, err = f.decryptV1(ciphertext)
+		plaintext, err = decryptV1WithKey(f.masterKey, ciphertext)
+		if err != nil && len(f.legacyKey) > 0 {
+			plaintext, err = decryptV1WithKey(f.legacyKey, ciphertext)
+		}
 	}
 	if err != nil {
 		return nil, err
@@ -254,8 +317,10 @@ func (f *FileKeystore) encryptV2(plaintext []byte) ([]byte, error) {
 	return append(header, ciphertext...), nil
 }
 
-// decryptV2 decrypts data using AES-256-GCM with Argon2id key derivation.
-func (f *FileKeystore) decryptV2(ciphertext []byte) ([]byte, error) {
+// decryptV2WithKey decrypts v2-format data using AES-256-GCM with Argon2id
+// key derivation from the given master key.
+// Format: [magic (4)] [version (1)] [salt (16)] [nonce (12)] [ciphertext]
+func decryptV2WithKey(masterKey, ciphertext []byte) ([]byte, error) {
 	headerLen := len(magicHeader) + 1 + saltLength + nonceLength
 	if len(ciphertext) < headerLen {
 		return nil, errors.New("ciphertext too short")
@@ -271,7 +336,7 @@ func (f *FileKeystore) decryptV2(ciphertext []byte) ([]byte, error) {
 	header := ciphertext[:offset]
 
 	// Derive key using Argon2id
-	key := deriveKeyV2(f.masterKey, salt)
+	key := deriveKeyV2(masterKey, salt)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -286,10 +351,10 @@ func (f *FileKeystore) decryptV2(ciphertext []byte) ([]byte, error) {
 	return gcm.Open(nil, nonce, encrypted, header)
 }
 
-// decryptV1 decrypts data using AES-256-GCM (legacy v1 format).
-func (f *FileKeystore) decryptV1(ciphertext []byte) ([]byte, error) {
-	key := f.deriveKeyFromMasterV1()
-
+// decryptV1WithKey decrypts v1-format data using AES-256-GCM with the given
+// key used directly (the schedule used by the original v1 implementation).
+// Format: [nonce (12)] [ciphertext]
+func decryptV1WithKey(key, ciphertext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -307,13 +372,6 @@ func (f *FileKeystore) decryptV1(ciphertext []byte) ([]byte, error) {
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 	return gcm.Open(nil, nonce, ciphertext, nil)
-}
-
-// deriveKeyFromMasterV1 hashes the master key to get a 32-byte key for v1 format.
-// This provides backward compatibility when using NewFileKeystoreWithSource with v1 files.
-func (f *FileKeystore) deriveKeyFromMasterV1() []byte {
-	hash := sha256.Sum256(f.masterKey)
-	return hash[:]
 }
 
 // deriveKeyV1 creates a machine-specific encryption key (legacy v1 method).
@@ -337,9 +395,27 @@ func deriveKeyV1() ([]byte, error) {
 	return hash[:], nil
 }
 
-// MigrateToV2 migrates a v1 keystore to v2 format.
-// The keystore must be opened with the new master key source.
-func (f *FileKeystore) MigrateToV2() error {
+// MigrateResult reports the outcome of a MigrateToV2 call.
+type MigrateResult int
+
+const (
+	// MigrateNone means no keystore file existed (or it was empty).
+	MigrateNone MigrateResult = iota
+	// MigrateAlreadyCurrent means the store is already v2-format and
+	// encrypted under the current master key.
+	MigrateAlreadyCurrent
+	// MigrateRekeyed means the store was decrypted (via the master key or the
+	// legacy fallback) and re-encrypted under the current master key.
+	MigrateRekeyed
+)
+
+// MigrateToV2 migrates a legacy keystore to v2 format encrypted under this
+// keystore's master key. It handles both v1-format files and v2-format files
+// encrypted with the legacy machine-derived key (requires
+// WithLegacyKeyFallback, which NewKeystore enables automatically).
+// The original file is preserved at <path>.bak before the new one is written.
+// The call is idempotent: an already-current store returns MigrateAlreadyCurrent.
+func (f *FileKeystore) MigrateToV2() (MigrateResult, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -347,50 +423,67 @@ func (f *FileKeystore) MigrateToV2() error {
 	ciphertext, err := os.ReadFile(f.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil // Nothing to migrate
+			return MigrateNone, nil // Nothing to migrate
 		}
-		return err
+		return MigrateNone, err
 	}
 
 	if len(ciphertext) == 0 {
-		return nil // Empty file, nothing to migrate
+		return MigrateNone, nil // Empty file, nothing to migrate
 	}
 
-	// Already v2 format
+	// Already v2 under the current master key: nothing to do.
 	if isV2Format(ciphertext) {
-		return nil
+		if _, err := decryptV2WithKey(f.masterKey, ciphertext); err == nil {
+			return MigrateAlreadyCurrent, nil
+		}
 	}
 
-	// Read data using v1 format
-	plaintext, err := f.decryptV1(ciphertext)
+	// Decrypt via any available key: master first, then the legacy fallback.
+	var plaintext []byte
+	if isV2Format(ciphertext) {
+		plaintext, err = decryptV2WithKey(f.masterKey, ciphertext)
+		if err != nil && len(f.legacyKey) > 0 {
+			plaintext, err = decryptV2WithKey(f.legacyKey, ciphertext)
+		}
+	} else {
+		plaintext, err = decryptV1WithKey(f.masterKey, ciphertext)
+		if err != nil && len(f.legacyKey) > 0 {
+			plaintext, err = decryptV1WithKey(f.legacyKey, ciphertext)
+		}
+	}
 	if err != nil {
-		return err
+		return MigrateNone, fmt.Errorf("cannot decrypt keystore with the current master key (or the legacy machine key): %w", err)
 	}
 
 	var data map[string]string
 	if err := json.Unmarshal(plaintext, &data); err != nil {
-		return err
+		return MigrateNone, err
 	}
 
-	// Re-encrypt with v2 format
+	// Re-encrypt under the current master key.
 	newPlaintext, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return MigrateNone, err
 	}
 
 	newCiphertext, err := f.encryptV2(newPlaintext)
 	if err != nil {
-		return err
+		return MigrateNone, err
 	}
 
-	// Backup old file
-	backupPath := f.path + ".v1.bak"
+	// Backup old file before replacing it.
+	backupPath := f.path + ".bak"
 	if err := os.WriteFile(backupPath, ciphertext, 0600); err != nil {
-		return err
+		return MigrateNone, err
 	}
 
 	// Write new file
-	return os.WriteFile(f.path, newCiphertext, 0600)
+	if err := os.WriteFile(f.path, newCiphertext, 0600); err != nil {
+		return MigrateNone, err
+	}
+
+	return MigrateRekeyed, nil
 }
 
 // IsV2Format checks if the keystore file is in v2 format.

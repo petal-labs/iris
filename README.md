@@ -40,7 +40,7 @@ Iris solves these problems by providing:
 
 ### CLI Features
 - `iris chat` - Send chat completions from the terminal
-- `iris keys` - Securely manage API keys with AES-256-GCM encryption and Argon2id key derivation
+- `iris keys` - Securely manage API keys with AES-256-GCM encryption and Argon2id key derivation (`set`, `list`, `delete`, `migrate`)
 - `iris init` - Scaffold new Iris projects
 ## Installation
 
@@ -718,6 +718,9 @@ iris keys set xai
 iris keys set zai
 iris keys set ollama  # Only needed for Ollama Cloud
 
+# Upgrade the keystore to master-key encryption (V2)
+iris keys migrate  # Requires IRIS_KEYSTORE_KEY (see Security below)
+
 # Chat with OpenAI
 iris chat --provider openai --model gpt-5.6 --prompt "Hello, world!"
 
@@ -814,12 +817,19 @@ export IRIS_KEYSTORE_KEY=$(openssl rand -base64 32)
 echo 'export IRIS_KEYSTORE_KEY="your-key-here"' >> ~/.bashrc
 ```
 
-When `IRIS_KEYSTORE_KEY` is set, Iris uses the V2 keystore format with:
+All keystore-backed commands (`iris keys`, `iris chat`) honor `IRIS_KEYSTORE_KEY`. When it is set, Iris uses the V2 keystore format with:
 - **Argon2id** key derivation (OWASP recommended parameters)
 - **AES-256-GCM** authenticated encryption
 - Per-file random salt and nonce
 
-Without `IRIS_KEYSTORE_KEY`, Iris falls back to V1 mode which derives keys from machine-specific data. This is convenient for development but less secure for production.
+Stores written by older versions remain readable (decryption falls back to the legacy key), and they are re-encrypted under your master key on the next write. To upgrade an existing store explicitly:
+
+```bash
+iris keys migrate
+# Re-encrypts ~/.iris/keys.enc in V2 format; the previous file is kept at ~/.iris/keys.enc.bak
+```
+
+Without `IRIS_KEYSTORE_KEY`, Iris falls back to V1 mode which derives keys from machine-specific data. This is convenient for development but less secure for production — the CLI prints a warning on every keystore operation while in this mode.
 
 ### API Key Protection
 

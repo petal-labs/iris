@@ -57,7 +57,7 @@ func (a *App) runChat(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get API key from keystore.
-	ks, err := a.newKeystore()
+	ks, err := a.openKeystore()
 	if err != nil {
 		return exitWithCode(ExitValidation, fmt.Errorf("failed to open keystore: %w", err))
 	}
