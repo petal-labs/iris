@@ -75,6 +75,12 @@ var ErrInvalidSchema = errors.New("invalid json schema for strict structured out
 // output.
 var ErrStructuredOutputUnsupported = errors.New("structured output not supported by this provider or model")
 
+// ErrSearchUnsupported indicates a request carried core.SearchOptions
+// targeting a provider that does not support core.FeatureWebSearch.
+// validate() returns this before the request is sent so callers fail fast
+// instead of sending a request whose search directives would be ignored.
+var ErrSearchUnsupported = errors.New("web search options not supported by this provider")
+
 // ErrTimeout indicates an Iris-imposed execution timeout elapsed before the
 // provider call completed. It wraps context.DeadlineExceeded, so
 // errors.Is(err, context.DeadlineExceeded) also holds.

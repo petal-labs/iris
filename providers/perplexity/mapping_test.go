@@ -412,3 +412,105 @@ type mockTool struct {
 
 func (t *mockTool) Name() string        { return t.name }
 func (t *mockTool) Description() string { return t.description }
+
+func TestMapResponseCitations(t *testing.T) {
+	resp := &perplexityResponse{
+		ID:    "resp-cite",
+		Model: "sonar",
+		Choices: []perplexityChoice{
+			{
+				Index: 0,
+				Message: &perplexityRespMsg{
+					Role:    "assistant",
+					Content: "Paris is the capital of France.",
+				},
+			},
+		},
+		Citations: []string{
+			"https://en.wikipedia.org/wiki/Paris",
+			"https://www.britannica.com/place/Paris-France",
+		},
+	}
+
+	result, err := mapResponse(resp)
+	if err != nil {
+		t.Fatalf("mapResponse() error = %v", err)
+	}
+
+	if len(result.Citations) != 2 {
+		t.Fatalf("Citations length = %d, want 2", len(result.Citations))
+	}
+	if result.Citations[0] != "https://en.wikipedia.org/wiki/Paris" {
+		t.Errorf("Citations[0] = %q, want wikipedia URL", result.Citations[0])
+	}
+	if result.Citations[1] != "https://www.britannica.com/place/Paris-France" {
+		t.Errorf("Citations[1] = %q, want britannica URL", result.Citations[1])
+	}
+	if !result.HasCitations() {
+		t.Error("HasCitations() = false, want true")
+	}
+}
+
+func TestMapResponseNoCitations(t *testing.T) {
+	resp := &perplexityResponse{
+		ID:    "resp-nocite",
+		Model: "sonar",
+		Choices: []perplexityChoice{
+			{Index: 0, Message: &perplexityRespMsg{Role: "assistant", Content: "hi"}},
+		},
+	}
+
+	result, err := mapResponse(resp)
+	if err != nil {
+		t.Fatalf("mapResponse() error = %v", err)
+	}
+	if result.HasCitations() {
+		t.Error("HasCitations() = true for response without citations")
+	}
+}
+
+func TestBuildRequestSearchOptions(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:    "sonar",
+		Messages: []core.Message{{Role: core.RoleUser, Content: "Latest Go release"}},
+		SearchOptions: &core.SearchOptions{
+			SearchDomainFilter: []string{"go.dev", "-example.com"},
+			Recency:            core.SearchRecencyMonth,
+			Mode:               core.SearchModeAcademic,
+		},
+	}
+
+	pReq := buildRequest(req, false)
+
+	if len(pReq.SearchDomainFilter) != 2 {
+		t.Fatalf("SearchDomainFilter length = %d, want 2", len(pReq.SearchDomainFilter))
+	}
+	if pReq.SearchDomainFilter[0] != "go.dev" || pReq.SearchDomainFilter[1] != "-example.com" {
+		t.Errorf("SearchDomainFilter = %v, want [go.dev -example.com]", pReq.SearchDomainFilter)
+	}
+	if pReq.SearchRecencyFilter != "month" {
+		t.Errorf("SearchRecencyFilter = %q, want month", pReq.SearchRecencyFilter)
+	}
+	if pReq.SearchMode != "academic" {
+		t.Errorf("SearchMode = %q, want academic", pReq.SearchMode)
+	}
+}
+
+func TestBuildRequestNoSearchOptions(t *testing.T) {
+	req := &core.ChatRequest{
+		Model:    "sonar",
+		Messages: []core.Message{{Role: core.RoleUser, Content: "Hi"}},
+	}
+
+	pReq := buildRequest(req, false)
+
+	if pReq.SearchDomainFilter != nil {
+		t.Errorf("SearchDomainFilter = %v, want nil", pReq.SearchDomainFilter)
+	}
+	if pReq.SearchRecencyFilter != "" {
+		t.Errorf("SearchRecencyFilter = %q, want empty", pReq.SearchRecencyFilter)
+	}
+	if pReq.SearchMode != "" {
+		t.Errorf("SearchMode = %q, want empty", pReq.SearchMode)
+	}
+}

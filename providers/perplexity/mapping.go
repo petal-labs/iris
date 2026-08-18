@@ -99,14 +99,22 @@ func buildRequest(req *core.ChatRequest, stream bool) *perplexityRequest {
 		pReq.ReasoningEffort = mapReasoningEffort(req.ReasoningEffort)
 	}
 
+	// Map web-search grounding options if set
+	if req.SearchOptions != nil {
+		pReq.SearchDomainFilter = req.SearchOptions.SearchDomainFilter
+		pReq.SearchRecencyFilter = string(req.SearchOptions.Recency)
+		pReq.SearchMode = string(req.SearchOptions.Mode)
+	}
+
 	return pReq
 }
 
 // mapResponse converts a Perplexity response to an Iris ChatResponse.
 func mapResponse(resp *perplexityResponse) (*core.ChatResponse, error) {
 	result := &core.ChatResponse{
-		ID:    resp.ID,
-		Model: core.ModelID(resp.Model),
+		ID:        resp.ID,
+		Model:     core.ModelID(resp.Model),
+		Citations: resp.Citations,
 	}
 
 	// Map usage if present

@@ -18,6 +18,7 @@ const (
 	FeatureReranking                Feature = "reranking"
 	FeatureStructuredOutput         Feature = "structured_output"
 	FeatureBatch                    Feature = "batch"
+	FeatureWebSearch                Feature = "web_search"
 )
 
 // ResponseFormat specifies the output format constraint for chat responses.
@@ -282,6 +283,12 @@ type ChatRequest struct {
 	PreviousResponseID string          `json:"previous_response_id,omitempty"`
 	Truncation         string          `json:"truncation,omitempty"`
 	ToolResources      *ToolResources  `json:"tool_resources,omitempty"`
+
+	// Web-search grounding options for providers that support
+	// FeatureWebSearch (currently Perplexity). Requests carrying search
+	// options against a provider without the capability are rejected by the
+	// builder with ErrSearchUnsupported before any HTTP call is made.
+	SearchOptions *SearchOptions `json:"search_options,omitempty"`
 }
 
 // ChatResponse represents a response from a chat model.
@@ -292,6 +299,10 @@ type ChatResponse struct {
 	Output    string     `json:"output"`
 	Usage     TokenUsage `json:"usage"`
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+
+	// Citations contains the source URLs consulted by search-grounded
+	// providers (currently Perplexity). Empty for providers without search.
+	Citations []string `json:"citations,omitempty"`
 
 	// Responses API fields
 	Reasoning *ReasoningOutput `json:"reasoning,omitempty"`
@@ -319,6 +330,11 @@ func (r *ChatResponse) FirstToolCall() *ToolCall {
 // HasReasoning reports whether the response contains reasoning output.
 func (r *ChatResponse) HasReasoning() bool {
 	return r.Reasoning != nil && len(r.Reasoning.Summary) > 0
+}
+
+// HasCitations reports whether the response carries search citations.
+func (r *ChatResponse) HasCitations() bool {
+	return len(r.Citations) > 0
 }
 
 // ChatChunk represents an incremental streaming response.
