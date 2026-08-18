@@ -412,3 +412,51 @@ func TestNewToolCallAssembler(t *testing.T) {
 		t.Fatal("newToolCallAssembler().asm should not be nil")
 	}
 }
+
+func TestDoStreamChatCitations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+
+		chunks := []string{
+			`data: {"id":"resp-cite","model":"sonar","choices":[{"index":0,"delta":{"role":"assistant","content":"Paris"}}]}`,
+			`data: {"id":"resp-cite","model":"sonar","choices":[{"index":0,"delta":{"content":" is the capital."}}]}`,
+			`data: {"id":"resp-cite","model":"sonar","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15},"citations":["https://en.wikipedia.org/wiki/Paris","https://www.britannica.com/place/Paris-France"]}`,
+			`data: [DONE]`,
+		}
+
+		for _, chunk := range chunks {
+			fmt.Fprintln(w, chunk)
+			fmt.Fprintln(w, "")
+		}
+	}))
+	defer server.Close()
+
+	p := New("test-key", WithBaseURL(server.URL))
+	stream, err := p.doStreamChat(context.Background(), &core.ChatRequest{
+		Model:    "sonar",
+		Messages: []core.Message{{Role: core.RoleUser, Content: "Capital of France?"}},
+	})
+	if err != nil {
+		t.Fatalf("doStreamChat() error = %v", err)
+	}
+
+	for range stream.Ch {
+	}
+
+	finalResp := <-stream.Final
+	if finalResp == nil {
+		t.Fatal("Final response should not be nil")
+	}
+	if len(finalResp.Citations) != 2 {
+		t.Fatalf("Citations length = %d, want 2", len(finalResp.Citations))
+	}
+	if finalResp.Citations[0] != "https://en.wikipedia.org/wiki/Paris" {
+		t.Errorf("Citations[0] = %q, want wikipedia URL", finalResp.Citations[0])
+	}
+	if finalResp.Citations[1] != "https://www.britannica.com/place/Paris-France" {
+		t.Errorf("Citations[1] = %q, want britannica URL", finalResp.Citations[1])
+	}
+	if !finalResp.HasCitations() {
+		t.Error("HasCitations() = false, want true")
+	}
+}

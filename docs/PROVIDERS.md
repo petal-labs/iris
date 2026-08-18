@@ -217,7 +217,8 @@ resp, err := client.Chat(xai.ModelGrok4).
 
 **Special Features**:
 - Built-in web search and grounding
-- Citation support
+- Search controls via `core.SearchOptions` (domain filter with `-` exclusion, recency, search mode) — set with `ChatBuilder.SearchOptions`
+- Citation support: response and streamed-final `Citations []string` on `core.ChatResponse`
 - Research report generation
 
 **Usage Example**:
@@ -227,7 +228,19 @@ client := core.NewClient(provider)
 
 resp, err := client.Chat(perplexity.ModelSonarPro).
     User("What are the latest developments in AI?").
+    SearchOptions(&core.SearchOptions{
+        SearchDomainFilter: []string{"arxiv.org"},
+        Recency:            core.SearchRecencyMonth,
+    }).
     GetResponse(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(resp.Output)
+for _, url := range resp.Citations {
+    fmt.Println("source:", url)
+}
 ```
 
 ---

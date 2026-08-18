@@ -122,6 +122,7 @@ func (p *Perplexity) processSSEStream(
 	var responseID string
 	var responseModel string
 	var usage *perplexityUsage
+	var citations []string
 
 	for {
 		// Check for context cancellation
@@ -179,6 +180,9 @@ func (p *Perplexity) processSSEStream(
 		if chunk.Usage != nil {
 			usage = chunk.Usage
 		}
+		if len(chunk.Citations) > 0 {
+			citations = chunk.Citations
+		}
 
 		// Process choices
 		for _, choice := range chunk.Choices {
@@ -211,6 +215,7 @@ func (p *Perplexity) processSSEStream(
 		ID:        responseID,
 		Model:     core.ModelID(responseModel),
 		ToolCalls: toolCalls,
+		Citations: citations,
 	}
 
 	if usage != nil {

@@ -71,7 +71,7 @@ func (p *Perplexity) Models() []core.ModelInfo {
 // Supports reports whether the provider supports the given feature.
 func (p *Perplexity) Supports(feature core.Feature) bool {
 	switch feature {
-	case core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling, core.FeatureReasoning:
+	case core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling, core.FeatureReasoning, core.FeatureWebSearch:
 		return true
 	default:
 		return false

@@ -202,6 +202,32 @@ func (b *ChatBuilder) ReasoningEffort(level ReasoningEffort) *ChatBuilder {
 	return b
 }
 
+// SearchOptions configures web-search grounding for providers that support
+// FeatureWebSearch (currently Perplexity). Passing a nil pointer clears any
+// previously set options. Requests carrying search options against a
+// provider without the capability fail validation with ErrSearchUnsupported
+// before any HTTP call is made.
+//
+// Note: this is distinct from WebSearch(), which enables OpenAI's built-in
+// web_search tool on the Responses API. SearchOptions controls how
+// search-native providers ground their results.
+//
+//	resp, err := client.Chat(perplexity.ModelSonar).
+//	    User("Latest Go release notes").
+//	    SearchOptions(&core.SearchOptions{
+//	        SearchDomainFilter: []string{"go.dev"},
+//	        Recency:            core.SearchRecencyMonth,
+//	    }).
+//	    GetResponse(ctx)
+//
+//	for _, url := range resp.Citations {
+//	    fmt.Println(url)
+//	}
+func (b *ChatBuilder) SearchOptions(opts *SearchOptions) *ChatBuilder {
+	b.req.SearchOptions = opts
+	return b
+}
+
 // BuiltInTool adds a built-in tool to the request.
 func (b *ChatBuilder) BuiltInTool(toolType string) *ChatBuilder {
 	b.req.BuiltInTools = append(b.req.BuiltInTools, BuiltInTool{Type: toolType})
@@ -342,6 +368,16 @@ func (b *ChatBuilder) Clone() *ChatBuilder {
 			}
 			copy(clone.req.ToolResources.FileSearch.VectorStoreIDs, b.req.ToolResources.FileSearch.VectorStoreIDs)
 		}
+	}
+
+	// Deep copy SearchOptions
+	if b.req.SearchOptions != nil {
+		searchCopy := *b.req.SearchOptions
+		if len(b.req.SearchOptions.SearchDomainFilter) > 0 {
+			searchCopy.SearchDomainFilter = make([]string, len(b.req.SearchOptions.SearchDomainFilter))
+			copy(searchCopy.SearchDomainFilter, b.req.SearchOptions.SearchDomainFilter)
+		}
+		clone.req.SearchOptions = &searchCopy
 	}
 
 	return clone
@@ -550,6 +586,17 @@ func (b *ChatBuilder) validate() error {
 				}
 				break
 			}
+		}
+	}
+
+	// Capability gate: reject requests carrying web-search options against
+	// a provider that does not support core.FeatureWebSearch. This fails
+	// fast instead of silently sending a request whose search directives
+	// the provider would ignore.
+	if b.req.SearchOptions != nil {
+		if !b.client.provider.Supports(FeatureWebSearch) {
+			return fmt.Errorf("%w: provider %s model %s",
+				ErrSearchUnsupported, b.client.provider.ID(), b.req.Model)
 		}
 	}
 

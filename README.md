@@ -321,6 +321,31 @@ func main() {
 }
 ```
 
+#### Search Options and Citations
+
+Control how Perplexity grounds its search and retrieve the sources it used. Domain filters accept a `-` prefix to exclude a domain, and `Recency` limits result freshness (`hour`, `day`, `week`, `month`, `year`):
+
+```go
+resp, err := client.Chat(perplexity.ModelSonar).
+    User("Summarize the latest Go release notes").
+    SearchOptions(&core.SearchOptions{
+        SearchDomainFilter: []string{"go.dev", "-old.docs.example.com"},
+        Recency:            core.SearchRecencyMonth,
+        Mode:               core.SearchModeWeb, // or SearchModeAcademic / SearchModeSEC
+    }).
+    GetResponse(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(resp.Output)
+for _, url := range resp.Citations {
+    fmt.Println("source:", url)
+}
+```
+
+Citations are also populated on the final response of a stream (`core.DrainStream` returns them). Requests carrying `SearchOptions` against providers without web-search support fail fast with `core.ErrSearchUnsupported` before any HTTP call is made.
+
 ### Using Ollama
 
 ```go
