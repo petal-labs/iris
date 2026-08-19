@@ -3,8 +3,22 @@ package tests
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers"
+	_ "github.com/petal-labs/iris/providers/anthropic"
+	_ "github.com/petal-labs/iris/providers/azurefoundry"
+	_ "github.com/petal-labs/iris/providers/gemini"
+	_ "github.com/petal-labs/iris/providers/huggingface"
+	_ "github.com/petal-labs/iris/providers/ollama"
+	_ "github.com/petal-labs/iris/providers/openai"
+	_ "github.com/petal-labs/iris/providers/perplexity"
+	_ "github.com/petal-labs/iris/providers/voyageai"
+	_ "github.com/petal-labs/iris/providers/xai"
+	_ "github.com/petal-labs/iris/providers/zai"
 )
 
 // TestProvidersDocExists verifies PROVIDERS.md exists and contains required sections.
@@ -24,6 +38,7 @@ func TestProvidersDocExists(t *testing.T) {
 		"### Ollama",
 		"### HuggingFace",
 		"### VoyageAI",
+		"### Azure AI Foundry",
 		"## Choosing a Provider",
 		"## Rate Limits and Pricing",
 	}
@@ -50,6 +65,174 @@ func TestProvidersDocExists(t *testing.T) {
 			t.Errorf("PROVIDERS.md missing usage example for %s provider", p)
 		}
 	}
+}
+
+// matrixColumns maps the PROVIDERS.md feature-matrix columns to the core
+// Feature constants each represents.
+var matrixColumns = []struct {
+	column  string
+	feature core.Feature
+}{
+	{"Chat", core.FeatureChat},
+	{"Streaming", core.FeatureChatStreaming},
+	{"Tool Calling", core.FeatureToolCalling},
+	{"Reasoning", core.FeatureReasoning},
+	{"Built-in Tools", core.FeatureBuiltInTools},
+	{"Response Chain", core.FeatureResponseChain},
+	{"Structured Output", core.FeatureStructuredOutput},
+	{"Embeddings", core.FeatureEmbeddings},
+	{"Reranking", core.FeatureReranking},
+	{"Images", core.FeatureImageGeneration},
+}
+
+// docMatrixProviderID maps the PROVIDERS.md display names to registry IDs.
+var docMatrixProviderID = map[string]string{
+	"OpenAI":           "openai",
+	"Anthropic":        "anthropic",
+	"Gemini":           "gemini",
+	"xAI (Grok)":       "xai",
+	"Perplexity":       "perplexity",
+	"Z.ai (GLM)":       "zai",
+	"Ollama":           "ollama",
+	"HuggingFace":      "huggingface",
+	"Azure AI Foundry": "azurefoundry",
+	"VoyageAI":         "voyageai",
+}
+
+// TestProvidersDocMatrixAccuracy verifies the PROVIDERS.md feature matrix
+// matches each provider's actual Supports() implementation, so the docs
+// cannot silently drift from the code.
+func TestProvidersDocMatrixAccuracy(t *testing.T) {
+	content := readDocFile(t, "PROVIDERS.md")
+
+	// Parse matrix rows: | <Provider> | Yes | No | ... |
+	// Note: [^|\n] — without excluding newlines the greedy inner group
+	// swallows the whole table into a single match.
+	rowRe := regexp.MustCompile(`(?m)^\| ([^|\n]+) \|((?:[^|\n]+\|)+)$`)
+	cells := map[string][]string{}
+	for _, match := range rowRe.FindAllStringSubmatch(content, -1) {
+		name := strings.TrimSpace(match[1])
+		if _, ok := docMatrixProviderID[name]; !ok {
+			continue // header or separator row
+		}
+		var row []string
+		for _, cell := range strings.Split(strings.TrimSuffix(match[2], "|"), "|") {
+			row = append(row, strings.TrimSpace(cell))
+		}
+		cells[name] = row
+	}
+
+	if len(cells) != len(docMatrixProviderID) {
+		t.Errorf("matrix has %d provider rows, want %d (missing providers: %v)",
+			len(cells), len(docMatrixProviderID), missingMatrixRows(cells))
+	}
+
+	header := matrixHeader(content)
+	if len(header) == 0 {
+		t.Fatal("could not parse feature matrix header row")
+	}
+
+	for displayName, id := range docMatrixProviderID {
+		row, ok := cells[displayName]
+		if !ok {
+			t.Errorf("matrix missing row for %q", displayName)
+			continue
+		}
+
+		// Instantiate the provider through the registry with a dummy key;
+		// Supports() does not depend on the key.
+		provider, err := providers.Create(id, "docs-test-key")
+		if err != nil {
+			t.Errorf("provider %q is not registered: %v", id, err)
+			continue
+		}
+
+		for _, col := range matrixColumns {
+			idx := headerIndex(header, col.column)
+			if idx < 0 {
+				t.Errorf("matrix has no %q column", col.column)
+				continue
+			}
+			// Header index 0 is the "Provider" name column; row cells are
+			// everything after it, so shift by one.
+			cellIdx := idx - 1
+			if cellIdx < 0 || cellIdx >= len(row) {
+				t.Errorf("matrix row for %q has no %q cell", displayName, col.column)
+				continue
+			}
+
+			supported := provider.Supports(col.feature)
+			cell := row[cellIdx]
+			switch strings.TrimSuffix(cell, "†") { // gated-sentinel footnote marker
+			case "Yes":
+				// Bare Yes asserts a provider-level capability.
+				if !supported {
+					t.Errorf("matrix cell %s/%s = %q, but Supports(%s) = false (use \"Yes*\" if model-dependent)",
+						displayName, col.column, cell, col.feature)
+				}
+			case "Yes*":
+				// Starred Yes asserts the capability exists for at least one
+				// model in the provider's catalog, even if not declared at
+				// provider level.
+				if !supported && !anyModelHasCapability(provider, col.feature) {
+					t.Errorf("matrix cell %s/%s = %q, but Supports(%s) = false and no catalog model has the capability",
+						displayName, col.column, cell, col.feature)
+				}
+			case "No":
+				if supported {
+					t.Errorf("matrix cell %s/%s = %q, want \"Yes\" (Supports(%s) = true)",
+						displayName, col.column, cell, col.feature)
+				}
+			default:
+				// "N/A" and anything else is provider-specific prose; not
+				// machine-checked.
+			}
+		}
+	}
+}
+
+// anyModelHasCapability reports whether any model in the provider's catalog
+// declares the feature.
+func anyModelHasCapability(p core.Provider, feature core.Feature) bool {
+	for _, m := range p.Models() {
+		if m.HasCapability(feature) {
+			return true
+		}
+	}
+	return false
+}
+
+func missingMatrixRows(cells map[string][]string) []string {
+	var missing []string
+	for name := range docMatrixProviderID {
+		if _, ok := cells[name]; !ok {
+			missing = append(missing, name)
+		}
+	}
+	return missing
+}
+
+func matrixHeader(content string) []string {
+	re := regexp.MustCompile(`(?m)^\| Provider \|([^|\n]+\|)+$`)
+	match := re.FindString(content)
+	if match == "" {
+		return nil
+	}
+	trimmed := strings.TrimSuffix(strings.TrimPrefix(match, "|"), "|")
+	var header []string
+	for _, cell := range strings.Split(trimmed, "|") {
+		header = append(header, strings.TrimSpace(cell))
+	}
+	return header
+}
+
+func headerIndex(header []string, column string) int {
+	for i, h := range header {
+		if h == column {
+			return i
+		}
+	}
+	return -1
 }
 
 // TestArchitectureDocExists verifies ARCHITECTURE.md exists and contains required sections.

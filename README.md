@@ -15,7 +15,7 @@ Building AI applications often requires:
 - Building reusable chat and tool-driven workflows
 
 Iris solves these problems by providing:
-- **Unified SDK**: A consistent Go API across providers (OpenAI, Anthropic, Google Gemini, xAI Grok, Z.ai GLM, Perplexity, Ollama)
+- **Unified SDK**: A consistent Go API across providers (OpenAI, Anthropic, Google Gemini, xAI Grok, Z.ai GLM, Perplexity, Ollama, Hugging Face, Azure AI Foundry, Voyage AI)
 - **Fluent Builder Pattern**: Intuitive, chainable API for constructing requests
 - **Built-in Streaming**: First-class support for streaming responses with proper channel handling
 - **Secure Key Management**: Encrypted local storage for API keys
@@ -785,15 +785,19 @@ iris/
 ├── core/           # Core SDK types and client
 ├── providers/      # LLM provider implementations
 │   ├── internal/   # Shared provider internals (normalize, toolcalls, etc.)
-│   ├── openai/     # OpenAI provider (includes Batch API)
+│   ├── openai/     # OpenAI provider (Batch API, files, vector stores, images)
 │   ├── anthropic/  # Anthropic Claude provider
-│   ├── gemini/     # Google Gemini provider
+│   ├── gemini/     # Google Gemini provider (images)
 │   ├── xai/        # xAI Grok provider
 │   ├── zai/        # Z.ai GLM provider
-│   ├── perplexity/ # Perplexity Search provider
-│   └── ollama/     # Ollama provider (local and cloud)
+│   ├── perplexity/ # Perplexity Search provider (web search + citations)
+│   ├── ollama/     # Ollama provider (local and cloud, embeddings)
+│   ├── huggingface/# Hugging Face Inference Providers router
+│   ├── azurefoundry/# Azure AI Foundry provider (Entra ID auth, embeddings)
+│   └── voyageai/   # Voyage AI provider (embeddings, reranking)
 ├── tools/          # Tool/function calling framework + middleware
 ├── testing/        # Test utilities (MockProvider, RecordingProvider)
+├── contrib/        # Optional integrations (OpenTelemetry hook)
 ├── cli/            # Command-line interface
 │   ├── cmd/iris/   # CLI entry point
 │   ├── commands/   # CLI commands
@@ -871,13 +875,16 @@ See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security documentatio
 
 | Provider | Status | Features |
 |----------|--------|----------|
-| OpenAI | Supported | Chat, Streaming, Tools, Batch API, Structured Output, Responses API (GPT-5+) |
-| Anthropic | Supported | Chat, Streaming, Tools |
-| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning, Structured Output |
+| OpenAI | Supported | Chat, Streaming, Tools, Batch API, Structured Output, Embeddings, Images, Responses API (GPT-5+) |
+| Anthropic | Supported | Chat, Streaming, Tools, Reasoning |
+| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Images |
 | xAI Grok | Supported | Chat, Streaming, Tools, Reasoning |
 | Z.ai GLM | Supported | Chat, Streaming, Tools, Thinking |
-| Perplexity | Supported | Chat, Streaming, Tools, Web Search |
-| Ollama | Supported | Chat, Streaming, Tools, Thinking |
+| Perplexity | Supported | Chat, Streaming, Tools, Reasoning, Web Search + Citations |
+| Ollama | Supported | Chat, Streaming, Tools, Thinking, Embeddings |
+| Hugging Face | Supported | Chat, Streaming, Tools (Inference Providers router, model discovery) |
+| Azure AI Foundry | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Embeddings (Entra ID auth) |
+| Voyage AI | Supported | Embeddings, Contextualized Embeddings, Reranking (no chat) |
 
 ### xAI Grok Models
 
@@ -1124,6 +1131,9 @@ import (
     "github.com/petal-labs/iris/providers/zai"
     "github.com/petal-labs/iris/providers/perplexity"
     "github.com/petal-labs/iris/providers/ollama"
+    "github.com/petal-labs/iris/providers/huggingface"
+    "github.com/petal-labs/iris/providers/azurefoundry"
+    "github.com/petal-labs/iris/providers/voyageai"
     "github.com/petal-labs/iris/tools"
     "github.com/petal-labs/iris/testing"  // Test utilities
 )
@@ -1167,10 +1177,28 @@ func init() {
 ```
 
 List registered providers:
-```go
-import "github.com/petal-labs/iris/providers"
 
-fmt.Println(providers.List()) // [anthropic gemini huggingface ollama openai perplexity xai zai]
+```go
+import (
+    // The registry itself.
+    "github.com/petal-labs/iris/providers"
+
+    // Provider packages register themselves via init(). Import the ones
+    // you want available — the registry is empty without these imports.
+    _ "github.com/petal-labs/iris/providers/anthropic"
+    _ "github.com/petal-labs/iris/providers/azurefoundry"
+    _ "github.com/petal-labs/iris/providers/gemini"
+    _ "github.com/petal-labs/iris/providers/huggingface"
+    _ "github.com/petal-labs/iris/providers/ollama"
+    _ "github.com/petal-labs/iris/providers/openai"
+    _ "github.com/petal-labs/iris/providers/perplexity"
+    _ "github.com/petal-labs/iris/providers/voyageai"
+    _ "github.com/petal-labs/iris/providers/xai"
+    _ "github.com/petal-labs/iris/providers/zai"
+)
+
+fmt.Println(providers.List())
+// [anthropic azurefoundry gemini huggingface ollama openai perplexity voyageai xai zai]
 ```
 
 ## License

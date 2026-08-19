@@ -4,17 +4,22 @@ This document provides a comprehensive comparison of the AI providers supported 
 
 ## Feature Support Matrix
 
-| Provider | Chat | Streaming | Tool Calling | Reasoning | Built-in Tools | Response Chain | Structured Output | Embeddings | Reranking |
-|----------|------|-----------|--------------|-----------|----------------|----------------|--------------------|------------|-----------|
-| OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | Yes | No | No |
-| Anthropic | Yes | Yes | Yes | No | No | No | No† | No | No |
-| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | No | No |
-| xAI (Grok) | Yes | Yes | Yes | Yes* | No | No | No† | No | No |
-| Perplexity | Yes | Yes | Yes* | Yes* | No | No | No† | No | No |
-| Z.ai (GLM) | Yes | Yes | Yes | Yes* | No | No | No† | No | No |
-| Ollama | Yes | Yes | Yes* | Yes* | No | No | No† | No | No |
-| HuggingFace | Yes | Yes | Yes | No | No | No | No† | No | No |
-| VoyageAI | No | No | No | No | No | No | N/A | Yes | Yes |
+Cells reflect each provider's `Supports()` implementation. For chat-based features, availability can also vary by model — see the model-specific tables below.
+
+| Provider | Chat | Streaming | Tool Calling | Reasoning | Built-in Tools | Response Chain | Structured Output | Embeddings | Reranking | Images |
+|----------|------|-----------|--------------|-----------|----------------|----------------|--------------------|------------|-----------|--------|
+| OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | Yes | Yes | No | Yes |
+| Anthropic | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
+| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | No | No | Yes |
+| xAI (Grok) | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
+| Perplexity | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
+| Z.ai (GLM) | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
+| Ollama | Yes | Yes | Yes | Yes | No | No | No† | Yes | No | No |
+| HuggingFace | Yes | Yes | Yes | No | No | No | No† | No | No | No |
+| Azure AI Foundry | Yes | Yes | Yes | Yes | No | No | Yes | Yes | No | No |
+| VoyageAI | No | No | No | No | No | No | N/A | Yes | Yes | No |
+
+Perplexity additionally supports web-search grounding (`core.SearchOptions`, response citations) via `core.FeatureWebSearch`.
 
 *Feature availability varies by model. See model-specific tables below.
 
@@ -413,6 +418,33 @@ results, err := provider.Rerank(ctx, &core.RerankRequest{
     Query:     "machine learning",
     Documents: []string{"doc1", "doc2", "doc3"},
 })
+```
+
+### Azure AI Foundry
+
+**API Endpoint**: `https://{resource}.services.ai.azure.com/models` (Model Inference API) or `https://{resource}.openai.azure.com` (Azure OpenAI Service, via `WithOpenAIEndpoint()`)
+
+**Authentication**: API key or Microsoft Entra ID (Azure AD) credential. Via environment: `AZURE_AI_ENDPOINT`, `AZURE_AI_API_KEY`, and optional `AZURE_AI_DEPLOYMENT_ID` (required with `WithOpenAIEndpoint()`).
+
+**Models**: Multi-family catalog — OpenAI (GPT), Meta Llama, Mistral, Cohere, and more — including embeddings models. Use `provider.Models()` or `azurefoundry.GetModelInfo(id)` to inspect the static catalog.
+
+**Notes**:
+- Unlike other Iris providers, `azurefoundry.New` takes `(endpoint, apiKey, ...)` — the resource endpoint is mandatory.
+- Entra ID auth (managed identity, workload identity, etc.) is available via `NewWithCredential(endpoint, credential)`, where `credential` implements `azurefoundry.TokenCredential`.
+- The provider registry entry requires the endpoint to come from `AZURE_AI_ENDPOINT`; prefer `New`/`NewFromEnv` for full configuration.
+
+**Usage Example**:
+```go
+provider, err := azurefoundry.NewFromEnv()
+// or: provider := azurefoundry.New("https://my-resource.services.ai.azure.com", apiKey)
+if err != nil {
+    log.Fatal(err)
+}
+client := core.NewClient(provider)
+
+resp, err := client.Chat("gpt-5.6"). // any deployed model
+    User("Hello").
+    GetResponse(ctx)
 ```
 
 ## Choosing a Provider
