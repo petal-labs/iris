@@ -303,7 +303,7 @@ When the Iris-applied timeout (not a caller-supplied ctx deadline) elapses, the 
 
 ### Migration Note
 
-Per-provider timeout options (e.g. `openai.WithTimeout`, `Config.Timeout` on each provider) are deprecated in favor of `core.WithTimeout` on the `Client`, which is provider-agnostic and composes with the precedence rules above.
+Per-provider timeout options (e.g. `openai.WithTimeout`, `Config.Timeout` on each provider) apply to that provider's **non-chat unary operations** (embeddings, files, images, batch, vector stores; default 600s). Chat and streaming calls are governed exclusively by `core.WithTimeout` on the `Client` and the precedence rules above. Use the provider option when a specific backend needs a tighter or looser bound on its auxiliary APIs, and `core.WithTimeout` for everything conversational.
 
 ### Alternatives Considered
 

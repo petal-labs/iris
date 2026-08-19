@@ -128,7 +128,7 @@ Use Iris to manage API keys, chat with models, and scaffold projects.`,
 	root.PersistentFlags().StringVar(&a.provider, "provider", "", "provider ID (openai, anthropic, ollama)")
 	root.PersistentFlags().StringVar(&a.model, "model", "", "model ID (e.g. gpt-4o)")
 	root.PersistentFlags().BoolVar(&a.jsonOutput, "json", false, "emit JSON output")
-	root.PersistentFlags().BoolVar(&a.verbose, "verbose", false, "enable debug logging")
+	root.PersistentFlags().BoolVar(&a.verbose, "verbose", false, "print token usage summary after streaming responses")
 
 	root.AddCommand(a.newChatCommand())
 	root.AddCommand(a.newKeysCommand())
