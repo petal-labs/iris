@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `Conversation.AddToolResults(ctx, results)` for recording tool execution results before the next conversational turn (#60)
+- Provider content-part capability declarations and `WithWarningHandler` warnings before unsupported multimodal parts are omitted (#61)
 
 ### Changed
 
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Conversation replay now preserves complete messages, including assistant tool calls, tool results, and multimodal parts; unary and streaming tool-call responses are retained in history (#60)
+- Anthropic image blocks, OpenAI Chat Completions image parts, and Azure AI Foundry vision messages are now transmitted instead of silently dropping `Message.Parts`; Gemini now accepts the pointer parts produced by `UserMultimodal` (#61)
 
 ## [0.17.0] - 2026-08-02
 

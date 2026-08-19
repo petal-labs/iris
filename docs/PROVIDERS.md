@@ -73,6 +73,8 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 
 **Structured Output**: `ResponseJSONSchema` works on both the Chat Completions API and the Responses API (GPT-5.x), mapped to each API's native `response_format`/`text.format` shape respectively. Requesting it against a Chat Completions-only model that lacks `core.FeatureStructuredOutput` (e.g. gpt-3.5-turbo) fails with `core.ErrStructuredOutputUnsupported`.
 
+**Multimodal Input**: Image URLs and base64 data URLs are mapped on both Chat Completions and Responses routes. Responses-routed models also accept image file IDs and document inputs.
+
 **Usage Example**:
 ```go
 provider := openai.New(os.Getenv("OPENAI_API_KEY"))
@@ -112,6 +114,7 @@ resp, err := client.Chat(openai.ModelGPT4o).
 - Strong instruction following
 - Built-in safety guardrails
 - Thinking/reasoning modes
+- Vision input via hosted image URLs or base64 data URLs
 
 **Usage Example**:
 ```go
@@ -432,6 +435,7 @@ results, err := provider.Rerank(ctx, &core.RerankRequest{
 - Unlike other Iris providers, `azurefoundry.New` takes `(endpoint, apiKey, ...)` — the resource endpoint is mandatory.
 - Entra ID auth (managed identity, workload identity, etc.) is available via `NewWithCredential(endpoint, credential)`, where `credential` implements `azurefoundry.TokenCredential`.
 - The provider registry entry requires the endpoint to come from `AZURE_AI_ENDPOINT`; prefer `New`/`NewFromEnv` for full configuration.
+- Vision-capable deployments accept image URLs and base64 data URLs through `UserMultimodal`; support still depends on the deployed model.
 
 **Usage Example**:
 ```go
@@ -458,8 +462,10 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 | Cost-sensitive applications | HuggingFace (routing), Ollama (local) |
 | Embeddings and RAG | VoyageAI |
 | Code generation | OpenAI (Codex models), Anthropic |
-| Multimodal (vision) | OpenAI (GPT-4o), Gemini, Z.ai (GLM-V) |
+| Multimodal (vision) | OpenAI (GPT-4o), Anthropic (Claude), Gemini, Azure AI Foundry vision deployments |
 | Image generation | OpenAI (DALL-E, GPT-Image), Gemini (Nano Banana) |
+
+Iris currently maps `Message.Parts` for OpenAI, Anthropic, Gemini, and Azure AI Foundry. Other providers invoke `core.WithWarningHandler` before omitting undeclared content parts, even when an upstream model advertises vision support.
 
 ## Rate Limits and Pricing
 

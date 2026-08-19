@@ -100,14 +100,13 @@ func mapMessages(msgs []core.Message) (system string, messages []anthropicMessag
 			}
 
 		case core.RoleUser:
+			content := mapUserContent(msg)
+			if len(content) == 0 {
+				continue
+			}
 			messages = append(messages, anthropicMessage{
-				Role: "user",
-				Content: []anthropicContentBlock{
-					{
-						Type: "text",
-						Text: msg.Content,
-					},
-				},
+				Role:    "user",
+				Content: content,
 			})
 		}
 	}
@@ -118,6 +117,80 @@ func mapMessages(msgs []core.Message) (system string, messages []anthropicMessag
 	}
 
 	return system, messages
+}
+
+func mapUserContent(msg core.Message) []anthropicContentBlock {
+	if len(msg.Parts) == 0 {
+		return []anthropicContentBlock{{Type: "text", Text: msg.Content}}
+	}
+
+	content := make([]anthropicContentBlock, 0, len(msg.Parts))
+	for _, part := range msg.Parts {
+		if block, ok := mapContentPart(part); ok {
+			content = append(content, block)
+		}
+	}
+	return content
+}
+
+func mapContentPart(part core.ContentPart) (anthropicContentBlock, bool) {
+	switch value := part.(type) {
+	case core.InputText:
+		return anthropicContentBlock{Type: "text", Text: value.Text}, true
+	case *core.InputText:
+		if value != nil {
+			return anthropicContentBlock{Type: "text", Text: value.Text}, true
+		}
+	case core.InputImage:
+		return mapInputImage(value)
+	case *core.InputImage:
+		if value != nil {
+			return mapInputImage(*value)
+		}
+	}
+	return anthropicContentBlock{}, false
+}
+
+func mapInputImage(image core.InputImage) (anthropicContentBlock, bool) {
+	if image.ImageURL == "" || image.FileID != "" {
+		return anthropicContentBlock{}, false
+	}
+	if strings.HasPrefix(image.ImageURL, "data:") {
+		mediaType, data, ok := parseImageDataURL(image.ImageURL)
+		if !ok {
+			return anthropicContentBlock{}, false
+		}
+		return anthropicContentBlock{
+			Type: "image",
+			Source: &anthropicImageSource{
+				Type:      "base64",
+				MediaType: mediaType,
+				Data:      data,
+			},
+		}, true
+	}
+	return anthropicContentBlock{
+		Type: "image",
+		Source: &anthropicImageSource{
+			Type: "url",
+			URL:  image.ImageURL,
+		},
+	}, true
+}
+
+func parseImageDataURL(value string) (mediaType, data string, ok bool) {
+	if !strings.HasPrefix(value, "data:") {
+		return "", "", false
+	}
+	metadata, data, found := strings.Cut(strings.TrimPrefix(value, "data:"), ",")
+	if !found || data == "" {
+		return "", "", false
+	}
+	mediaType, encoding, found := strings.Cut(metadata, ";")
+	if !found || encoding != "base64" || !strings.HasPrefix(mediaType, "image/") {
+		return "", "", false
+	}
+	return mediaType, data, true
 }
 
 // marshalToolResultContent converts tool result content to a string.

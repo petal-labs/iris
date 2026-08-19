@@ -304,3 +304,25 @@ func TestIsGemini3Model(t *testing.T) {
 		})
 	}
 }
+
+func TestSupportsContentPart(t *testing.T) {
+	provider := New("test-key")
+	tests := []struct {
+		name string
+		role core.Role
+		part core.ContentPart
+		want bool
+	}{
+		{name: "user text", role: core.RoleUser, part: core.InputText{Text: "describe"}, want: true},
+		{name: "assistant image", role: core.RoleAssistant, part: core.InputImage{ImageURL: "https://example.com/cat.jpg"}, want: true},
+		{name: "user file", role: core.RoleUser, part: &core.InputFile{FileID: "files/123"}, want: true},
+		{name: "system image", role: core.RoleSystem, part: &core.InputImage{ImageURL: "https://example.com/cat.jpg"}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := provider.SupportsContentPart(ModelGemini36Flash, tt.role, tt.part); got != tt.want {
+				t.Errorf("SupportsContentPart() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

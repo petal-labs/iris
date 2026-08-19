@@ -166,6 +166,15 @@ func (p *AzureFoundry) Supports(feature core.Feature) bool {
 	}
 }
 
+// SupportsContentPart reports whether Azure Foundry can transmit a message part.
+func (p *AzureFoundry) SupportsContentPart(_ core.ModelID, role core.Role, part core.ContentPart) bool {
+	if role != core.RoleUser {
+		return false
+	}
+	_, ok := mapContentPart(part)
+	return ok
+}
+
 // buildHeaders constructs the HTTP headers for an API request.
 func (p *AzureFoundry) buildHeaders(ctx context.Context) (http.Header, error) {
 	headers := make(http.Header)
@@ -230,3 +239,5 @@ func normalizeEndpoint(endpoint string) string {
 
 // Compile-time check that AzureFoundry implements Provider.
 var _ core.Provider = (*AzureFoundry)(nil)
+
+var _ core.ContentPartSupporter = (*AzureFoundry)(nil)

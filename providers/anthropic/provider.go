@@ -82,6 +82,15 @@ func (p *Anthropic) Supports(feature core.Feature) bool {
 	}
 }
 
+// SupportsContentPart reports whether Anthropic can transmit a message part.
+func (p *Anthropic) SupportsContentPart(_ core.ModelID, role core.Role, part core.ContentPart) bool {
+	if role != core.RoleUser {
+		return false
+	}
+	_, ok := mapContentPart(part)
+	return ok
+}
+
 // buildHeaders constructs the HTTP headers for an API request.
 func (p *Anthropic) buildHeaders() http.Header {
 	headers := make(http.Header)
@@ -119,3 +128,5 @@ func (p *Anthropic) StreamChat(ctx context.Context, req *core.ChatRequest) (*cor
 
 // Compile-time check that Anthropic implements Provider.
 var _ core.Provider = (*Anthropic)(nil)
+
+var _ core.ContentPartSupporter = (*Anthropic)(nil)

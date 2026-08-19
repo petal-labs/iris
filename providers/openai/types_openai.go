@@ -31,9 +31,20 @@ type openAIJSONSchema struct {
 // openAIMessage represents a message in the OpenAI format.
 type openAIMessage struct {
 	Role       string           `json:"role"`
-	Content    string           `json:"content,omitempty"`
+	Content    any              `json:"content,omitempty"`
 	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`   // For assistant messages requesting tools
 	ToolCallID string           `json:"tool_call_id,omitempty"` // For tool result messages
+}
+
+type openAIContentPart struct {
+	Type     string          `json:"type"`
+	Text     string          `json:"text,omitempty"`
+	ImageURL *openAIImageURL `json:"image_url,omitempty"`
+}
+
+type openAIImageURL struct {
+	URL    string `json:"url"`
+	Detail string `json:"detail,omitempty"`
 }
 
 // openAITool represents a tool definition in the OpenAI format.

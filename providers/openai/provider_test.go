@@ -297,3 +297,27 @@ func TestNewFromEnvWithOptions(t *testing.T) {
 		t.Errorf("Organization header not set correctly")
 	}
 }
+
+func TestSupportsContentPart(t *testing.T) {
+	provider := New("test-key")
+	tests := []struct {
+		name  string
+		model core.ModelID
+		role  core.Role
+		part  core.ContentPart
+		want  bool
+	}{
+		{name: "completions image URL", model: ModelGPT4o, role: core.RoleUser, part: core.InputImage{ImageURL: "https://example.com/cat.jpg"}, want: true},
+		{name: "completions file ID", model: ModelGPT4o, role: core.RoleUser, part: &core.InputImage{FileID: "file-123"}, want: false},
+		{name: "completions assistant part", model: ModelGPT4o, role: core.RoleAssistant, part: &core.InputText{Text: "history"}, want: false},
+		{name: "responses image file ID", model: ModelGPT56, role: core.RoleUser, part: &core.InputImage{FileID: "file-123"}, want: true},
+		{name: "responses document data", model: ModelGPT56, role: core.RoleUser, part: &core.InputFile{FileData: "cGRm", Filename: "document.pdf"}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := provider.SupportsContentPart(tt.model, tt.role, tt.part); got != tt.want {
+				t.Errorf("SupportsContentPart() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

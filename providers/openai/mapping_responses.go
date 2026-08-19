@@ -131,7 +131,9 @@ func buildResponsesInput(msgs []core.Message, instructions string) responsesInpu
 		if len(msg.Parts) > 0 {
 			parts := make([]responsesContentPart, 0, len(msg.Parts))
 			for _, part := range msg.Parts {
-				parts = append(parts, mapContentPart(part))
+				if mapped := mapResponsesContentPart(part); mapped.Type != "" {
+					parts = append(parts, mapped)
+				}
 			}
 			messages = append(messages, responsesInputMessage{
 				Role:    role,
@@ -148,34 +150,66 @@ func buildResponsesInput(msgs []core.Message, instructions string) responsesInpu
 	return responsesInput{Messages: messages}
 }
 
-// mapContentPart converts a core.ContentPart to a responsesContentPart.
-func mapContentPart(part core.ContentPart) responsesContentPart {
+// mapResponsesContentPart converts a core.ContentPart to a Responses API part.
+func mapResponsesContentPart(part core.ContentPart) responsesContentPart {
 	switch p := part.(type) {
+	case core.InputText:
+		return responsesContentPart{Type: "input_text", Text: p.Text}
 	case *core.InputText:
+		if p == nil {
+			return responsesContentPart{}
+		}
 		return responsesContentPart{
 			Type: "input_text",
 			Text: p.Text,
 		}
+	case core.InputImage:
+		return mapResponsesInputImage(p)
 	case *core.InputImage:
-		cp := responsesContentPart{
-			Type:     "input_image",
-			ImageURL: p.ImageURL,
-			FileID:   p.FileID,
+		if p == nil {
+			return responsesContentPart{}
 		}
-		if p.Detail != "" {
-			cp.Detail = string(p.Detail)
-		}
-		return cp
+		return mapResponsesInputImage(*p)
+	case core.InputFile:
+		return mapResponsesInputFile(p)
 	case *core.InputFile:
-		return responsesContentPart{
-			Type:     "input_file",
-			FileID:   p.FileID,
-			FileURL:  p.FileURL,
-			FileData: p.FileData,
-			Filename: p.Filename,
+		if p == nil {
+			return responsesContentPart{}
 		}
+		return mapResponsesInputFile(*p)
 	default:
 		return responsesContentPart{}
+	}
+}
+
+func mapResponsesInputImage(image core.InputImage) responsesContentPart {
+	if (image.ImageURL == "") == (image.FileID == "") {
+		return responsesContentPart{}
+	}
+	return responsesContentPart{
+		Type:     "input_image",
+		ImageURL: image.ImageURL,
+		FileID:   image.FileID,
+		Detail:   string(image.Detail),
+	}
+}
+
+func mapResponsesInputFile(file core.InputFile) responsesContentPart {
+	sourceCount := 0
+	for _, source := range []string{file.FileID, file.FileURL, file.FileData} {
+		if source != "" {
+			sourceCount++
+		}
+	}
+	if sourceCount != 1 {
+		return responsesContentPart{}
+	}
+	return responsesContentPart{
+		Type:     "input_file",
+		FileID:   file.FileID,
+		FileURL:  file.FileURL,
+		FileData: file.FileData,
+		Filename: file.Filename,
 	}
 }
 
