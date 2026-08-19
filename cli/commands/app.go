@@ -4,6 +4,7 @@ package commands
 import (
 	"io"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -28,24 +29,28 @@ type AppOption func(*App)
 type App struct {
 	root *cobra.Command
 
-	loadConfig      ConfigLoader
-	createProvider  ProviderFactory
-	newKeystore     KeystoreFactory
-	stdin           io.Reader
-	stdout          io.Writer
-	stderr          io.Writer
-	cfgFile         string
-	provider        string
-	model           string
-	jsonOutput      bool
-	verbose         bool
-	cfg             *config.Config
-	chatPrompt      string
-	chatSystem      string
-	chatTemperature float32
-	chatMaxTokens   int
-	chatStream      bool
-	initProvider    string
+	loadConfig          ConfigLoader
+	createProvider      ProviderFactory
+	newKeystore         KeystoreFactory
+	stdin               io.Reader
+	stdout              io.Writer
+	stderr              io.Writer
+	cfgFile             string
+	provider            string
+	model               string
+	jsonOutput          bool
+	verbose             bool
+	cfg                 *config.Config
+	chatPrompt          string
+	chatSystem          string
+	chatTemperature     float32
+	chatMaxTokens       int
+	chatStream          bool
+	chatTimeout         time.Duration
+	chatSchema          string
+	chatSchemaNonStrict bool
+	chatInteractive     bool
+	initProvider        string
 }
 
 // WithConfigLoader injects a config loader dependency.
@@ -128,12 +133,13 @@ Use Iris to manage API keys, chat with models, and scaffold projects.`,
 	root.PersistentFlags().StringVar(&a.provider, "provider", "", "provider ID (openai, anthropic, ollama)")
 	root.PersistentFlags().StringVar(&a.model, "model", "", "model ID (e.g. gpt-4o)")
 	root.PersistentFlags().BoolVar(&a.jsonOutput, "json", false, "emit JSON output")
-	root.PersistentFlags().BoolVar(&a.verbose, "verbose", false, "print token usage summary after streaming responses")
+	root.PersistentFlags().BoolVar(&a.verbose, "verbose", false, "print token usage summary after each response")
 
 	root.AddCommand(a.newChatCommand())
 	root.AddCommand(a.newKeysCommand())
 	root.AddCommand(a.newInitCommand())
 	root.AddCommand(a.newVersionCommand())
+	root.AddCommand(a.newModelsCommand())
 
 	return root
 }
