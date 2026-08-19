@@ -429,7 +429,7 @@ if errors.Is(err, core.ErrTimeout) {
 }
 ```
 
-Precedence: a deadline already on the caller's `ctx` always wins; otherwise the per-call `.Timeout(d)` applies; otherwise the client's default. This timeout only covers `Chat`/`Stream` — embeddings, batch, file, and image calls are not subject to it, so pass a `context.WithTimeout` deadline yourself for those. Per-provider `WithTimeout`/`Config.Timeout` options are deprecated in favor of `core.WithTimeout`.
+Precedence: a deadline already on the caller's `ctx` always wins; otherwise the per-call `.Timeout(d)` applies; otherwise the client's default. This timeout covers `Chat`/`Stream` only. Non-chat unary operations (embeddings, batch, files, images, vector stores) are instead bounded by the per-provider `WithTimeout`/`Config.Timeout` option (default 600s), or by a `context.WithTimeout` deadline you supply yourself.
 
 ### Streaming Responses
 
@@ -805,28 +805,25 @@ iris/
 
 ## Configuration
 
-Iris looks for configuration at `~/.iris/config.yaml`:
+Iris looks for configuration at `~/.iris/config.yaml`. The schema is:
+
+| Field | Purpose |
+|---|---|
+| `default_provider` | Provider used when `--provider` is omitted |
+| `default_model` | Model used when `--model` is omitted |
+| `providers.<id>.base_url` | Override a provider's API base URL |
 
 ```yaml
 default_provider: openai
 default_model: gpt-5.6  # or gpt-4o for older models
 
 providers:
-  openai:
-    api_key_env: OPENAI_API_KEY
-  anthropic:
-    api_key_env: ANTHROPIC_API_KEY
-  gemini:
-    api_key_env: GEMINI_API_KEY
-  xai:
-    api_key_env: XAI_API_KEY
-  zai:
-    api_key_env: ZAI_API_KEY
   ollama:
-    # For local Ollama, no API key needed
-    # For Ollama Cloud, set api_key_env: OLLAMA_API_KEY
-    # Custom base URL: base_url: http://localhost:11434
+    # Custom base URL for a remote/local Ollama instance (default: http://localhost:11434)
+    base_url: http://remote-host:11434
 ```
+
+API keys are **not** configured here. The CLI reads provider keys from the encrypted keystore (`iris keys set <provider>`, see [Security](#security)); the SDK reads them from environment variables when you use the provider packages directly.
 
 ## Security
 
@@ -1017,10 +1014,16 @@ make build-cli
 
 # Check version
 ./bin/iris version
-# Output: iris v0.3.0 (abc1234) built 2026-01-30T12:00:00Z
+# Output:
+# iris v0.18.0
+#   commit:     abc1234
+#   built:      2026-08-17T12:00:00Z
+#   go version: go1.24.0
+#   platform:   darwin/arm64
 
 # JSON output
 ./bin/iris version --json
+# Output: {"version":"v0.18.0","commit":"abc1234","buildDate":"2026-08-17T12:00:00Z","goVersion":"go1.24.0","platform":"darwin/arm64"}
 ```
 
 ### Building (without Make)

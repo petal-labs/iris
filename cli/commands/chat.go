@@ -65,9 +65,17 @@ func (a *App) runChat(cmd *cobra.Command, args []string) error {
 	apiKey, err := ks.Get(providerID)
 	if err != nil {
 		if _, ok := err.(*keystore.ErrKeyNotFound); ok {
-			return exitWithCode(ExitValidation, fmt.Errorf("no API key for %s: run 'iris keys set %s' first", providerID, providerID))
+			// Providers that run locally (e.g. Ollama) work without a stored
+			// key; proceed with an empty key and let the provider decide.
+			// Ollama Cloud still fails at request time with its own
+			// unauthorized error if a key was actually required.
+			if !providerAllowsEmptyAPIKey(providerID) {
+				return exitWithCode(ExitValidation, fmt.Errorf("no API key for %s: run 'iris keys set %s' first", providerID, providerID))
+			}
+			apiKey = ""
+		} else {
+			return exitWithCode(ExitValidation, fmt.Errorf("failed to get API key: %w", err))
 		}
-		return exitWithCode(ExitValidation, fmt.Errorf("failed to get API key: %w", err))
 	}
 
 	// Create provider.

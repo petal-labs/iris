@@ -17,6 +17,21 @@ import (
 
 type providerConstructor func(apiKey, baseURL string) (core.Provider, error)
 
+// keylessProviders lists providers that can operate without an API key
+// (local inference). For these, a missing keystore entry is not an error:
+// the provider is constructed with an empty key, and its own behavior
+// decides what happens (local Ollama works; Ollama Cloud fails at request
+// time with the provider's unauthorized error).
+var keylessProviders = map[string]bool{
+	"ollama": true,
+}
+
+// providerAllowsEmptyAPIKey reports whether providerID can be used without
+// an API key stored in the keystore.
+func providerAllowsEmptyAPIKey(providerID string) bool {
+	return keylessProviders[providerID]
+}
+
 func defaultProviderFactory() ProviderFactory {
 	constructors := map[string]providerConstructor{
 		"openai": func(apiKey, baseURL string) (core.Provider, error) {
