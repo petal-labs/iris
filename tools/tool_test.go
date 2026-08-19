@@ -90,3 +90,58 @@ func TestToolSchemaJSONSerialization(t *testing.T) {
 		t.Errorf("Round-trip failed: got %q, want %q", string(parsed.JSONSchema), string(schema.JSONSchema))
 	}
 }
+
+// capturingProvider captures the ChatRequest the client built, so tests can
+// verify tools passed via ChatBuilder.Tools arrive intact.
+type capturingProvider struct {
+	lastReq *core.ChatRequest
+}
+
+func (p *capturingProvider) ID() string                         { return "capturing" }
+func (p *capturingProvider) Models() []core.ModelInfo           { return nil }
+func (p *capturingProvider) Supports(feature core.Feature) bool { return true }
+func (p *capturingProvider) Chat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
+	p.lastReq = req
+	return &core.ChatResponse{ID: "resp-1", Model: req.Model, Output: "ok"}, nil
+}
+func (p *capturingProvider) StreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
+	p.lastReq = req
+	ch := make(chan core.ChatChunk, 1)
+	errCh := make(chan error, 1)
+	finalCh := make(chan *core.ChatResponse, 1)
+	go func() {
+		ch <- core.ChatChunk{Delta: "ok"}
+		close(ch)
+		finalCh <- &core.ChatResponse{ID: "resp-1", Model: req.Model, Output: "ok"}
+		close(finalCh)
+		close(errCh)
+	}()
+	return &core.ChatStream{Ch: ch, Err: errCh, Final: finalCh}, nil
+}
+
+func TestToolSchemaReachesProviderThroughClient(t *testing.T) {
+	schema := tools.ToolSchema{JSONSchema: json.RawMessage(`{"type":"object","properties":{"city":{"type":"string"}}}`)}
+	tool := &mockTool{
+		name:        "get_weather",
+		description: "Get weather",
+		schema:      schema,
+		callFn:      func(ctx context.Context, args json.RawMessage) (any, error) { return "sunny", nil },
+	}
+
+	provider := &capturingProvider{}
+	client := core.NewClient(provider)
+
+	_, err := client.Chat("gpt-4").User("Weather in Tokyo?").Tools(tool).GetResponse(context.Background())
+	if err != nil {
+		t.Fatalf("GetResponse() error = %v", err)
+	}
+
+	if provider.lastReq == nil || len(provider.lastReq.Tools) != 1 {
+		t.Fatalf("request did not carry the tool (tools: %v)", provider.lastReq)
+	}
+
+	got := provider.lastReq.Tools[0].Schema().JSONSchema
+	if string(got) != string(schema.JSONSchema) {
+		t.Errorf("schema at provider = %s, want %s", got, schema.JSONSchema)
+	}
+}

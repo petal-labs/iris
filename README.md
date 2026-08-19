@@ -466,6 +466,8 @@ client := core.NewClient(provider,
 
 ### Using Tools
 
+Tools implement the `tools.Tool` interface — `Name()`, `Description()`, and `Schema()` come from `core.Tool`; `Call()` makes the tool executable. Any `tools.Tool` can be passed straight to `Tools(...)`:
+
 ```go
 // Define a tool
 weatherTool := mytools.NewWeatherTool()
@@ -482,6 +484,8 @@ if len(resp.ToolCalls) > 0 {
     }
 }
 ```
+
+A minimal tool without execution logic only needs the three `core.Tool` methods (return `core.ToolSchema{}` for a no-parameter tool). The schema is part of the interface, so the compiler guarantees every tool you register carries its parameters schema to the provider.
 
 ### Tool Middleware and Validation
 

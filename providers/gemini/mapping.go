@@ -6,13 +6,7 @@ import (
 	"strings"
 
 	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/tools"
 )
-
-// schemaProvider is an interface for tools that provide a JSON schema.
-type schemaProvider interface {
-	Schema() tools.ToolSchema
-}
 
 // buildRequest creates a Gemini API request from an Iris ChatRequest.
 func buildRequest(req *core.ChatRequest) *geminiRequest {
@@ -300,15 +294,10 @@ func mapTools(irisTools []core.Tool) []geminiTool {
 
 	decls := make([]geminiFunctionDecl, len(irisTools))
 	for i, t := range irisTools {
-		var params json.RawMessage
+		params := t.Schema().JSONSchema
 
-		// Check if the tool provides a schema
-		if sp, ok := t.(schemaProvider); ok {
-			params = sp.Schema().JSONSchema
-		}
-
-		// Default to empty object if no schema
-		if params == nil {
+		// Default to empty object for no-parameter tools
+		if len(params) == 0 {
 			params = json.RawMessage(`{}`)
 		}
 

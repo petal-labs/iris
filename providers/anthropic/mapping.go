@@ -5,18 +5,11 @@ import (
 	"strings"
 
 	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/tools"
 )
 
 // defaultMaxTokens is the default max_tokens value when not specified.
 // Anthropic requires max_tokens, so we provide a reasonable default.
 const defaultMaxTokens = 1024
-
-// schemaProvider is an interface for tools that provide a JSON schema.
-// This allows us to check if a core.Tool also implements the full tools.Tool interface.
-type schemaProvider interface {
-	Schema() tools.ToolSchema
-}
 
 // buildRequest creates an Anthropic API request from an Iris ChatRequest.
 func buildRequest(req *core.ChatRequest, stream bool) *anthropicRequest {
@@ -142,7 +135,8 @@ func marshalToolResultContent(content any) string {
 }
 
 // mapTools converts Iris tools to Anthropic tool format.
-// Tools that implement schemaProvider will have their schema included.
+// A tool with an empty schema (no parameters) is transmitted with an empty
+// object schema.
 func mapTools(irisTools []core.Tool) []anthropicTool {
 	if len(irisTools) == 0 {
 		return nil
@@ -150,15 +144,10 @@ func mapTools(irisTools []core.Tool) []anthropicTool {
 
 	result := make([]anthropicTool, len(irisTools))
 	for i, t := range irisTools {
-		var inputSchema json.RawMessage
+		inputSchema := t.Schema().JSONSchema
 
-		// Check if the tool provides a schema
-		if sp, ok := t.(schemaProvider); ok {
-			inputSchema = sp.Schema().JSONSchema
-		}
-
-		// Default to empty object if no schema
-		if inputSchema == nil {
+		// Default to empty object for no-parameter tools
+		if len(inputSchema) == 0 {
 			inputSchema = json.RawMessage(`{}`)
 		}
 

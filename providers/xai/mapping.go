@@ -4,14 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/tools"
 )
-
-// schemaProvider is an interface for tools that provide a JSON schema.
-// This allows us to check if a core.Tool also implements the full tools.Tool interface.
-type schemaProvider interface {
-	Schema() tools.ToolSchema
-}
 
 // mapMessages converts Iris messages to xAI message format.
 func mapMessages(msgs []core.Message) []xaiMessage {
@@ -26,7 +19,8 @@ func mapMessages(msgs []core.Message) []xaiMessage {
 }
 
 // mapTools converts Iris tools to xAI tool format.
-// Tools that implement schemaProvider will have their schema included.
+// A tool with an empty schema (no parameters) is transmitted with an empty
+// object schema.
 func mapTools(irisTools []core.Tool) []xaiTool {
 	if len(irisTools) == 0 {
 		return nil
@@ -34,15 +28,10 @@ func mapTools(irisTools []core.Tool) []xaiTool {
 
 	result := make([]xaiTool, len(irisTools))
 	for i, t := range irisTools {
-		var params json.RawMessage
+		params := t.Schema().JSONSchema
 
-		// Check if the tool provides a schema
-		if sp, ok := t.(schemaProvider); ok {
-			params = sp.Schema().JSONSchema
-		}
-
-		// Default to empty object if no schema
-		if params == nil {
+		// Default to empty object for no-parameter tools
+		if len(params) == 0 {
 			params = json.RawMessage(`{}`)
 		}
 

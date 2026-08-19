@@ -105,14 +105,15 @@ func (m *mockFullTool) Description() string                                     
 func (m *mockFullTool) Schema() tools.ToolSchema                                    { return m.schema }
 func (m *mockFullTool) Call(ctx context.Context, args json.RawMessage) (any, error) { return nil, nil }
 
-// mockBasicTool implements only core.Tool (no Schema)
+// mockBasicTool implements core.Tool with an empty schema (no parameters).
 type mockBasicTool struct {
 	name        string
 	description string
 }
 
-func (m *mockBasicTool) Name() string        { return m.name }
-func (m *mockBasicTool) Description() string { return m.description }
+func (m *mockBasicTool) Name() string            { return m.name }
+func (m *mockBasicTool) Description() string     { return m.description }
+func (m *mockBasicTool) Schema() core.ToolSchema { return core.ToolSchema{} }
 
 func TestMapToolsWithSchema(t *testing.T) {
 	schema := json.RawMessage(`{"type":"object","properties":{"location":{"type":"string"}}}`)
@@ -145,7 +146,9 @@ func TestMapToolsWithSchema(t *testing.T) {
 	}
 }
 
-func TestMapToolsWithoutSchema(t *testing.T) {
+func TestMapToolsEmptySchemaDefaultsToEmptyObject(t *testing.T) {
+	// A tool that declares no parameters (empty ToolSchema) is transmitted
+	// with an empty object schema rather than a missing one.
 	tool := &mockBasicTool{
 		name:        "simple_tool",
 		description: "A simple tool",

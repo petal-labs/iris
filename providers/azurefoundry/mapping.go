@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/tools"
 )
 
 // ----------------------------------------------------------------------------
@@ -188,11 +187,6 @@ func (f *azureContentFilters) IsFiltered() bool {
 // Mapping Functions
 // ----------------------------------------------------------------------------
 
-// schemaProvider is an interface for tools that provide a JSON schema.
-type schemaProvider interface {
-	Schema() tools.ToolSchema
-}
-
 // mapMessages converts Iris messages to Azure message format.
 func mapMessages(msgs []core.Message) []azureMessage {
 	result := make([]azureMessage, 0, len(msgs))
@@ -271,15 +265,10 @@ func mapTools(irisTools []core.Tool) []azureTool {
 
 	result := make([]azureTool, len(irisTools))
 	for i, t := range irisTools {
-		var params json.RawMessage
+		params := t.Schema().JSONSchema
 
-		// Check if the tool provides a schema
-		if sp, ok := t.(schemaProvider); ok {
-			params = sp.Schema().JSONSchema
-		}
-
-		// Default to empty object if no schema
-		if params == nil {
+		// Default to empty object for no-parameter tools
+		if len(params) == 0 {
 			params = json.RawMessage(`{}`)
 		}
 
