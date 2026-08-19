@@ -361,8 +361,9 @@ type mockTool struct {
 	description string
 }
 
-func (t *mockTool) Name() string        { return t.name }
-func (t *mockTool) Description() string { return t.description }
+func (t *mockTool) Name() string            { return t.name }
+func (t *mockTool) Description() string     { return t.description }
+func (t *mockTool) Schema() core.ToolSchema { return core.ToolSchema{} }
 
 // mockToolWithSchema is a tool that provides a schema.
 type mockToolWithSchema struct {

@@ -247,11 +247,35 @@ func (b *TypedToolResultBuilder[T]) Build() []ToolResult {
 	return out
 }
 
-// Tool is a placeholder interface for tool definitions.
-// Full implementation is in the tools package (Task 07).
+// Tool is the canonical contract for tool definitions passed to
+// ChatBuilder.Tools. Name and Description are used by every provider;
+// Schema supplies the JSON Schema describing the tool's parameters so the
+// model can generate valid arguments. A tool that takes no parameters may
+// return an empty ToolSchema.
+//
+// The tools package extends this interface with Call for executable tools:
+//
+//	type Tool interface {
+//	    core.Tool
+//	    Call(ctx context.Context, args json.RawMessage) (any, error)
+//	}
+//
+// Any type implementing tools.Tool (or core.Tool plus Schema) can be passed
+// to ChatBuilder.Tools.
 type Tool interface {
 	Name() string
 	Description() string
+	Schema() ToolSchema
+}
+
+// ToolSchema describes a tool's parameters as a JSON Schema.
+// tools.ToolSchema is an alias of this type, so implementations may return
+// either interchangeably.
+type ToolSchema struct {
+	// JSONSchema is a valid JSON Schema object describing the tool's
+	// parameters. Example:
+	//   {"type": "object", "properties": {"location": {"type": "string"}}}
+	JSONSchema json.RawMessage `json:"json_schema"`
 }
 
 // ToolResources contains configuration for built-in tools.

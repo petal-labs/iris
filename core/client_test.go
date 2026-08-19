@@ -499,6 +499,7 @@ type mockTool struct {
 
 func (t *mockTool) Name() string        { return t.name }
 func (t *mockTool) Description() string { return "mock tool" }
+func (t *mockTool) Schema() ToolSchema  { return ToolSchema{} }
 
 func TestImageGeneratorInterface(t *testing.T) {
 	// Verify the interface is defined

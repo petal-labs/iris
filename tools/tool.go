@@ -3,23 +3,18 @@ package tools
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/petal-labs/iris/core"
 )
 
-// Tool defines the interface for AI-callable tools.
+// Tool defines the interface for executable AI-callable tools.
 // Tools provide a schema for argument validation and a Call method for execution.
 //
-// Any type implementing Tool also satisfies core.Tool (which requires only
-// Name and Description), allowing tools to be used with ChatRequest.Tools.
+// Tool embeds core.Tool, so any type implementing Tool can be passed
+// directly to ChatBuilder.Tools (or ChatRequest.Tools) and providers will
+// transmit its schema.
 type Tool interface {
-	// Name returns the unique identifier for this tool.
-	Name() string
-
-	// Description returns a human-readable description of what this tool does.
-	// This is provided to the AI model to help it decide when to use the tool.
-	Description() string
-
-	// Schema returns the JSON Schema that describes the tool's parameters.
-	Schema() ToolSchema
+	core.Tool
 
 	// Call executes the tool with the given arguments.
 	// The args parameter contains the raw JSON arguments from the model.
@@ -28,9 +23,9 @@ type Tool interface {
 }
 
 // ToolSchema describes the parameters a tool accepts.
-// JSONSchema must be a valid JSON Schema object.
-type ToolSchema struct {
-	// JSONSchema is a valid JSON Schema object describing the tool's parameters.
-	// Example: {"type": "object", "properties": {"location": {"type": "string"}}}
-	JSONSchema json.RawMessage `json:"json_schema"`
-}
+// It is an alias of core.ToolSchema; the schema contract is owned by core
+// so providers can consume it without importing this package.
+type ToolSchema = core.ToolSchema
+
+// Ensure the executable interface satisfies the request-carrier interface.
+var _ core.Tool = (Tool)(nil)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/tools"
 )
 
 // mapRequest converts a core.ChatRequest to an ollamaRequest.
@@ -104,12 +103,9 @@ func marshalToolResultContent(content any) string {
 	}
 }
 
-// schemaProvider is an interface for tools that provide a JSON schema.
-type schemaProvider interface {
-	Schema() tools.ToolSchema
-}
-
 // mapTools converts core tools to Ollama tools.
+// A tool with an empty schema (no parameters) is transmitted with an empty
+// object schema.
 func mapTools(coreTools []core.Tool) []ollamaTool {
 	if len(coreTools) == 0 {
 		return nil
@@ -120,13 +116,10 @@ func mapTools(coreTools []core.Tool) []ollamaTool {
 	for _, t := range coreTools {
 		var params map[string]interface{}
 
-		// Check if the tool provides a schema
-		if sp, ok := t.(schemaProvider); ok {
-			schema := sp.Schema()
-			if len(schema.JSONSchema) > 0 {
-				if err := json.Unmarshal(schema.JSONSchema, &params); err != nil {
-					params = map[string]interface{}{}
-				}
+		schema := t.Schema()
+		if len(schema.JSONSchema) > 0 {
+			if err := json.Unmarshal(schema.JSONSchema, &params); err != nil {
+				params = map[string]interface{}{}
 			}
 		}
 

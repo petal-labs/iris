@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/tools"
 )
 
 // buildResponsesRequest creates a Responses API request from an Iris ChatRequest.
@@ -193,15 +192,10 @@ func mapResponsesTools(irisTools []core.Tool, builtInTools []core.BuiltInTool) [
 
 	// Add custom function tools
 	for _, t := range irisTools {
-		var params json.RawMessage
+		params := t.Schema().JSONSchema
 
-		// Check if the tool provides a schema
-		if sp, ok := t.(schemaProvider); ok {
-			params = sp.Schema().JSONSchema
-		}
-
-		// Default to empty object if no schema
-		if params == nil {
+		// Default to empty object for no-parameter tools
+		if len(params) == 0 {
 			params = json.RawMessage(`{}`)
 		}
 
@@ -215,10 +209,6 @@ func mapResponsesTools(irisTools []core.Tool, builtInTools []core.BuiltInTool) [
 
 	return result
 }
-
-// schemaProvider interface is already defined in mapping.go
-// We use tools.ToolSchema for the schema type.
-var _ schemaProvider = (tools.Tool)(nil)
 
 // mapResponsesResponse converts a Responses API response to an Iris ChatResponse.
 func mapResponsesResponse(resp *responsesResponse) (*core.ChatResponse, error) {

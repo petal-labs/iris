@@ -167,8 +167,9 @@ type mockTool struct {
 	description string
 }
 
-func (m *mockTool) Name() string        { return m.name }
-func (m *mockTool) Description() string { return m.description }
+func (m *mockTool) Name() string            { return m.name }
+func (m *mockTool) Description() string     { return m.description }
+func (m *mockTool) Schema() core.ToolSchema { return core.ToolSchema{} }
 
 func TestMapToolsBasic(t *testing.T) {
 	tools := []core.Tool{
