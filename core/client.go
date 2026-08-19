@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 )
 
@@ -147,6 +148,9 @@ func (c *Client) Chat(model ModelID) *ChatBuilder {
 
 // ChatBuilder provides a fluent API for building chat requests.
 // ChatBuilder is NOT thread-safe and should not be shared across goroutines.
+// Most configuration methods mutate the receiver and return the same builder.
+// Clone returns an independent builder; ToolResults, ToolResult, and ToolError
+// are the only configuration methods that clone automatically.
 type ChatBuilder struct {
 	client  *Client
 	req     ChatRequest
@@ -183,9 +187,11 @@ func (b *ChatBuilder) MaxTokens(n int) *ChatBuilder {
 	return b
 }
 
-// Tools sets the tools available for the request.
+// Tools sets the tools available for the request. It copies the caller's slice,
+// so later changes to the slice do not affect the request. The Tool values are
+// retained as interfaces and must not be mutated while the builder is in use.
 func (b *ChatBuilder) Tools(ts ...Tool) *ChatBuilder {
-	b.req.Tools = ts
+	b.req.Tools = slices.Clone(ts)
 	return b
 }
 
@@ -317,13 +323,7 @@ func (b *ChatBuilder) Clone() *ChatBuilder {
 		clone.req.MaxTokens = &m
 	}
 	if b.req.JSONSchema != nil {
-		schemaCopy := *b.req.JSONSchema
-		// Deep copy the schema bytes
-		if len(b.req.JSONSchema.Schema) > 0 {
-			schemaCopy.Schema = make([]byte, len(b.req.JSONSchema.Schema))
-			copy(schemaCopy.Schema, b.req.JSONSchema.Schema)
-		}
-		clone.req.JSONSchema = &schemaCopy
+		clone.req.JSONSchema = cloneJSONSchemaDefinition(b.req.JSONSchema)
 	}
 
 	// Deep copy slices
@@ -401,11 +401,13 @@ func (b *ChatBuilder) ResponseJSON() *ChatBuilder {
 // This enables structured output mode where the model produces JSON conforming to the schema.
 // The schema parameter defines the structure the output must conform to.
 //
-// This always forces schema.Strict = true. Strict mode requires the schema to
-// set "additionalProperties": false and list every property in "required" at
-// every object node; validate() rejects non-compliant schemas with
-// ErrInvalidSchema before the request is sent. Use ResponseJSONSchemaNonStrict
-// to opt out of strict mode for schemas that cannot meet those constraints.
+// This copies schema, including its raw JSON bytes, and forces Strict = true on
+// the copy without modifying the caller's value. Strict mode requires the
+// schema to set "additionalProperties": false and list every property in
+// "required" at every object node; validate() rejects non-compliant schemas
+// with ErrInvalidSchema before the request is sent. Use
+// ResponseJSONSchemaNonStrict to opt out of strict mode for schemas that cannot
+// meet those constraints.
 //
 // Example:
 //
@@ -418,27 +420,41 @@ func (b *ChatBuilder) ResponseJSON() *ChatBuilder {
 //	    ResponseJSONSchema(schema).
 //	    GetResponse(ctx)
 func (b *ChatBuilder) ResponseJSONSchema(schema *JSONSchemaDefinition) *ChatBuilder {
-	if schema != nil {
-		schema.Strict = true
+	schemaCopy := cloneJSONSchemaDefinition(schema)
+	if schemaCopy != nil {
+		schemaCopy.Strict = true
 	}
 	b.req.ResponseFormat = ResponseFormatJSONSchema
-	b.req.JSONSchema = schema
+	b.req.JSONSchema = schemaCopy
 	return b
 }
 
 // ResponseJSONSchemaNonStrict constrains the model output to match a specific
-// JSON Schema without enforcing strict mode. This forces schema.Strict = false,
-// skipping the strict-schema validation that ResponseJSONSchema applies. Use
-// this when a schema cannot satisfy strict mode's requirements (every object
-// node needs "additionalProperties": false and a "required" array covering
-// all declared properties) and the provider still accepts loose schemas.
+// JSON Schema without enforcing strict mode. This copies schema, including its
+// raw JSON bytes, and forces Strict = false on the copy without modifying the
+// caller's value. It skips the strict-schema validation that ResponseJSONSchema
+// applies. Use this when a schema cannot satisfy strict mode's requirements
+// (every object node needs "additionalProperties": false and a "required"
+// array covering all declared properties) and the provider accepts loose
+// schemas.
 func (b *ChatBuilder) ResponseJSONSchemaNonStrict(schema *JSONSchemaDefinition) *ChatBuilder {
-	if schema != nil {
-		schema.Strict = false
+	schemaCopy := cloneJSONSchemaDefinition(schema)
+	if schemaCopy != nil {
+		schemaCopy.Strict = false
 	}
 	b.req.ResponseFormat = ResponseFormatJSONSchema
-	b.req.JSONSchema = schema
+	b.req.JSONSchema = schemaCopy
 	return b
+}
+
+func cloneJSONSchemaDefinition(schema *JSONSchemaDefinition) *JSONSchemaDefinition {
+	if schema == nil {
+		return nil
+	}
+
+	clone := *schema
+	clone.Schema = slices.Clone(schema.Schema)
+	return &clone
 }
 
 // ResponseText explicitly sets the response format to text (the default).

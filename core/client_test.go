@@ -492,6 +492,23 @@ func TestChatBuilderTools(t *testing.T) {
 	}
 }
 
+func TestChatBuilderToolsCopiesCallerSlice(t *testing.T) {
+	p := &mockProvider{id: "test"}
+	c := NewClient(p)
+
+	tool1 := &mockTool{name: "tool1"}
+	tool2 := &mockTool{name: "tool2"}
+	replacement := &mockTool{name: "replacement"}
+	callerTools := []Tool{tool1, tool2}
+
+	builder := c.Chat("gpt-4").Tools(callerTools...)
+	callerTools[0] = replacement
+
+	if builder.req.Tools[0] != tool1 {
+		t.Error("mutating the caller's tools slice changed the builder request")
+	}
+}
+
 // mockTool is a test implementation of Tool.
 type mockTool struct {
 	name string
@@ -1575,15 +1592,71 @@ func TestResponseJSONSchemaNonStrictOptOut(t *testing.T) {
 	}
 }
 
-func TestResponseJSONSchemaForcesStrictEvenIfCallerSetFalse(t *testing.T) {
-	schema := &JSONSchemaDefinition{
-		Name:   "x",
-		Schema: json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{},"required":[]}`),
-		Strict: false,
+func TestResponseJSONSchemaCopiesCallerSchema(t *testing.T) {
+	tests := []struct {
+		name          string
+		callerStrict  bool
+		requestStrict bool
+		apply         func(*ChatBuilder, *JSONSchemaDefinition) *ChatBuilder
+	}{
+		{
+			name:          "strict",
+			callerStrict:  false,
+			requestStrict: true,
+			apply:         (*ChatBuilder).ResponseJSONSchema,
+		},
+		{
+			name:          "non-strict",
+			callerStrict:  true,
+			requestStrict: false,
+			apply:         (*ChatBuilder).ResponseJSONSchemaNonStrict,
+		},
 	}
-	NewClient(&mockProvider{}).Chat("m").ResponseJSONSchema(schema)
-	if !schema.Strict {
-		t.Error("ResponseJSONSchema should force Strict=true even if the caller passed false")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertChatBuilderCopiesSchema(t, tt.callerStrict, tt.requestStrict, tt.apply)
+		})
+	}
+}
+
+func assertChatBuilderCopiesSchema(
+	t *testing.T,
+	callerStrict bool,
+	requestStrict bool,
+	apply func(*ChatBuilder, *JSONSchemaDefinition) *ChatBuilder,
+) {
+	t.Helper()
+	schema := &JSONSchemaDefinition{
+		Name:        "person",
+		Description: "a person",
+		Schema:      json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{},"required":[]}`),
+		Strict:      callerStrict,
+	}
+
+	builder := apply(NewClient(&mockProvider{}).Chat("m"), schema)
+	if schema.Strict != callerStrict {
+		t.Errorf("caller schema Strict = %v, want unchanged value %v", schema.Strict, callerStrict)
+	}
+	if builder.req.JSONSchema == schema {
+		t.Error("builder retained the caller's schema pointer")
+	}
+
+	schema.Name = "mutated"
+	schema.Description = "mutated"
+	schema.Schema[0] = 'X'
+
+	if builder.req.JSONSchema.Name != "person" {
+		t.Errorf("request schema Name = %q, want %q", builder.req.JSONSchema.Name, "person")
+	}
+	if builder.req.JSONSchema.Description != "a person" {
+		t.Errorf("request schema Description = %q, want %q", builder.req.JSONSchema.Description, "a person")
+	}
+	if builder.req.JSONSchema.Schema[0] == 'X' {
+		t.Error("mutating caller schema bytes changed the builder request")
+	}
+	if builder.req.JSONSchema.Strict != requestStrict {
+		t.Errorf("request schema Strict = %v, want %v", builder.req.JSONSchema.Strict, requestStrict)
 	}
 }
 

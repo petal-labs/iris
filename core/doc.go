@@ -34,6 +34,18 @@
 //	go func() { resp1, _ := base.Clone().User("Q1").GetResponse(ctx) }()
 //	go func() { resp2, _ := base.Clone().User("Q2").GetResponse(ctx) }()
 //
+// Most ChatBuilder configuration methods mutate the receiver and return the
+// same pointer. [ChatBuilder.ToolResults], [ChatBuilder.ToolResult], and
+// [ChatBuilder.ToolError] are the exceptions: they clone the builder and leave
+// the original unchanged.
+//
+// [ChatBuilder.Tools], [ChatBuilder.ResponseJSONSchema], and
+// [ChatBuilder.ResponseJSONSchemaNonStrict] defensively copy their caller-owned
+// slice or schema, including raw schema bytes. Callers may therefore reuse or
+// modify those containers after configuring a builder. Tools themselves are
+// interface values and are not cloned; treat the underlying tool objects as
+// immutable while a builder that references them is in use.
+//
 // # Streaming
 //
 // Iris treats streaming as a first-class primitive. Use [ChatBuilder.Stream] for
