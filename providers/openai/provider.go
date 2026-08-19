@@ -84,6 +84,19 @@ func (p *OpenAI) Supports(feature core.Feature) bool {
 	}
 }
 
+// SupportsContentPart reports whether the selected OpenAI endpoint can
+// transmit a message part.
+func (p *OpenAI) SupportsContentPart(model core.ModelID, role core.Role, part core.ContentPart) bool {
+	if p.shouldUseResponsesAPI(model) {
+		return mapResponsesContentPart(part).Type != ""
+	}
+	if role != core.RoleUser {
+		return false
+	}
+	_, ok := mapChatContentPart(part)
+	return ok
+}
+
 // requireAPIKey returns a descriptive *core.ProviderError wrapping
 // core.ErrUnauthorized when the configured API key is empty (or
 // whitespace-only). Callers must invoke this before building or sending any
@@ -159,6 +172,8 @@ func (p *OpenAI) shouldUseResponsesAPI(model core.ModelID) bool {
 
 // Compile-time check that OpenAI implements Provider.
 var _ core.Provider = (*OpenAI)(nil)
+
+var _ core.ContentPartSupporter = (*OpenAI)(nil)
 
 // Compile-time check that OpenAI implements ImageGenerator.
 var _ core.ImageGenerator = (*OpenAI)(nil)

@@ -20,6 +20,19 @@ type mockProvider struct {
 	mu          sync.Mutex
 }
 
+type contentPartAwareMockProvider struct {
+	*mockProvider
+	support func(model ModelID, role Role, part ContentPart) bool
+}
+
+type customContentPart struct{}
+
+func (customContentPart) ContentType() string { return "custom" }
+
+func (p *contentPartAwareMockProvider) SupportsContentPart(model ModelID, role Role, part ContentPart) bool {
+	return p.support(model, role, part)
+}
+
 func (m *mockProvider) ID() string {
 	return m.id
 }
@@ -1237,6 +1250,132 @@ func TestToolResultsWarningHandler(t *testing.T) {
 	}
 	if !strings.Contains(warnings[1], "call_2") {
 		t.Errorf("warnings[1] = %q, want mention of call_2", warnings[1])
+	}
+}
+
+func TestUnsupportedContentPartsWarnForChatAndStream(t *testing.T) {
+	for _, execute := range []struct {
+		name string
+		run  func(*ChatBuilder) error
+	}{
+		{
+			name: "chat",
+			run: func(builder *ChatBuilder) error {
+				_, err := builder.GetResponse(context.Background())
+				return err
+			},
+		},
+		{
+			name: "stream",
+			run: func(builder *ChatBuilder) error {
+				stream, err := builder.Stream(context.Background())
+				if err != nil {
+					return err
+				}
+				_, err = DrainStream(context.Background(), stream)
+				return err
+			},
+		},
+	} {
+		t.Run(execute.name, func(t *testing.T) {
+			provider := &mockProvider{id: "text-only"}
+			var warnings []string
+			client := NewClient(provider, WithWarningHandler(func(message string) {
+				warnings = append(warnings, message)
+			}))
+
+			err := execute.run(client.Chat("mock-model").
+				UserMultimodal().
+				ImageURL("https://example.com/cat.jpg").
+				Done())
+			if err != nil {
+				t.Fatalf("execute() error = %v", err)
+			}
+			if len(warnings) != 1 {
+				t.Fatalf("len(warnings) = %d, want 1", len(warnings))
+			}
+			for _, want := range []string{"text-only", "mock-model", "input_image", "omitted"} {
+				if !strings.Contains(warnings[0], want) {
+					t.Errorf("warning = %q, want it to contain %q", warnings[0], want)
+				}
+			}
+		})
+	}
+}
+
+func TestSupportedContentPartsDoNotWarn(t *testing.T) {
+	provider := &contentPartAwareMockProvider{
+		mockProvider: &mockProvider{id: "vision"},
+		support: func(model ModelID, role Role, part ContentPart) bool {
+			return model == "mock-model" && role == RoleUser && part.ContentType() == "input_image"
+		},
+	}
+	var warnings []string
+	client := NewClient(provider, WithWarningHandler(func(message string) {
+		warnings = append(warnings, message)
+	}))
+
+	_, err := client.Chat("mock-model").
+		UserMultimodal().
+		ImageURL("https://example.com/cat.jpg").
+		Done().
+		GetResponse(context.Background())
+	if err != nil {
+		t.Fatalf("GetResponse() error = %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v, want none", warnings)
+	}
+}
+
+func TestContentPartSupporterWarnsOnlyForUnsupportedParts(t *testing.T) {
+	provider := &contentPartAwareMockProvider{
+		mockProvider: &mockProvider{id: "partial-vision"},
+		support: func(_ ModelID, role Role, part ContentPart) bool {
+			return role == RoleUser && part.ContentType() == "input_text"
+		},
+	}
+	var warnings []string
+	client := NewClient(provider, WithWarningHandler(func(message string) {
+		warnings = append(warnings, message)
+	}))
+
+	_, err := client.Chat("mock-model").
+		UserMultimodal().
+		Text("Describe this image").
+		ImageURL("https://example.com/cat.jpg").
+		Done().
+		GetResponse(context.Background())
+	if err != nil {
+		t.Fatalf("GetResponse() error = %v", err)
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "input_image") {
+		t.Fatalf("warnings = %v, want one input_image warning", warnings)
+	}
+}
+
+func TestContentPartType(t *testing.T) {
+	tests := []struct {
+		name string
+		part ContentPart
+		want string
+	}{
+		{name: "text value", part: InputText{}, want: "input_text"},
+		{name: "text pointer", part: &InputText{}, want: "input_text"},
+		{name: "image value", part: InputImage{}, want: "input_image"},
+		{name: "image pointer", part: &InputImage{}, want: "input_image"},
+		{name: "file value", part: InputFile{}, want: "input_file"},
+		{name: "file pointer", part: &InputFile{}, want: "input_file"},
+		{name: "nil", part: nil, want: "<nil>"},
+		{name: "custom", part: customContentPart{}, want: "core.customContentPart"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := contentPartType(tt.part); got != tt.want {
+				t.Errorf("contentPartType() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

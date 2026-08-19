@@ -232,6 +232,29 @@ func TestModelCapabilities(t *testing.T) {
 
 func TestProviderImplementsInterface(t *testing.T) {
 	var _ core.Provider = (*Anthropic)(nil)
+	var _ core.ContentPartSupporter = (*Anthropic)(nil)
+}
+
+func TestSupportsContentPart(t *testing.T) {
+	provider := New("test-key")
+	tests := []struct {
+		name string
+		role core.Role
+		part core.ContentPart
+		want bool
+	}{
+		{name: "text", role: core.RoleUser, part: core.InputText{Text: "describe"}, want: true},
+		{name: "image URL", role: core.RoleUser, part: core.InputImage{ImageURL: "https://example.com/cat.jpg"}, want: true},
+		{name: "file ID", role: core.RoleUser, part: &core.InputImage{FileID: "file-123"}, want: false},
+		{name: "assistant image", role: core.RoleAssistant, part: &core.InputImage{ImageURL: "https://example.com/cat.jpg"}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := provider.SupportsContentPart(ModelClaudeSonnet46, tt.role, tt.part); got != tt.want {
+				t.Errorf("SupportsContentPart() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestNewWithDefaultFilesAPIBeta(t *testing.T) {

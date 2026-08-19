@@ -36,14 +36,59 @@ func mapMessages(msgs []core.Message) []openAIMessage {
 
 		default:
 			// System, User messages
+			content := any(msg.Content)
+			if msg.Role == core.RoleUser && len(msg.Parts) > 0 {
+				content = mapChatContentParts(msg.Parts)
+			}
 			result = append(result, openAIMessage{
 				Role:    string(msg.Role),
-				Content: msg.Content,
+				Content: content,
 			})
 		}
 	}
 
 	return result
+}
+
+func mapChatContentParts(parts []core.ContentPart) []openAIContentPart {
+	result := make([]openAIContentPart, 0, len(parts))
+	for _, part := range parts {
+		if mapped, ok := mapChatContentPart(part); ok {
+			result = append(result, mapped)
+		}
+	}
+	return result
+}
+
+func mapChatContentPart(part core.ContentPart) (openAIContentPart, bool) {
+	switch value := part.(type) {
+	case core.InputText:
+		return openAIContentPart{Type: "text", Text: value.Text}, true
+	case *core.InputText:
+		if value != nil {
+			return openAIContentPart{Type: "text", Text: value.Text}, true
+		}
+	case core.InputImage:
+		return mapChatInputImage(value)
+	case *core.InputImage:
+		if value != nil {
+			return mapChatInputImage(*value)
+		}
+	}
+	return openAIContentPart{}, false
+}
+
+func mapChatInputImage(image core.InputImage) (openAIContentPart, bool) {
+	if image.ImageURL == "" || image.FileID != "" {
+		return openAIContentPart{}, false
+	}
+	return openAIContentPart{
+		Type: "image_url",
+		ImageURL: &openAIImageURL{
+			URL:    image.ImageURL,
+			Detail: string(image.Detail),
+		},
+	}, true
 }
 
 // mapToolCallsToOpenAI converts Iris ToolCalls to OpenAI format.

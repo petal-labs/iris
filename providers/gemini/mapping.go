@@ -105,16 +105,35 @@ func mapMessageParts(msg core.Message) []geminiPart {
 
 	parts := make([]geminiPart, 0, len(msg.Parts))
 	for _, part := range msg.Parts {
-		switch p := part.(type) {
-		case core.InputText:
-			parts = append(parts, geminiPart{Text: p.Text})
-		case core.InputImage:
-			parts = append(parts, mapInputImage(p))
-		case core.InputFile:
-			parts = append(parts, mapInputFile(p))
+		if mapped, ok := mapContentPart(part); ok {
+			parts = append(parts, mapped)
 		}
 	}
 	return parts
+}
+
+func mapContentPart(part core.ContentPart) (geminiPart, bool) {
+	switch value := part.(type) {
+	case core.InputText:
+		return geminiPart{Text: value.Text}, true
+	case *core.InputText:
+		if value != nil {
+			return geminiPart{Text: value.Text}, true
+		}
+	case core.InputImage:
+		return mapInputImage(value), true
+	case *core.InputImage:
+		if value != nil {
+			return mapInputImage(*value), true
+		}
+	case core.InputFile:
+		return mapInputFile(value), true
+	case *core.InputFile:
+		if value != nil {
+			return mapInputFile(*value), true
+		}
+	}
+	return geminiPart{}, false
 }
 
 // mapInputImage converts an InputImage to a Gemini part.

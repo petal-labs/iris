@@ -126,7 +126,7 @@ const (
 type Message struct {
 	Role        Role          `json:"role"`
 	Content     string        `json:"content,omitempty"`
-	Parts       []ContentPart `json:"-"`                      // Multimodal content parts (Responses API only)
+	Parts       []ContentPart `json:"-"`                      // Provider-mapped multimodal content parts
 	ToolCalls   []ToolCall    `json:"tool_calls,omitempty"`   // For assistant messages requesting tools
 	ToolResults []ToolResult  `json:"tool_results,omitempty"` // For tool result messages (RoleTool)
 }

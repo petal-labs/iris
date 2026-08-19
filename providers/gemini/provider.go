@@ -86,6 +86,15 @@ func (p *Gemini) Supports(feature core.Feature) bool {
 	}
 }
 
+// SupportsContentPart reports whether Gemini can transmit a message part.
+func (p *Gemini) SupportsContentPart(_ core.ModelID, role core.Role, part core.ContentPart) bool {
+	if role != core.RoleUser && role != core.RoleAssistant {
+		return false
+	}
+	_, ok := mapContentPart(part)
+	return ok
+}
+
 // buildHeaders constructs the HTTP headers for an API request.
 func (p *Gemini) buildHeaders() http.Header {
 	headers := make(http.Header)
@@ -122,6 +131,8 @@ func (p *Gemini) StreamChat(ctx context.Context, req *core.ChatRequest) (*core.C
 
 // Compile-time check that Gemini implements Provider.
 var _ core.Provider = (*Gemini)(nil)
+
+var _ core.ContentPartSupporter = (*Gemini)(nil)
 
 // Compile-time check that Gemini implements ImageGenerator.
 var _ core.ImageGenerator = (*Gemini)(nil)

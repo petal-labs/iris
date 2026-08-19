@@ -2,11 +2,18 @@
 package core
 
 // ContentPart represents a part of multimodal content in a message.
-// Types implementing this interface can be used in multimodal messages
-// with the OpenAI Responses API.
+// Types implementing this interface can be used in multimodal messages.
 type ContentPart interface {
 	// ContentType returns the type identifier for this content part.
 	ContentType() string
+}
+
+// ContentPartSupporter is an optional provider capability interface for
+// declaring which message parts a provider can transmit for a model. The
+// client warns through WarningHandler before dispatching any part for which
+// support is not declared.
+type ContentPartSupporter interface {
+	SupportsContentPart(model ModelID, role Role, part ContentPart) bool
 }
 
 // ImageDetail specifies the level of detail for image processing.

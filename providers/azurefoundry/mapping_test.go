@@ -44,6 +44,40 @@ func TestMapMessagesEmpty(t *testing.T) {
 	}
 }
 
+func TestMapMessagesMultimodalImage(t *testing.T) {
+	messages := mapMessages([]core.Message{{
+		Role: core.RoleUser,
+		Parts: []core.ContentPart{
+			&core.InputText{Text: "Describe this image"},
+			&core.InputImage{
+				ImageURL: "data:image/jpeg;base64,aGVsbG8=",
+				Detail:   core.ImageDetailLow,
+			},
+		},
+	}})
+
+	got, err := json.Marshal(messages)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+	want := `[{"role":"user","content":[{"type":"text","text":"Describe this image"},{"type":"image_url","image_url":{"url":"data:image/jpeg;base64,aGVsbG8=","detail":"low"}}]}]`
+	if string(got) != want {
+		t.Errorf("wire JSON = %s, want %s", got, want)
+	}
+}
+
+func TestMapContentPartRejectsImageFileID(t *testing.T) {
+	if _, ok := mapContentPart(&core.InputImage{FileID: "file-123"}); ok {
+		t.Fatal("Azure Foundry should not map an image file ID")
+	}
+	if _, ok := mapContentPart(&core.InputImage{
+		ImageURL: "https://example.com/cat.jpg",
+		FileID:   "file-123",
+	}); ok {
+		t.Fatal("Azure Foundry should reject an image with multiple sources")
+	}
+}
+
 func TestMapMessagesWithToolCalls(t *testing.T) {
 	msgs := []core.Message{
 		{

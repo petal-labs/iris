@@ -634,6 +634,7 @@ func (b *ChatBuilder) GetResponse(ctx context.Context) (*ChatResponse, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
 	}
+	b.warnUnsupportedContentParts()
 
 	// Apply the effective execution timeout (see effectiveTimeout for precedence).
 	// timedOut records that any resulting DeadlineExceeded is Iris-owned and
@@ -737,6 +738,7 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
 	}
+	b.warnUnsupportedContentParts()
 
 	// Apply the effective execution timeout (see effectiveTimeout for precedence).
 	// cancel is intentionally NOT deferred here: on success it is handed to
@@ -1057,4 +1059,34 @@ func wrapStreamWithTelemetry(
 
 func (c *Client) warnf(format string, args ...any) {
 	c.warningHandler(fmt.Sprintf(format, args...))
+}
+
+func (b *ChatBuilder) warnUnsupportedContentParts() {
+	supporter, declaresSupport := b.client.provider.(ContentPartSupporter)
+	for messageIndex, message := range b.req.Messages {
+		for partIndex, part := range message.Parts {
+			if declaresSupport && supporter.SupportsContentPart(b.req.Model, message.Role, part) {
+				continue
+			}
+			b.client.warnf(
+				"provider %s model %s does not declare support for content part %s at message %d part %d; part will be omitted",
+				b.client.provider.ID(), b.req.Model, contentPartType(part), messageIndex, partIndex,
+			)
+		}
+	}
+}
+
+func contentPartType(part ContentPart) string {
+	switch part.(type) {
+	case InputText, *InputText:
+		return "input_text"
+	case InputImage, *InputImage:
+		return "input_image"
+	case InputFile, *InputFile:
+		return "input_file"
+	case nil:
+		return "<nil>"
+	default:
+		return fmt.Sprintf("%T", part)
+	}
 }

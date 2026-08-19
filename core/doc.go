@@ -160,8 +160,9 @@
 //
 // # Warnings
 //
-// Non-fatal SDK warnings (for example, mismatched tool result IDs) can be routed
-// through [WithWarningHandler]. The default warning handler is a no-op.
+// Non-fatal SDK warnings (for example, mismatched tool result IDs or message
+// parts unsupported by the selected provider) can be routed through
+// [WithWarningHandler]. The default warning handler is a no-op.
 //
 // # Multimodal Messages
 //
@@ -179,6 +180,11 @@
 //	resp, err := client.Chat(model).
 //	    UserWithImageURL("Describe this:", "https://example.com/image.jpg").
 //	    GetResponse(ctx)
+//
+// Image URLs and data URLs are supported by Anthropic, OpenAI, Azure AI
+// Foundry, and Gemini. File IDs and document inputs are endpoint-specific.
+// Providers declare support through [ContentPartSupporter]; undeclared parts
+// invoke the client's [WarningHandler] before they are omitted.
 //
 // # Thread Safety
 //

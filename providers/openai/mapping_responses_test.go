@@ -570,3 +570,45 @@ func TestBuildResponsesInputMultimodal(t *testing.T) {
 		})
 	}
 }
+
+func TestMapResponsesContentPartRejectsAmbiguousSources(t *testing.T) {
+	image := &core.InputImage{
+		ImageURL: "https://example.com/cat.jpg",
+		FileID:   "file-123",
+	}
+	if got := mapResponsesContentPart(image); got.Type != "" {
+		t.Errorf("ambiguous image mapped as %#v", got)
+	}
+
+	file := &core.InputFile{FileID: "file-123", FileURL: "https://example.com/file.pdf"}
+	if got := mapResponsesContentPart(file); got.Type != "" {
+		t.Errorf("ambiguous file mapped as %#v", got)
+	}
+}
+
+func TestMapResponsesContentPartAcceptsValueParts(t *testing.T) {
+	parts := []core.ContentPart{
+		core.InputText{Text: "describe"},
+		core.InputImage{FileID: "file-image"},
+		core.InputFile{FileData: "cGRm", Filename: "document.pdf"},
+	}
+	wantTypes := []string{"input_text", "input_image", "input_file"}
+	for index, part := range parts {
+		if got := mapResponsesContentPart(part); got.Type != wantTypes[index] {
+			t.Errorf("part %d type = %q, want %q", index, got.Type, wantTypes[index])
+		}
+	}
+
+	var nilText *core.InputText
+	var nilImage *core.InputImage
+	var nilFile *core.InputFile
+	for _, part := range []core.ContentPart{nilText, nilImage, nilFile, customPart{}} {
+		if got := mapResponsesContentPart(part); got.Type != "" {
+			t.Errorf("unsupported part %T mapped as %#v", part, got)
+		}
+	}
+}
+
+type customPart struct{}
+
+func (customPart) ContentType() string { return "custom" }

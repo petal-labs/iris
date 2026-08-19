@@ -38,6 +38,17 @@ type azureMessage struct {
 	ToolCallID string          `json:"tool_call_id,omitempty"` // For tool result messages
 }
 
+type azureContentPart struct {
+	Type     string         `json:"type"`
+	Text     string         `json:"text,omitempty"`
+	ImageURL *azureImageURL `json:"image_url,omitempty"`
+}
+
+type azureImageURL struct {
+	URL    string `json:"url"`
+	Detail string `json:"detail,omitempty"`
+}
+
 // azureTool represents a tool definition in the Azure format.
 type azureTool struct {
 	Type     string        `json:"type"` // "function"
@@ -217,14 +228,59 @@ func mapMessages(msgs []core.Message) []azureMessage {
 
 		default:
 			// System, User messages
+			content := any(msg.Content)
+			if msg.Role == core.RoleUser && len(msg.Parts) > 0 {
+				content = mapContentParts(msg.Parts)
+			}
 			result = append(result, azureMessage{
 				Role:    string(msg.Role),
-				Content: msg.Content,
+				Content: content,
 			})
 		}
 	}
 
 	return result
+}
+
+func mapContentParts(parts []core.ContentPart) []azureContentPart {
+	result := make([]azureContentPart, 0, len(parts))
+	for _, part := range parts {
+		if mapped, ok := mapContentPart(part); ok {
+			result = append(result, mapped)
+		}
+	}
+	return result
+}
+
+func mapContentPart(part core.ContentPart) (azureContentPart, bool) {
+	switch value := part.(type) {
+	case core.InputText:
+		return azureContentPart{Type: "text", Text: value.Text}, true
+	case *core.InputText:
+		if value != nil {
+			return azureContentPart{Type: "text", Text: value.Text}, true
+		}
+	case core.InputImage:
+		return mapInputImage(value)
+	case *core.InputImage:
+		if value != nil {
+			return mapInputImage(*value)
+		}
+	}
+	return azureContentPart{}, false
+}
+
+func mapInputImage(image core.InputImage) (azureContentPart, bool) {
+	if image.ImageURL == "" || image.FileID != "" {
+		return azureContentPart{}, false
+	}
+	return azureContentPart{
+		Type: "image_url",
+		ImageURL: &azureImageURL{
+			URL:    image.ImageURL,
+			Detail: string(image.Detail),
+		},
+	}, true
 }
 
 // mapToolCallsToAzure converts Iris ToolCalls to Azure format.

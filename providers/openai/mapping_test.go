@@ -93,6 +93,54 @@ func TestMapMessagesEmpty(t *testing.T) {
 	}
 }
 
+func TestMapMessagesMultimodalImage(t *testing.T) {
+	messages := mapMessages([]core.Message{{
+		Role: core.RoleUser,
+		Parts: []core.ContentPart{
+			&core.InputText{Text: "Describe this image"},
+			&core.InputImage{
+				ImageURL: "https://example.com/cat.jpg",
+				Detail:   core.ImageDetailHigh,
+			},
+		},
+	}})
+
+	got, err := json.Marshal(messages)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+	want := `[{"role":"user","content":[{"type":"text","text":"Describe this image"},{"type":"image_url","image_url":{"url":"https://example.com/cat.jpg","detail":"high"}}]}]`
+	if string(got) != want {
+		t.Errorf("wire JSON = %s, want %s", got, want)
+	}
+}
+
+func TestChatCompletionsRejectsImageFileID(t *testing.T) {
+	if _, ok := mapChatContentPart(&core.InputImage{FileID: "file-123"}); ok {
+		t.Fatal("Chat Completions should not map an image file ID")
+	}
+	if _, ok := mapChatContentPart(&core.InputImage{
+		ImageURL: "https://example.com/cat.jpg",
+		FileID:   "file-123",
+	}); ok {
+		t.Fatal("Chat Completions should reject an image with multiple sources")
+	}
+}
+
+func TestMapChatContentPartValueAndNilParts(t *testing.T) {
+	if got, ok := mapChatContentPart(core.InputText{Text: "describe"}); !ok || got.Text != "describe" {
+		t.Errorf("text value mapped as %#v, %v", got, ok)
+	}
+
+	var nilText *core.InputText
+	var nilImage *core.InputImage
+	for _, part := range []core.ContentPart{nilText, nilImage, customPart{}} {
+		if got, ok := mapChatContentPart(part); ok {
+			t.Errorf("unsupported part %T mapped as %#v", part, got)
+		}
+	}
+}
+
 // mockFullTool implements both core.Tool and tools.Tool (with Schema)
 type mockFullTool struct {
 	name        string

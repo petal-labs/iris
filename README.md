@@ -454,7 +454,7 @@ resp, err := core.DrainStream(ctx, stream)
 
 ### Warning Hooks
 
-Route non-fatal SDK warnings (for example, mismatched tool result IDs) into your application logger:
+Route non-fatal SDK warnings (for example, mismatched tool result IDs or unsupported multimodal parts) into your application logger:
 
 ```go
 client := core.NewClient(provider,
@@ -463,6 +463,21 @@ client := core.NewClient(provider,
     }),
 )
 ```
+
+### Multimodal Messages
+
+Send text and images together with `UserMultimodal` or the `UserWithImageURL` convenience method:
+
+```go
+resp, err := client.Chat(model).
+    UserMultimodal().
+        Text("What's in this image?").
+        ImageURLWithDetail("https://example.com/image.jpg", core.ImageDetailHigh).
+        Done().
+    GetResponse(ctx)
+```
+
+Image URLs and base64 data URLs are mapped for Anthropic, OpenAI Chat Completions and Responses, Azure AI Foundry, and Gemini. File IDs and document parts remain endpoint-specific. When requests execute through `core.Client`, configure `WithWarningHandler` to observe any part that the selected provider, model endpoint, or message role cannot transmit; the client invokes that handler before an unsupported part is omitted.
 
 ### Using Tools
 

@@ -93,6 +93,69 @@ func TestMapMessages(t *testing.T) {
 	}
 }
 
+func TestMapMessagesMultimodalImages(t *testing.T) {
+	tests := []struct {
+		name     string
+		imageURL string
+		wantJSON string
+	}{
+		{
+			name:     "remote URL",
+			imageURL: "https://example.com/cat.jpg",
+			wantJSON: `[{"role":"user","content":[{"type":"text","text":"Describe this image"},{"type":"image","source":{"type":"url","url":"https://example.com/cat.jpg"}}]}]`,
+		},
+		{
+			name:     "base64 data URL",
+			imageURL: "data:image/png;base64,aGVsbG8=",
+			wantJSON: `[{"role":"user","content":[{"type":"text","text":"Describe this image"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"aGVsbG8="}}]}]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, messages := mapMessages([]core.Message{{
+				Role: core.RoleUser,
+				Parts: []core.ContentPart{
+					&core.InputText{Text: "Describe this image"},
+					&core.InputImage{ImageURL: tt.imageURL},
+				},
+			}})
+
+			got, err := json.Marshal(messages)
+			if err != nil {
+				t.Fatalf("json.Marshal() error = %v", err)
+			}
+			if string(got) != tt.wantJSON {
+				t.Errorf("wire JSON = %s, want %s", got, tt.wantJSON)
+			}
+		})
+	}
+}
+
+func TestMapContentPartRejectsUnsupportedImageSources(t *testing.T) {
+	for _, image := range []core.InputImage{
+		{FileID: "file-123"},
+		{ImageURL: "data:image/png;base64"},
+		{ImageURL: "https://example.com/cat.jpg", FileID: "file-123"},
+	} {
+		if _, ok := mapContentPart(&image); ok {
+			t.Errorf("mapContentPart(%+v) supported an invalid Anthropic image source", image)
+		}
+	}
+}
+
+func TestParseImageDataURLRejectsInvalidMetadata(t *testing.T) {
+	for _, value := range []string{
+		"data:text/plain;base64,aGVsbG8=",
+		"data:image/png,aGVsbG8=",
+		"data:image/png;base64,",
+	} {
+		if _, _, ok := parseImageDataURL(value); ok {
+			t.Errorf("parseImageDataURL(%q) succeeded, want invalid", value)
+		}
+	}
+}
+
 func TestBuildRequest(t *testing.T) {
 	temp := float32(0.7)
 	maxTokens := 500

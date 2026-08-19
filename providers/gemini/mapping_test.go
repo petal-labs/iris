@@ -253,6 +253,27 @@ func TestMapMessages_WithMultimodalParts(t *testing.T) {
 	}
 }
 
+func TestMapMessages_WithPointerMultimodalParts(t *testing.T) {
+	msgs := []core.Message{{
+		Role: core.RoleUser,
+		Parts: []core.ContentPart{
+			&core.InputText{Text: "What's in this image?"},
+			&core.InputImage{ImageURL: "data:image/png;base64,aGVsbG8="},
+		},
+	}}
+
+	_, contents := mapMessages(msgs)
+	if len(contents) != 1 || len(contents[0].Parts) != 2 {
+		t.Fatalf("mapped contents = %#v, want one message with two parts", contents)
+	}
+	if contents[0].Parts[0].Text != "What's in this image?" {
+		t.Errorf("text = %q, want prompt text", contents[0].Parts[0].Text)
+	}
+	if contents[0].Parts[1].InlineData == nil {
+		t.Fatal("image InlineData is nil")
+	}
+}
+
 func TestMapMessages_WithFileReference(t *testing.T) {
 	msgs := []core.Message{
 		{
