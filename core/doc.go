@@ -46,6 +46,20 @@
 // interface values and are not cloned; treat the underlying tool objects as
 // immutable while a builder that references them is in use.
 //
+// # Conversations and Memory
+//
+// [Conversation] manages multi-turn history. Its constructor and operations
+// require a context, which is passed to both the provider and every [Memory]
+// operation so cancellations, deadlines, and trace metadata reach remote
+// storage implementations:
+//
+//	conv := core.NewConversation(ctx, client, model)
+//	resp, err := conv.Send(ctx, "Hello")
+//
+// Conversation history preserves complete [Message] values, including
+// assistant tool calls and tool-result turns. After executing requested tools,
+// use [Conversation.AddToolResults] before sending the next user message.
+//
 // # Streaming
 //
 // Iris treats streaming as a first-class primitive. Use [ChatBuilder.Stream] for

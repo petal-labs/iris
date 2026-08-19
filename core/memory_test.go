@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 )
@@ -14,13 +15,13 @@ func TestInMemoryStoreAddMessage(t *testing.T) {
 	store := NewInMemoryStore()
 
 	msg := Message{Role: RoleUser, Content: "Hello"}
-	store.AddMessage(msg)
+	store.AddMessage(context.Background(), msg)
 
-	if store.Len() != 1 {
-		t.Errorf("Len() = %d, want 1", store.Len())
+	if store.Len(context.Background()) != 1 {
+		t.Errorf("Len() = %d, want 1", store.Len(context.Background()))
 	}
 
-	history := store.GetHistory()
+	history := store.GetHistory(context.Background())
 	if len(history) != 1 {
 		t.Fatalf("GetHistory() len = %d, want 1", len(history))
 	}
@@ -37,17 +38,17 @@ func TestInMemoryStoreAddMessages(t *testing.T) {
 		{Role: RoleAssistant, Content: "Hi there"},
 		{Role: RoleUser, Content: "How are you?"},
 	}
-	store.AddMessages(msgs)
+	store.AddMessages(context.Background(), msgs)
 
-	if store.Len() != 3 {
-		t.Errorf("Len() = %d, want 3", store.Len())
+	if store.Len(context.Background()) != 3 {
+		t.Errorf("Len() = %d, want 3", store.Len(context.Background()))
 	}
 
 	// Test empty add
-	store.AddMessages(nil)
-	store.AddMessages([]Message{})
-	if store.Len() != 3 {
-		t.Errorf("Len() after empty adds = %d, want 3", store.Len())
+	store.AddMessages(context.Background(), nil)
+	store.AddMessages(context.Background(), []Message{})
+	if store.Len(context.Background()) != 3 {
+		t.Errorf("Len() after empty adds = %d, want 3", store.Len(context.Background()))
 	}
 }
 
@@ -61,7 +62,7 @@ func TestInMemoryStoreGetLastN(t *testing.T) {
 		{Role: RoleAssistant, Content: "4"},
 		{Role: RoleUser, Content: "5"},
 	}
-	store.AddMessages(msgs)
+	store.AddMessages(context.Background(), msgs)
 
 	tests := []struct {
 		n    int
@@ -76,7 +77,7 @@ func TestInMemoryStoreGetLastN(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := store.GetLastN(tc.n)
+		got := store.GetLastN(context.Background(), tc.n)
 		if tc.want == nil {
 			if got != nil {
 				t.Errorf("GetLastN(%d) = %v, want nil", tc.n, got)
@@ -97,33 +98,33 @@ func TestInMemoryStoreGetLastN(t *testing.T) {
 
 func TestInMemoryStoreClear(t *testing.T) {
 	store := NewInMemoryStore()
-	store.AddMessages([]Message{
+	store.AddMessages(context.Background(), []Message{
 		{Role: RoleUser, Content: "Hello"},
 		{Role: RoleAssistant, Content: "Hi"},
 	})
 
-	store.Clear()
+	store.Clear(context.Background())
 
-	if store.Len() != 0 {
-		t.Errorf("Len() after Clear = %d, want 0", store.Len())
+	if store.Len(context.Background()) != 0 {
+		t.Errorf("Len() after Clear = %d, want 0", store.Len(context.Background()))
 	}
 }
 
 func TestInMemoryStoreSetMessages(t *testing.T) {
 	store := NewInMemoryStore()
-	store.AddMessage(Message{Role: RoleUser, Content: "Original"})
+	store.AddMessage(context.Background(), Message{Role: RoleUser, Content: "Original"})
 
 	newMsgs := []Message{
 		{Role: RoleSystem, Content: "System"},
 		{Role: RoleUser, Content: "New"},
 	}
-	store.SetMessages(newMsgs)
+	store.SetMessages(context.Background(), newMsgs)
 
-	if store.Len() != 2 {
-		t.Errorf("Len() = %d, want 2", store.Len())
+	if store.Len(context.Background()) != 2 {
+		t.Errorf("Len() = %d, want 2", store.Len(context.Background()))
 	}
 
-	history := store.GetHistory()
+	history := store.GetHistory(context.Background())
 	if history[0].Role != RoleSystem {
 		t.Errorf("First message role = %q, want %q", history[0].Role, RoleSystem)
 	}
@@ -131,13 +132,13 @@ func TestInMemoryStoreSetMessages(t *testing.T) {
 
 func TestInMemoryStoreGetHistoryReturnsCopy(t *testing.T) {
 	store := NewInMemoryStore()
-	store.AddMessage(Message{Role: RoleUser, Content: "Original"})
+	store.AddMessage(context.Background(), Message{Role: RoleUser, Content: "Original"})
 
-	history := store.GetHistory()
+	history := store.GetHistory(context.Background())
 	history[0].Content = "Modified"
 
 	// Original should be unchanged
-	newHistory := store.GetHistory()
+	newHistory := store.GetHistory(context.Background())
 	if newHistory[0].Content != "Original" {
 		t.Error("GetHistory did not return a copy")
 	}
@@ -152,7 +153,7 @@ func TestInMemoryStoreConcurrency(t *testing.T) {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
-			store.AddMessage(Message{Role: RoleUser, Content: "msg"})
+			store.AddMessage(context.Background(), Message{Role: RoleUser, Content: "msg"})
 		}(i)
 	}
 
@@ -161,16 +162,16 @@ func TestInMemoryStoreConcurrency(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = store.GetHistory()
-			_ = store.Len()
-			_ = store.GetLastN(5)
+			_ = store.GetHistory(context.Background())
+			_ = store.Len(context.Background())
+			_ = store.GetLastN(context.Background(), 5)
 		}()
 	}
 
 	wg.Wait()
 
-	if store.Len() != 100 {
-		t.Errorf("Len() = %d, want 100 after concurrent operations", store.Len())
+	if store.Len(context.Background()) != 100 {
+		t.Errorf("Len() = %d, want 100 after concurrent operations", store.Len(context.Background()))
 	}
 }
 
@@ -181,25 +182,27 @@ func TestInMemoryStoreConcurrency(t *testing.T) {
 func TestNewConversation(t *testing.T) {
 	provider := &mockProvider{id: "test"}
 	client := NewClient(provider)
+	ctx := context.Background()
 
-	conv := NewConversation(client, "test-model")
+	conv := NewConversation(ctx, client, "test-model")
 
-	if conv.MessageCount() != 0 {
-		t.Errorf("MessageCount() = %d, want 0", conv.MessageCount())
+	if conv.MessageCount(ctx) != 0 {
+		t.Errorf("MessageCount() = %d, want 0", conv.MessageCount(ctx))
 	}
 }
 
 func TestNewConversationWithSystemMessage(t *testing.T) {
 	provider := &mockProvider{id: "test"}
 	client := NewClient(provider)
+	ctx := context.Background()
 
-	conv := NewConversation(client, "test-model", WithSystemMessage("You are helpful"))
+	conv := NewConversation(ctx, client, "test-model", WithSystemMessage("You are helpful"))
 
-	if conv.MessageCount() != 1 {
-		t.Errorf("MessageCount() = %d, want 1", conv.MessageCount())
+	if conv.MessageCount(ctx) != 1 {
+		t.Errorf("MessageCount() = %d, want 1", conv.MessageCount(ctx))
 	}
 
-	history := conv.GetHistory()
+	history := conv.GetHistory(ctx)
 	if history[0].Role != RoleSystem {
 		t.Errorf("First message role = %q, want %q", history[0].Role, RoleSystem)
 	}
@@ -211,35 +214,37 @@ func TestNewConversationWithSystemMessage(t *testing.T) {
 func TestNewConversationWithCustomMemory(t *testing.T) {
 	provider := &mockProvider{id: "test"}
 	client := NewClient(provider)
+	ctx := context.Background()
 
 	customMemory := NewInMemoryStore()
-	customMemory.AddMessage(Message{Role: RoleUser, Content: "Pre-existing"})
+	customMemory.AddMessage(ctx, Message{Role: RoleUser, Content: "Pre-existing"})
 
-	conv := NewConversation(client, "test-model", WithMemoryStore(customMemory))
+	conv := NewConversation(ctx, client, "test-model", WithMemoryStore(customMemory))
 
-	if conv.MessageCount() != 1 {
-		t.Errorf("MessageCount() = %d, want 1", conv.MessageCount())
+	if conv.MessageCount(ctx) != 1 {
+		t.Errorf("MessageCount() = %d, want 1", conv.MessageCount(ctx))
 	}
 }
 
 func TestConversationClear(t *testing.T) {
 	provider := &mockProvider{id: "test"}
 	client := NewClient(provider)
+	ctx := context.Background()
 
-	conv := NewConversation(client, "test-model", WithSystemMessage("System"))
-	conv.memory.AddMessage(Message{Role: RoleUser, Content: "Hello"})
+	conv := NewConversation(ctx, client, "test-model", WithSystemMessage("System"))
+	conv.memory.AddMessage(ctx, Message{Role: RoleUser, Content: "Hello"})
 
-	if conv.MessageCount() != 2 {
-		t.Errorf("MessageCount() before clear = %d, want 2", conv.MessageCount())
+	if conv.MessageCount(ctx) != 2 {
+		t.Errorf("MessageCount() before clear = %d, want 2", conv.MessageCount(ctx))
 	}
 
-	conv.Clear()
+	conv.Clear(ctx)
 
 	// System message should be re-added
-	if conv.MessageCount() != 1 {
-		t.Errorf("MessageCount() after clear = %d, want 1", conv.MessageCount())
+	if conv.MessageCount(ctx) != 1 {
+		t.Errorf("MessageCount() after clear = %d, want 1", conv.MessageCount(ctx))
 	}
-	history := conv.GetHistory()
+	history := conv.GetHistory(ctx)
 	if history[0].Role != RoleSystem {
 		t.Errorf("After clear, first message role = %q, want %q", history[0].Role, RoleSystem)
 	}
@@ -248,20 +253,157 @@ func TestConversationClear(t *testing.T) {
 func TestConversationClearNoSystem(t *testing.T) {
 	provider := &mockProvider{id: "test"}
 	client := NewClient(provider)
+	ctx := context.Background()
 
-	conv := NewConversation(client, "test-model")
-	conv.memory.AddMessage(Message{Role: RoleUser, Content: "Hello"})
+	conv := NewConversation(ctx, client, "test-model")
+	conv.memory.AddMessage(ctx, Message{Role: RoleUser, Content: "Hello"})
 
-	conv.Clear()
+	conv.Clear(ctx)
 
-	if conv.MessageCount() != 0 {
-		t.Errorf("MessageCount() after clear = %d, want 0", conv.MessageCount())
+	if conv.MessageCount(ctx) != 0 {
+		t.Errorf("MessageCount() after clear = %d, want 0", conv.MessageCount(ctx))
 	}
 }
 
 func TestMemoryInterfaceImplementation(t *testing.T) {
 	// Verify InMemoryStore implements Memory interface
 	var _ Memory = (*InMemoryStore)(nil)
+}
+
+type contextRecordingMemory struct {
+	*InMemoryStore
+	seen []context.Context
+}
+
+func (m *contextRecordingMemory) AddMessage(ctx context.Context, msg Message) {
+	m.seen = append(m.seen, ctx)
+	m.InMemoryStore.AddMessage(ctx, msg)
+}
+
+func (m *contextRecordingMemory) GetHistory(ctx context.Context) []Message {
+	m.seen = append(m.seen, ctx)
+	return m.InMemoryStore.GetHistory(ctx)
+}
+
+func TestConversationSendPropagatesContext(t *testing.T) {
+	type contextKey struct{}
+	ctx := context.WithValue(context.Background(), contextKey{}, "request-60")
+	memory := &contextRecordingMemory{InMemoryStore: NewInMemoryStore()}
+	provider := &mockProvider{id: "test", chatFunc: func(got context.Context, _ *ChatRequest) (*ChatResponse, error) {
+		if got.Value(contextKey{}) != "request-60" {
+			t.Error("provider did not receive the conversation context")
+		}
+		return &ChatResponse{Output: "Hello!"}, nil
+	}}
+	conv := NewConversation(ctx, NewClient(provider), "test-model",
+		WithMemoryStore(memory),
+		WithSystemMessage("You are helpful"),
+	)
+
+	if _, err := conv.Send(ctx, "Hello"); err != nil {
+		t.Fatalf("Send() error: %v", err)
+	}
+	if len(memory.seen) != 4 {
+		t.Fatalf("memory context calls = %d, want 4", len(memory.seen))
+	}
+	for _, got := range memory.seen {
+		if got.Value(contextKey{}) != "request-60" {
+			t.Error("memory did not receive the conversation context")
+		}
+	}
+}
+
+func TestConversationStreamHonorsCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	provider := &mockProvider{id: "test", streamFunc: func(got context.Context, _ *ChatRequest) (*ChatStream, error) {
+		return nil, got.Err()
+	}}
+	conv := NewConversation(context.Background(), NewClient(provider), "test-model")
+
+	_, err := conv.Stream(ctx, "Hello")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Stream() error = %v, want context.Canceled", err)
+	}
+}
+
+func TestConversationReplaysToolTurns(t *testing.T) {
+	ctx := context.Background()
+	store := NewInMemoryStore()
+	store.AddMessages(ctx, []Message{
+		{Role: RoleUser, Content: "What's the weather?"},
+		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "call-1", Name: "weather", Arguments: []byte(`{"city":"Tokyo"}`)}}},
+		{Role: RoleTool, ToolResults: []ToolResult{{CallID: "call-1", Content: "sunny"}}},
+	})
+
+	var got []Message
+	provider := &mockProvider{id: "test", chatFunc: func(_ context.Context, req *ChatRequest) (*ChatResponse, error) {
+		got = append([]Message(nil), req.Messages...)
+		return &ChatResponse{Output: "It is sunny."}, nil
+	}}
+	conv := NewConversation(ctx, NewClient(provider), "test-model", WithMemoryStore(store))
+
+	if _, err := conv.Send(ctx, "What should I wear?"); err != nil {
+		t.Fatalf("Send() error: %v", err)
+	}
+	if len(got) != 4 {
+		t.Fatalf("replayed message count = %d, want 4", len(got))
+	}
+	if len(got[1].ToolCalls) != 1 || got[1].ToolCalls[0].ID != "call-1" {
+		t.Errorf("assistant tool calls = %#v, want call-1", got[1].ToolCalls)
+	}
+	if got[2].Role != RoleTool || len(got[2].ToolResults) != 1 {
+		t.Errorf("tool result message = %#v, want one RoleTool result", got[2])
+	}
+}
+
+func TestConversationStoresResponseToolCalls(t *testing.T) {
+	ctx := context.Background()
+	provider := &mockProvider{id: "test", chatFunc: func(_ context.Context, _ *ChatRequest) (*ChatResponse, error) {
+		return &ChatResponse{ToolCalls: []ToolCall{{ID: "call-1", Name: "weather", Arguments: []byte(`{"city":"Tokyo"}`)}}}, nil
+	}}
+	conv := NewConversation(ctx, NewClient(provider), "test-model")
+
+	if _, err := conv.Send(ctx, "What's the weather?"); err != nil {
+		t.Fatalf("Send() error: %v", err)
+	}
+	history := conv.GetHistory(ctx)
+	if len(history) != 2 {
+		t.Fatalf("history length = %d, want 2", len(history))
+	}
+	if len(history[1].ToolCalls) != 1 || history[1].ToolCalls[0].ID != "call-1" {
+		t.Errorf("stored tool calls = %#v, want call-1", history[1].ToolCalls)
+	}
+}
+
+func TestConversationAddToolResultsReplaysCompleteTurn(t *testing.T) {
+	ctx := context.Background()
+	callCount := 0
+	var replayed []Message
+	provider := &mockProvider{id: "test", chatFunc: func(_ context.Context, req *ChatRequest) (*ChatResponse, error) {
+		callCount++
+		if callCount == 1 {
+			return &ChatResponse{ToolCalls: []ToolCall{{ID: "call-1", Name: "weather"}}}, nil
+		}
+		replayed = append([]Message(nil), req.Messages...)
+		return &ChatResponse{Output: "It is sunny."}, nil
+	}}
+	conv := NewConversation(ctx, NewClient(provider), "test-model")
+
+	if _, err := conv.Send(ctx, "What's the weather?"); err != nil {
+		t.Fatalf("first Send() error: %v", err)
+	}
+	conv.AddToolResults(ctx, []ToolResult{{CallID: "call-1", Content: "sunny"}})
+	if _, err := conv.Send(ctx, "What should I wear?"); err != nil {
+		t.Fatalf("second Send() error: %v", err)
+	}
+
+	if len(replayed) != 4 {
+		t.Fatalf("replayed message count = %d, want 4", len(replayed))
+	}
+	if len(replayed[1].ToolCalls) != 1 || replayed[2].Role != RoleTool {
+		t.Errorf("replayed tool turn = %#v, want assistant call followed by tool result", replayed[1:3])
+	}
 }
 
 // -----------------------------------------------------------------------------
@@ -271,17 +413,18 @@ func TestMemoryInterfaceImplementation(t *testing.T) {
 func TestConversationStream(t *testing.T) {
 	provider := &mockProvider{id: "test"}
 	client := NewClient(provider)
+	ctx := context.Background()
 
-	conv := NewConversation(client, "test-model")
+	conv := NewConversation(ctx, client, "test-model")
 
 	// Get stream
-	stream, err := conv.Stream("Hello")
+	stream, err := conv.Stream(ctx, "Hello")
 	if err != nil {
 		t.Fatalf("Stream() error: %v", err)
 	}
 
 	// Use DrainStream for proper handling
-	resp, err := DrainStream(context.Background(), stream)
+	resp, err := DrainStream(ctx, stream)
 	if err != nil {
 		t.Fatalf("DrainStream error: %v", err)
 	}
@@ -290,7 +433,7 @@ func TestConversationStream(t *testing.T) {
 	}
 
 	// Verify history was updated
-	history := conv.GetHistory()
+	history := conv.GetHistory(ctx)
 	if len(history) != 2 {
 		t.Fatalf("History length = %d, want 2", len(history))
 	}
@@ -307,13 +450,13 @@ func TestConversationStream(t *testing.T) {
 	}
 }
 
-func TestConversationStreamWithContext(t *testing.T) {
+func TestConversationStreamWithContextAlias(t *testing.T) {
 	provider := &mockProvider{id: "test"}
 	client := NewClient(provider)
-
-	conv := NewConversation(client, "test-model", WithSystemMessage("You are helpful"))
-
 	ctx := context.Background()
+
+	conv := NewConversation(ctx, client, "test-model", WithSystemMessage("You are helpful"))
+
 	stream, err := conv.StreamWithContext(ctx, "How are you?")
 	if err != nil {
 		t.Fatalf("StreamWithContext() error: %v", err)
@@ -329,7 +472,7 @@ func TestConversationStreamWithContext(t *testing.T) {
 	}
 
 	// History should have: system, user, assistant
-	history := conv.GetHistory()
+	history := conv.GetHistory(ctx)
 	if len(history) != 3 {
 		t.Fatalf("History length = %d, want 3", len(history))
 	}
@@ -348,12 +491,11 @@ func TestConversationStreamWithContext(t *testing.T) {
 func TestConversationStreamMultipleTurns(t *testing.T) {
 	provider := &mockProvider{id: "test"}
 	client := NewClient(provider)
-
-	conv := NewConversation(client, "test-model")
 	ctx := context.Background()
+	conv := NewConversation(ctx, client, "test-model")
 
 	// First turn
-	stream1, err := conv.Stream("First")
+	stream1, err := conv.Stream(ctx, "First")
 	if err != nil {
 		t.Fatalf("Stream() first turn error: %v", err)
 	}
@@ -363,7 +505,7 @@ func TestConversationStreamMultipleTurns(t *testing.T) {
 	}
 
 	// Second turn
-	stream2, err := conv.Stream("Second")
+	stream2, err := conv.Stream(ctx, "Second")
 	if err != nil {
 		t.Fatalf("Stream() second turn error: %v", err)
 	}
@@ -373,7 +515,7 @@ func TestConversationStreamMultipleTurns(t *testing.T) {
 	}
 
 	// Should have 4 messages: user1, assistant1, user2, assistant2
-	history := conv.GetHistory()
+	history := conv.GetHistory(ctx)
 	if len(history) != 4 {
 		t.Fatalf("History length = %d, want 4", len(history))
 	}
@@ -383,5 +525,35 @@ func TestConversationStreamMultipleTurns(t *testing.T) {
 	}
 	if history[2].Content != "Second" {
 		t.Errorf("Message 2 content = %q, want %q", history[2].Content, "Second")
+	}
+}
+
+func TestConversationStreamStoresResponseToolCalls(t *testing.T) {
+	provider := &mockProvider{id: "test", streamFunc: func(_ context.Context, _ *ChatRequest) (*ChatStream, error) {
+		chunks := make(chan ChatChunk)
+		errs := make(chan error)
+		final := make(chan *ChatResponse, 1)
+		close(chunks)
+		close(errs)
+		final <- &ChatResponse{ToolCalls: []ToolCall{{ID: "call-1", Name: "weather"}}}
+		close(final)
+		return &ChatStream{Ch: chunks, Err: errs, Final: final}, nil
+	}}
+	ctx := context.Background()
+	conv := NewConversation(ctx, NewClient(provider), "test-model")
+
+	stream, err := conv.Stream(ctx, "What's the weather?")
+	if err != nil {
+		t.Fatalf("Stream() error: %v", err)
+	}
+	if _, err := DrainStream(ctx, stream); err != nil {
+		t.Fatalf("DrainStream() error: %v", err)
+	}
+	history := conv.GetHistory(ctx)
+	if len(history) != 2 {
+		t.Fatalf("history length = %d, want 2", len(history))
+	}
+	if len(history[1].ToolCalls) != 1 || history[1].ToolCalls[0].ID != "call-1" {
+		t.Errorf("stored tool calls = %#v, want call-1", history[1].ToolCalls)
 	}
 }

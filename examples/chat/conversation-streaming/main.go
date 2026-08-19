@@ -11,6 +11,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -28,9 +29,10 @@ func main() {
 
 	provider := openai.New(apiKey)
 	client := core.NewClient(provider)
+	ctx := context.Background()
 
 	// Create a conversation with a system prompt
-	conv := core.NewConversation(client, "gpt-5.4-mini",
+	conv := core.NewConversation(ctx, client, "gpt-5.4-mini",
 		core.WithSystemMessage("You are a helpful programming tutor. Keep responses concise. Remember our conversation context."),
 	)
 
@@ -57,7 +59,7 @@ func main() {
 		fmt.Print("Assistant: ")
 
 		// Use streaming - response is automatically added to history when complete
-		stream, err := conv.Stream(input)
+		stream, err := conv.Stream(ctx, input)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "\nError: %v\n", err)
 			continue
@@ -91,5 +93,5 @@ func main() {
 	}
 
 	// Show conversation history
-	fmt.Printf("\nConversation had %d messages total.\n", conv.MessageCount())
+	fmt.Printf("\nConversation had %d messages total.\n", conv.MessageCount(ctx))
 }

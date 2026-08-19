@@ -2,37 +2,42 @@ package core
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 )
 
 // Memory is the interface for managing conversation history.
-// Implementations provide different storage backends (in-memory, Redis, PostgreSQL, etc.).
+// Implementations provide different storage backends (in-memory, Redis,
+// PostgreSQL, etc.). Every operation receives the caller's context so remote
+// stores can honor cancellation and deadlines and propagate trace metadata.
 type Memory interface {
 	// AddMessage appends a message to the conversation history.
-	AddMessage(msg Message)
+	AddMessage(ctx context.Context, msg Message)
 
 	// AddMessages appends multiple messages to the conversation history.
-	AddMessages(msgs []Message)
+	AddMessages(ctx context.Context, msgs []Message)
 
 	// GetHistory returns all messages in the conversation.
-	GetHistory() []Message
+	GetHistory(ctx context.Context) []Message
 
 	// GetLastN returns the last N messages in the conversation.
-	GetLastN(n int) []Message
+	GetLastN(ctx context.Context, n int) []Message
 
 	// Clear removes all messages from the conversation.
-	Clear()
+	Clear(ctx context.Context)
 
 	// Len returns the number of messages in the conversation.
-	Len() int
+	Len(ctx context.Context) int
 
 	// SetMessages replaces the entire conversation history.
-	SetMessages(msgs []Message)
+	SetMessages(ctx context.Context, msgs []Message)
 }
 
-// InMemoryStore is a thread-safe in-memory implementation of the Memory interface.
-// Suitable for single-session conversations that don't require persistence.
+// InMemoryStore is a thread-safe in-memory implementation of the Memory
+// interface. Operations complete synchronously, so their contexts are unused.
+// It is suitable for single-session conversations that don't require
+// persistence.
 type InMemoryStore struct {
 	mu       sync.RWMutex
 	messages []Message
@@ -46,14 +51,14 @@ func NewInMemoryStore() *InMemoryStore {
 }
 
 // AddMessage appends a message to the conversation history.
-func (m *InMemoryStore) AddMessage(msg Message) {
+func (m *InMemoryStore) AddMessage(_ context.Context, msg Message) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.messages = append(m.messages, msg)
 }
 
 // AddMessages appends multiple messages to the conversation history.
-func (m *InMemoryStore) AddMessages(msgs []Message) {
+func (m *InMemoryStore) AddMessages(_ context.Context, msgs []Message) {
 	if len(msgs) == 0 {
 		return
 	}
@@ -64,7 +69,7 @@ func (m *InMemoryStore) AddMessages(msgs []Message) {
 
 // GetHistory returns all messages in the conversation.
 // Returns a copy of the messages slice.
-func (m *InMemoryStore) GetHistory() []Message {
+func (m *InMemoryStore) GetHistory(_ context.Context) []Message {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -75,7 +80,7 @@ func (m *InMemoryStore) GetHistory() []Message {
 
 // GetLastN returns the last N messages in the conversation.
 // If N is greater than the number of messages, returns all messages.
-func (m *InMemoryStore) GetLastN(n int) []Message {
+func (m *InMemoryStore) GetLastN(_ context.Context, n int) []Message {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -96,21 +101,21 @@ func (m *InMemoryStore) GetLastN(n int) []Message {
 }
 
 // Clear removes all messages from the conversation.
-func (m *InMemoryStore) Clear() {
+func (m *InMemoryStore) Clear(_ context.Context) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.messages = make([]Message, 0)
 }
 
 // Len returns the number of messages in the conversation.
-func (m *InMemoryStore) Len() int {
+func (m *InMemoryStore) Len(_ context.Context) int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return len(m.messages)
 }
 
 // SetMessages replaces the entire conversation history.
-func (m *InMemoryStore) SetMessages(msgs []Message) {
+func (m *InMemoryStore) SetMessages(_ context.Context, msgs []Message) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.messages = make([]Message, len(msgs))
@@ -148,7 +153,8 @@ func WithMemoryStore(memory Memory) ConversationOption {
 }
 
 // NewConversation creates a new conversation session with the given client and model.
-func NewConversation(client *Client, model ModelID, opts ...ConversationOption) *Conversation {
+// ctx is passed to the configured Memory when initializing a system message.
+func NewConversation(ctx context.Context, client *Client, model ModelID, opts ...ConversationOption) *Conversation {
 	c := &Conversation{
 		memory: NewInMemoryStore(),
 		client: client,
@@ -161,7 +167,7 @@ func NewConversation(client *Client, model ModelID, opts ...ConversationOption) 
 
 	// Add system message if provided
 	if c.system != "" {
-		c.memory.AddMessage(Message{
+		c.memory.AddMessage(ctx, Message{
 			Role:    RoleSystem,
 			Content: c.system,
 		})
@@ -170,60 +176,65 @@ func NewConversation(client *Client, model ModelID, opts ...ConversationOption) 
 	return c
 }
 
-// Send sends a user message and returns the assistant's response.
-// Automatically manages conversation history.
-// Uses context.Background() internally.
-func (c *Conversation) Send(userMessage string) (*ChatResponse, error) {
-	return c.SendWithContext(context.Background(), userMessage)
-}
-
-// SendWithContext sends a user message with context and returns the assistant's response.
-func (c *Conversation) SendWithContext(ctx context.Context, userMessage string) (*ChatResponse, error) {
-	// Add user message to history
-	c.memory.AddMessage(Message{
-		Role:    RoleUser,
-		Content: userMessage,
-	})
-
-	// Build request with full history
-	builder := c.client.Chat(c.model)
-	for _, msg := range c.memory.GetHistory() {
-		switch msg.Role {
-		case RoleSystem:
-			builder = builder.System(msg.Content)
-		case RoleUser:
-			builder = builder.User(msg.Content)
-		case RoleAssistant:
-			builder = builder.Assistant(msg.Content)
-		}
-	}
-
-	// Get response
+// Send sends a user message with ctx and returns the assistant's response.
+// It automatically manages conversation history, preserving multimodal and
+// tool-call turns when replaying earlier messages.
+func (c *Conversation) Send(ctx context.Context, userMessage string) (*ChatResponse, error) {
+	builder := c.builderWithUserMessage(ctx, userMessage)
 	resp, err := builder.GetResponse(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add assistant response to history
-	c.memory.AddMessage(Message{
-		Role:    RoleAssistant,
-		Content: resp.Output,
+	c.memory.AddMessage(ctx, Message{
+		Role:      RoleAssistant,
+		Content:   resp.Output,
+		ToolCalls: slices.Clone(resp.ToolCalls),
 	})
 
 	return resp, nil
 }
 
+// SendWithContext delegates to Send.
+//
+// Deprecated: use Send.
+func (c *Conversation) SendWithContext(ctx context.Context, userMessage string) (*ChatResponse, error) {
+	return c.Send(ctx, userMessage)
+}
+
+func (c *Conversation) builderWithUserMessage(ctx context.Context, userMessage string) *ChatBuilder {
+	c.memory.AddMessage(ctx, Message{Role: RoleUser, Content: userMessage})
+
+	builder := c.client.Chat(c.model)
+	builder.req.Messages = slices.Clone(c.memory.GetHistory(ctx))
+	return builder
+}
+
+// AddToolResults appends tool execution results to the conversation. Call it
+// after Send or Stream returns assistant tool calls and before sending the next
+// user message. The results slice is copied before it is stored.
+func (c *Conversation) AddToolResults(ctx context.Context, results []ToolResult) {
+	if len(results) == 0 {
+		return
+	}
+
+	c.memory.AddMessage(ctx, Message{
+		Role:        RoleTool,
+		ToolResults: slices.Clone(results),
+	})
+}
+
 // GetHistory returns the full conversation history.
-func (c *Conversation) GetHistory() []Message {
-	return c.memory.GetHistory()
+func (c *Conversation) GetHistory(ctx context.Context) []Message {
+	return c.memory.GetHistory(ctx)
 }
 
 // Clear resets the conversation history.
 // If a system message was provided, it will be re-added.
-func (c *Conversation) Clear() {
-	c.memory.Clear()
+func (c *Conversation) Clear(ctx context.Context) {
+	c.memory.Clear(ctx)
 	if c.system != "" {
-		c.memory.AddMessage(Message{
+		c.memory.AddMessage(ctx, Message{
 			Role:    RoleSystem,
 			Content: c.system,
 		})
@@ -231,99 +242,76 @@ func (c *Conversation) Clear() {
 }
 
 // MessageCount returns the number of messages in the conversation.
-func (c *Conversation) MessageCount() int {
-	return c.memory.Len()
+func (c *Conversation) MessageCount(ctx context.Context) int {
+	return c.memory.Len(ctx)
 }
 
-// Stream sends a user message and returns a streaming response.
-// Automatically manages conversation history; the assistant's response
-// is added to history when the stream completes.
-// Uses context.Background() internally.
-func (c *Conversation) Stream(userMessage string) (*ChatStream, error) {
-	return c.StreamWithContext(context.Background(), userMessage)
-}
-
-// StreamWithContext sends a user message with context and returns a streaming response.
-// The stream is wrapped to automatically add the assistant's response to history
-// when the stream completes successfully.
-func (c *Conversation) StreamWithContext(ctx context.Context, userMessage string) (*ChatStream, error) {
-	// Add user message to history
-	c.memory.AddMessage(Message{
-		Role:    RoleUser,
-		Content: userMessage,
-	})
-
-	// Build request with full history
-	builder := c.client.Chat(c.model)
-	for _, msg := range c.memory.GetHistory() {
-		switch msg.Role {
-		case RoleSystem:
-			builder = builder.System(msg.Content)
-		case RoleUser:
-			builder = builder.User(msg.Content)
-		case RoleAssistant:
-			builder = builder.Assistant(msg.Content)
-		}
-	}
-
-	// Get stream
+// Stream sends a user message with ctx and returns a streaming response.
+// The stream is wrapped to add the assistant's complete text and tool calls to
+// conversation history when it finishes successfully.
+func (c *Conversation) Stream(ctx context.Context, userMessage string) (*ChatStream, error) {
+	builder := c.builderWithUserMessage(ctx, userMessage)
 	stream, err := builder.Stream(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Wrap stream to capture final response for history
-	return c.wrapStreamForHistory(stream), nil
+	return c.wrapStreamForHistory(ctx, stream), nil
+}
+
+// StreamWithContext delegates to Stream.
+//
+// Deprecated: use Stream.
+func (c *Conversation) StreamWithContext(ctx context.Context, userMessage string) (*ChatStream, error) {
+	return c.Stream(ctx, userMessage)
 }
 
 // wrapStreamForHistory wraps a ChatStream to capture the final response
 // and add it to conversation history.
-func (c *Conversation) wrapStreamForHistory(stream *ChatStream) *ChatStream {
+func (c *Conversation) wrapStreamForHistory(ctx context.Context, stream *ChatStream) *ChatStream {
 	wrappedCh := make(chan ChatChunk, 1)
 	wrappedFinal := make(chan *ChatResponse, 1)
 
-	go func() {
-		// Accumulate content from chunks
-		var accumulated strings.Builder
-
-		// Forward all chunks while accumulating
-		for chunk := range stream.Ch {
-			accumulated.WriteString(chunk.Delta)
-			wrappedCh <- chunk
-		}
-		// Close chunk channel immediately after forwarding all chunks
-		// so consumers know chunks are done before waiting for Final
-		close(wrappedCh)
-
-		// Wait for final response
-		finalResp, ok := <-stream.Final
-		if !ok {
-			close(wrappedFinal)
-			return
-		}
-
-		// Use accumulated content if Final.Output is empty
-		output := finalResp.Output
-		if output == "" {
-			output = accumulated.String()
-		}
-
-		// Add assistant response to history
-		if output != "" {
-			c.memory.AddMessage(Message{
-				Role:    RoleAssistant,
-				Content: output,
-			})
-		}
-
-		// Forward the final response and close the channel
-		wrappedFinal <- finalResp
-		close(wrappedFinal)
-	}()
+	go c.forwardStreamToHistory(ctx, stream, wrappedCh, wrappedFinal)
 
 	return &ChatStream{
 		Ch:    wrappedCh,
 		Err:   stream.Err,
 		Final: wrappedFinal,
 	}
+}
+
+func (c *Conversation) forwardStreamToHistory(
+	ctx context.Context,
+	stream *ChatStream,
+	wrappedCh chan<- ChatChunk,
+	wrappedFinal chan<- *ChatResponse,
+) {
+	var accumulated strings.Builder
+	for chunk := range stream.Ch {
+		accumulated.WriteString(chunk.Delta)
+		wrappedCh <- chunk
+	}
+	close(wrappedCh)
+
+	finalResp, ok := <-stream.Final
+	if !ok || finalResp == nil {
+		close(wrappedFinal)
+		return
+	}
+
+	output := finalResp.Output
+	if output == "" {
+		output = accumulated.String()
+	}
+	if output != "" || len(finalResp.ToolCalls) > 0 {
+		c.memory.AddMessage(ctx, Message{
+			Role:      RoleAssistant,
+			Content:   output,
+			ToolCalls: slices.Clone(finalResp.ToolCalls),
+		})
+	}
+
+	wrappedFinal <- finalResp
+	close(wrappedFinal)
 }
