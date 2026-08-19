@@ -562,19 +562,31 @@ The `Conversation` type manages message history automatically:
 
 ```go
 // Create a conversation with a system prompt
-conv := core.NewConversation(client, "gpt-5.6",
+ctx := context.Background()
+conv := core.NewConversation(ctx, client, "gpt-5.6",
     core.WithSystemMessage("You are a helpful assistant."),
 )
 
 // Send messages - history is managed automatically
-resp1, _ := conv.Send("What is Go?")
-resp2, _ := conv.Send("What are its main features?") // Remembers context
+resp1, _ := conv.Send(ctx, "What is Go?")
+resp2, _ := conv.Send(ctx, "What are its main features?") // Remembers context
 
 // Streaming responses
-stream, _ := conv.Stream("Tell me more about concurrency")
+stream, _ := conv.Stream(ctx, "Tell me more about concurrency")
 for chunk := range stream.Ch {
     fmt.Print(chunk.Delta)
 }
+```
+
+The same context is propagated through the provider request and every `Memory`
+operation. Assistant tool calls are retained in history; after executing them,
+append their results before continuing:
+
+```go
+resp, _ := conv.Send(ctx, "What's the weather in Tokyo?")
+results := executeTools(resp.ToolCalls)
+conv.AddToolResults(ctx, results)
+resp, _ = conv.Send(ctx, "Summarize the result.")
 ```
 
 ### Batch API
