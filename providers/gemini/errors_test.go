@@ -36,7 +36,7 @@ func TestNormalizeError(t *testing.T) {
 			name:         "not found",
 			status:       404,
 			body:         `{"error":{"code":404,"message":"Not found","status":"NOT_FOUND"}}`,
-			wantSentinel: core.ErrBadRequest,
+			wantSentinel: core.ErrNotFound,
 		},
 		{
 			name:         "rate limited",

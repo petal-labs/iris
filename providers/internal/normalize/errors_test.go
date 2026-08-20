@@ -176,6 +176,13 @@ func TestSentinelForStatusWithOverrides(t *testing.T) {
 	}
 }
 
+func TestSentinelForStatusNotFound(t *testing.T) {
+	sentinel := SentinelForStatus(http.StatusNotFound)
+	if !errors.Is(sentinel, core.ErrNotFound) {
+		t.Errorf("sentinel = %v, want ErrNotFound", sentinel)
+	}
+}
+
 func TestRequireAPIKey(t *testing.T) {
 	if err := RequireAPIKey("acme", core.NewSecret("sk-x")); err != nil {
 		t.Fatalf("non-empty key should pass: %v", err)

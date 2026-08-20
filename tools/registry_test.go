@@ -3,6 +3,7 @@ package tools_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 	"testing"
 
@@ -54,6 +55,15 @@ func TestRegistryGetNotFound(t *testing.T) {
 	_, ok := r.Get("nonexistent")
 	if ok {
 		t.Error("Get() returned true for nonexistent tool, want false")
+	}
+}
+
+func TestRegistryExecuteNotFound(t *testing.T) {
+	r := tools.NewRegistry()
+
+	_, err := r.Execute(context.Background(), "nonexistent", nil)
+	if !errors.Is(err, tools.ErrToolNotFound) {
+		t.Errorf("Execute() error = %v, want ErrToolNotFound", err)
 	}
 }
 

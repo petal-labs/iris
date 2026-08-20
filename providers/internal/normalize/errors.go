@@ -144,6 +144,8 @@ func SentinelForStatusWithOverrides(status int, overrides map[int]error) error {
 		return core.ErrBadRequest
 	case status == http.StatusUnauthorized || status == http.StatusForbidden:
 		return core.ErrUnauthorized
+	case status == http.StatusNotFound:
+		return core.ErrNotFound
 	case status == http.StatusTooManyRequests:
 		return core.ErrRateLimited
 	case status >= 500:

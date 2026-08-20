@@ -269,8 +269,8 @@ func TestCreateEmbeddings_HTTPError(t *testing.T) {
 	if provErr.Provider != "ollama" {
 		t.Errorf("Provider = %q, want ollama", provErr.Provider)
 	}
-	if !errors.Is(provErr, core.ErrBadRequest) {
-		t.Errorf("Expected ErrBadRequest for 404, got %v", provErr.Err)
+	if !errors.Is(provErr, core.ErrNotFound) {
+		t.Errorf("Expected ErrNotFound for 404, got %v", provErr.Err)
 	}
 }
 
@@ -290,6 +290,7 @@ func TestCreateEmbeddings_MalformedResponse(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error for malformed response, got nil")
 	}
+	assertNormalizedError(t, err, core.ErrDecode)
 }
 
 func TestCreateEmbeddings_ContextCancellation(t *testing.T) {

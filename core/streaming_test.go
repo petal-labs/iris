@@ -175,8 +175,11 @@ func TestDrainStreamToolCallsPreserved(t *testing.T) {
 
 func TestDrainStreamNilStream(t *testing.T) {
 	_, err := DrainStream(context.Background(), nil)
-	if !errors.Is(err, ErrBadRequest) {
-		t.Errorf("err = %v, want ErrBadRequest", err)
+	if !errors.Is(err, ErrNilStream) {
+		t.Errorf("err = %v, want ErrNilStream", err)
+	}
+	if errors.Is(err, ErrBadRequest) {
+		t.Errorf("err = %v, must not report a provider bad request", err)
 	}
 }
 

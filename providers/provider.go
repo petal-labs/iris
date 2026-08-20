@@ -102,6 +102,7 @@ var (
 	ErrUnauthorized  = core.ErrUnauthorized
 	ErrRateLimited   = core.ErrRateLimited
 	ErrBadRequest    = core.ErrBadRequest
+	ErrNotFound      = core.ErrNotFound
 	ErrServer        = core.ErrServer
 	ErrNetwork       = core.ErrNetwork
 	ErrDecode        = core.ErrDecode

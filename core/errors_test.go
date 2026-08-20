@@ -108,6 +108,12 @@ func TestErrNotFound(t *testing.T) {
 	}
 }
 
+func TestErrBatchNotFoundClassifiesAsNotFound(t *testing.T) {
+	if !errors.Is(ErrBatchNotFound, ErrNotFound) {
+		t.Errorf("ErrBatchNotFound = %v, want ErrNotFound classification", ErrBatchNotFound)
+	}
+}
+
 func TestProviderErrorUnwrapsNotFound(t *testing.T) {
 	err := &ProviderError{
 		Provider: "test",
