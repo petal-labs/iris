@@ -73,6 +73,8 @@ func TestCreateProviderAllProviders(t *testing.T) {
 		{"ollama", "", "ollama"},         // ollama works without API key
 		{"ollama", "test-key", "ollama"}, // ollama also works with API key
 		{"huggingface", "test-key", "huggingface"},
+		{"perplexity", "test-key", "perplexity"},
+		{"voyageai", "test-key", "voyageai"},
 	}
 
 	for _, tt := range tests {
@@ -86,6 +88,201 @@ func TestCreateProviderAllProviders(t *testing.T) {
 				t.Errorf("provider.ID() = %q, want %q", provider.ID(), tt.wantID)
 			}
 		})
+	}
+}
+
+func TestCreateProviderUsesPerplexityBaseURL(t *testing.T) {
+	var gotRequest bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotRequest = true
+		if r.URL.Path != "/chat/completions" {
+			t.Errorf("path = %q, want /chat/completions", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"id":"resp-1","model":"sonar","choices":[{"index":0,"message":{"role":"assistant","content":"hello"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
+	}))
+	defer server.Close()
+
+	app := NewApp()
+	provider, err := app.createProvider("perplexity", "test-key", &config.Config{
+		Providers: map[string]config.ProviderConfig{
+			"perplexity": {BaseURL: server.URL},
+		},
+	})
+	if err != nil {
+		t.Fatalf("createProvider(perplexity) error = %v", err)
+	}
+
+	_, err = provider.Chat(context.Background(), &core.ChatRequest{
+		Model:    "sonar",
+		Messages: []core.Message{{Role: core.RoleUser, Content: "hello"}},
+	})
+	if err != nil {
+		t.Fatalf("perplexity.Chat() error = %v", err)
+	}
+	if !gotRequest {
+		t.Error("perplexity request did not use the configured base URL")
+	}
+}
+
+func TestCreateProviderUsesVoyageAIBaseURL(t *testing.T) {
+	var gotRequest bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotRequest = true
+		if r.URL.Path != "/embeddings" {
+			t.Errorf("path = %q, want /embeddings", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"object":"list","data":[{"object":"embedding","index":0,"embedding":[0.1]}],"model":"voyage-4-large","usage":{"total_tokens":1}}`)
+	}))
+	defer server.Close()
+
+	app := NewApp()
+	provider, err := app.createProvider("voyageai", "test-key", &config.Config{
+		Providers: map[string]config.ProviderConfig{
+			"voyageai": {BaseURL: server.URL},
+		},
+	})
+	if err != nil {
+		t.Fatalf("createProvider(voyageai) error = %v", err)
+	}
+
+	embedder, ok := provider.(core.EmbeddingProvider)
+	if !ok {
+		t.Fatal("voyageai provider does not implement core.EmbeddingProvider")
+	}
+	_, err = embedder.CreateEmbeddings(context.Background(), &core.EmbeddingRequest{
+		Model: "voyage-4-large",
+		Input: []core.EmbeddingInput{{Text: "hello"}},
+	})
+	if err != nil {
+		t.Fatalf("voyageai.CreateEmbeddings() error = %v", err)
+	}
+	if !gotRequest {
+		t.Error("voyageai request did not use the configured base URL")
+	}
+}
+
+func TestCreateAzureFoundryProviderFromConfig(t *testing.T) {
+	server := newAzureChatServer(t, "/openai/deployments/chat-prod/chat/completions", "2025-01-01-preview")
+	defer server.Close()
+
+	app := NewApp()
+	provider, err := app.createProvider("azurefoundry", "test-key", &config.Config{
+		Providers: map[string]config.ProviderConfig{
+			"azurefoundry": {
+				Endpoint:          server.URL,
+				DeploymentID:      "chat-prod",
+				APIVersion:        "2025-01-01-preview",
+				UseOpenAIEndpoint: true,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("createProvider(azurefoundry) error = %v", err)
+	}
+
+	assertAzureChatSucceeds(t, provider)
+}
+
+func TestCreateAzureFoundryProviderFromEnvironment(t *testing.T) {
+	server := newAzureChatServer(t, "/openai/deployments/env-deployment/chat/completions", "2024-10-21")
+	defer server.Close()
+	t.Setenv("AZURE_AI_ENDPOINT", server.URL)
+	t.Setenv("AZURE_AI_DEPLOYMENT_ID", "env-deployment")
+
+	app := NewApp()
+	provider, err := app.createProvider("azurefoundry", "test-key", &config.Config{
+		Providers: map[string]config.ProviderConfig{
+			"azurefoundry": {UseOpenAIEndpoint: true},
+		},
+	})
+	if err != nil {
+		t.Fatalf("createProvider(azurefoundry) error = %v", err)
+	}
+
+	assertAzureChatSucceeds(t, provider)
+}
+
+func TestCreateAzureFoundryProviderRequiresEndpoint(t *testing.T) {
+	t.Setenv("AZURE_AI_ENDPOINT", "")
+	app := NewApp()
+	_, err := app.createProvider("azurefoundry", "test-key", nil)
+	if err == nil {
+		t.Fatal("createProvider(azurefoundry) should require an endpoint")
+	}
+	if !strings.Contains(err.Error(), "endpoint") || !strings.Contains(err.Error(), "AZURE_AI_ENDPOINT") {
+		t.Errorf("error = %q, want endpoint configuration guidance", err)
+	}
+}
+
+func TestCreateAzureFoundryProviderRejectsInvalidConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  config.ProviderConfig
+	}{
+		{
+			name: "non HTTP endpoint",
+			cfg:  config.ProviderConfig{Endpoint: "file:///tmp/azure"},
+		},
+		{
+			name: "endpoint credentials",
+			cfg:  config.ProviderConfig{Endpoint: "https://user:secret@example.com"},
+		},
+		{
+			name: "unsafe deployment ID",
+			cfg: config.ProviderConfig{
+				Endpoint:     "https://example.openai.azure.com",
+				DeploymentID: "chat/prod",
+			},
+		},
+		{
+			name: "unsafe API version",
+			cfg: config.ProviderConfig{
+				Endpoint:   "https://example.openai.azure.com",
+				APIVersion: "2025-01-01&mode=unsafe",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := NewApp()
+			_, err := app.createProvider("azurefoundry", "test-key", &config.Config{
+				Providers: map[string]config.ProviderConfig{"azurefoundry": tt.cfg},
+			})
+			if err == nil {
+				t.Fatal("createProvider(azurefoundry) should reject invalid config")
+			}
+		})
+	}
+}
+
+func newAzureChatServer(t *testing.T, wantPath, wantAPIVersion string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != wantPath {
+			t.Errorf("path = %q, want %q", r.URL.Path, wantPath)
+		}
+		if got := r.URL.Query().Get("api-version"); got != wantAPIVersion {
+			t.Errorf("api-version = %q, want %q", got, wantAPIVersion)
+		}
+		if got := r.Header.Get("api-key"); got != "test-key" {
+			t.Errorf("api-key = %q, want test-key", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"id":"resp-1","model":"gpt-4o","choices":[{"index":0,"message":{"role":"assistant","content":"hello"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
+	}))
+}
+
+func assertAzureChatSucceeds(t *testing.T, provider core.Provider) {
+	t.Helper()
+	_, err := provider.Chat(context.Background(), &core.ChatRequest{
+		Model:    "gpt-4o",
+		Messages: []core.Message{{Role: core.RoleUser, Content: "hello"}},
+	})
+	if err != nil {
+		t.Fatalf("azurefoundry.Chat() error = %v", err)
 	}
 }
 
@@ -227,6 +424,91 @@ func TestRunChatKeylessOllama(t *testing.T) {
 	if !gotRequest {
 		t.Error("no request reached the ollama server; keyless path did not proceed")
 	}
+}
+
+func TestRunChatPerplexityWithStoredKey(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Authorization"); got != "Bearer test-key" {
+			t.Errorf("Authorization = %q, want stored key", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"id":"resp-1","model":"sonar","choices":[{"index":0,"message":{"role":"assistant","content":"hello"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
+	}))
+	defer server.Close()
+
+	app, stdout := appWithStoredKey(t, "perplexity")
+	app.cfg = &config.Config{Providers: map[string]config.ProviderConfig{
+		"perplexity": {BaseURL: server.URL},
+	}}
+	app.provider = "perplexity"
+	app.model = "sonar"
+	app.chatPrompt = "hi"
+
+	if err := app.runChat(nil, nil); err != nil {
+		t.Fatalf("runChat() error = %v", err)
+	}
+	if got := stdout.String(); !strings.Contains(got, "hello") {
+		t.Errorf("stdout = %q, want provider response", got)
+	}
+}
+
+func TestRunChatAzureFoundryWithStoredKeyAndEnvironment(t *testing.T) {
+	server := newAzureChatServer(t, "/models/chat/completions", "2024-05-01-preview")
+	defer server.Close()
+	t.Setenv("AZURE_AI_ENDPOINT", server.URL)
+
+	app, stdout := appWithStoredKey(t, "azurefoundry")
+	app.cfg = &config.Config{Providers: map[string]config.ProviderConfig{}}
+	app.provider = "azurefoundry"
+	app.model = "gpt-4o"
+	app.chatPrompt = "hi"
+
+	if err := app.runChat(nil, nil); err != nil {
+		t.Fatalf("runChat() error = %v", err)
+	}
+	if got := stdout.String(); !strings.Contains(got, "hello") {
+		t.Errorf("stdout = %q, want provider response", got)
+	}
+}
+
+func TestRunChatVoyageAIReportsUnsupportedCapability(t *testing.T) {
+	app, _ := appWithStoredKey(t, "voyageai")
+	app.cfg = &config.Config{Providers: map[string]config.ProviderConfig{}}
+	app.provider = "voyageai"
+	app.model = "voyage-4-large"
+	app.chatPrompt = "hi"
+
+	err := app.runChat(nil, nil)
+	if err == nil {
+		t.Fatal("runChat() should report Voyage AI's unsupported chat capability")
+	}
+	if !strings.Contains(err.Error(), "chat is not supported by Voyage AI") {
+		t.Errorf("error = %q, want Voyage AI capability error", err)
+	}
+	if strings.Contains(err.Error(), "unsupported provider") {
+		t.Errorf("error = %q, provider should be constructed before capability validation", err)
+	}
+}
+
+func appWithStoredKey(t *testing.T, providerID string) (*App, *bytes.Buffer) {
+	t.Helper()
+	keyPath := filepath.Join(t.TempDir(), "keys.enc")
+	store, err := keystore.NewKeystoreAtPath(keyPath)
+	if err != nil {
+		t.Fatalf("create keystore: %v", err)
+	}
+	if err := store.Set(providerID, "test-key"); err != nil {
+		t.Fatalf("store %s key: %v", providerID, err)
+	}
+
+	stdout := &bytes.Buffer{}
+	app := NewApp(
+		WithKeystoreFactory(func() (keystore.Keystore, error) {
+			return keystore.NewKeystoreAtPath(keyPath)
+		}),
+		WithIO(strings.NewReader(""), stdout, &bytes.Buffer{}),
+	)
+	return app, stdout
 }
 
 // TestRunChatMissingKeyFailsForKeyedProviders verifies the actionable

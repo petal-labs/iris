@@ -18,7 +18,11 @@ type Config struct {
 
 // ProviderConfig holds configuration for a specific provider.
 type ProviderConfig struct {
-	BaseURL string `yaml:"base_url,omitempty"`
+	BaseURL           string `yaml:"base_url,omitempty"`
+	Endpoint          string `yaml:"endpoint,omitempty"`
+	DeploymentID      string `yaml:"deployment_id,omitempty"`
+	APIVersion        string `yaml:"api_version,omitempty"`
+	UseOpenAIEndpoint bool   `yaml:"use_openai_endpoint,omitempty"`
 }
 
 // DefaultConfigPath returns the default configuration file path for the current platform.

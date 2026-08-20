@@ -19,7 +19,7 @@ func (a *App) newInitCommand() *cobra.Command {
 
 Creates a project directory with:
   - main.go: A starter Go file using the Iris SDK
-  - iris.yaml: Project configuration
+  - go.mod: A standalone Go module with the Iris dependency
   - tools/: Directory for custom tools
 
 Example:
@@ -37,62 +37,72 @@ func (a *App) runInit(cmd *cobra.Command, args []string) error {
 	projectPath := args[0]
 	projectName := filepath.Base(projectPath)
 
-	// Validate project name (just the base name, not full path).
 	if err := validateProjectName(projectName); err != nil {
 		return err
 	}
+	if err := validateInitProvider(a.initProvider); err != nil {
+		return err
+	}
+	if err := ensureProjectPathAvailable(projectPath); err != nil {
+		return err
+	}
+	if err := createProject(projectPath, projectName, a.initProvider); err != nil {
+		return err
+	}
 
-	// Check if directory already exists.
-	if _, err := os.Stat(projectPath); err == nil {
+	printInitSuccess(a, projectName, projectPath)
+	return nil
+}
+
+func ensureProjectPathAvailable(projectPath string) error {
+	_, err := os.Stat(projectPath)
+	if err == nil {
 		return fmt.Errorf("directory %q already exists", projectPath)
 	}
+	if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to inspect project path %q: %w", projectPath, err)
+	}
+	return nil
+}
 
-	// Create directory structure.
-	dirs := []string{
-		projectPath,
-		filepath.Join(projectPath, "tools"),
+func createProject(projectPath, projectName, provider string) error {
+	toolsPath := filepath.Join(projectPath, "tools")
+	if err := os.MkdirAll(toolsPath, 0755); err != nil {
+		return fmt.Errorf("failed to create project directories: %w", err)
 	}
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
-		}
-	}
-
-	// Create .gitkeep files in empty directories.
-	gitkeepDirs := []string{
-		filepath.Join(projectPath, "tools"),
-	}
-	for _, dir := range gitkeepDirs {
-		path := filepath.Join(dir, ".gitkeep")
-		if err := os.WriteFile(path, []byte{}, 0644); err != nil {
-			return fmt.Errorf("failed to create %s: %w", path, err)
-		}
+	if err := os.WriteFile(filepath.Join(toolsPath, ".gitkeep"), []byte{}, 0644); err != nil {
+		return fmt.Errorf("failed to create tools/.gitkeep: %w", err)
 	}
 
-	// Generate main.go.
-	mainPath := filepath.Join(projectPath, "main.go")
-	if err := generateFile(mainPath, mainGoTemplate, templateData{
-		Provider: a.initProvider,
-	}); err != nil {
+	data := templateData{
+		ProjectName: projectName,
+		Provider:    provider,
+		GoVersion:   scaffoldGoVersion,
+		SDKVersion:  scaffoldSDKVersion,
+	}
+	if err := generateFile(filepath.Join(projectPath, "main.go"), mainTemplateForProvider(provider), data); err != nil {
 		return fmt.Errorf("failed to create main.go: %w", err)
 	}
-
-	// Generate iris.yaml.
-	configPath := filepath.Join(projectPath, "iris.yaml")
-	if err := generateFile(configPath, irisYamlTemplate, templateData{
-		Provider: a.initProvider,
-	}); err != nil {
-		return fmt.Errorf("failed to create iris.yaml: %w", err)
+	if err := generateFile(filepath.Join(projectPath, "go.mod"), goModTemplate, data); err != nil {
+		return fmt.Errorf("failed to create go.mod: %w", err)
 	}
+	return nil
+}
 
-	// Print success message.
+func printInitSuccess(a *App, projectName, projectPath string) {
 	fmt.Fprintf(a.stdout, "Created Iris project: %s\n\n", projectName)
 	fmt.Fprintln(a.stdout, "Next steps:")
 	fmt.Fprintf(a.stdout, "  cd %s\n", projectPath)
-	fmt.Fprintf(a.stdout, "  export %s=<your-key>\n", envVarForProvider(a.initProvider))
-	fmt.Fprintln(a.stdout, "  go run main.go")
-
-	return nil
+	if a.initProvider == "azurefoundry" {
+		fmt.Fprintln(a.stdout, "  export AZURE_AI_ENDPOINT=<your-endpoint>")
+	}
+	if a.initProvider != "ollama" {
+		fmt.Fprintf(a.stdout, "  export %s=<your-key>\n", envVarForProvider(a.initProvider))
+	}
+	if a.initProvider == "ollama" {
+		fmt.Fprintln(a.stdout, "  # Ensure Ollama is running and llama3.2 is available")
+	}
+	fmt.Fprintln(a.stdout, "  go run .")
 }
 
 func validateProjectName(name string) error {
@@ -118,8 +128,16 @@ func validateProjectName(name string) error {
 }
 
 type templateData struct {
-	Provider string
+	ProjectName string
+	Provider    string
+	GoVersion   string
+	SDKVersion  string
 }
+
+const (
+	scaffoldGoVersion  = "1.24.0"
+	scaffoldSDKVersion = "v0.17.0"
+)
 
 var templateFuncs = template.FuncMap{
 	"envVar":       envVarForProvider,
@@ -136,13 +154,24 @@ func generateFile(path string, tmplContent string, data templateData) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-
-	return tmpl.Execute(f, data)
+	if err := tmpl.Execute(f, data); err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 func envVarForProvider(provider string) string {
-	return strings.ToUpper(provider) + "_API_KEY"
+	switch provider {
+	case "huggingface":
+		return "HF_TOKEN"
+	case "voyageai":
+		return "VOYAGE_API_KEY"
+	case "azurefoundry":
+		return "AZURE_AI_API_KEY"
+	default:
+		return strings.ToUpper(provider) + "_API_KEY"
+	}
 }
 
 func defaultModel(provider string) string {
@@ -159,8 +188,39 @@ func defaultModel(provider string) string {
 		return "glm-4.7-flash"
 	case "ollama":
 		return "llama3.2"
+	case "perplexity":
+		return "sonar"
+	case "huggingface":
+		return "meta-llama/Llama-3-8B-Instruct"
+	case "azurefoundry":
+		return "gpt-4o"
+	case "voyageai":
+		return "voyage-4-large"
 	default:
-		return "default"
+		return ""
+	}
+}
+
+func validateInitProvider(provider string) error {
+	switch provider {
+	case "openai", "anthropic", "gemini", "xai", "zai", "ollama",
+		"huggingface", "perplexity", "voyageai", "azurefoundry":
+		return nil
+	default:
+		return fmt.Errorf("unsupported provider %q for project scaffold", provider)
+	}
+}
+
+func mainTemplateForProvider(provider string) string {
+	switch provider {
+	case "ollama":
+		return ollamaMainGoTemplate
+	case "voyageai":
+		return voyageAIMainGoTemplate
+	case "azurefoundry":
+		return azureFoundryMainGoTemplate
+	default:
+		return mainGoTemplate
 	}
 }
 
@@ -199,13 +259,101 @@ func main() {
 }
 `
 
-var irisYamlTemplate = `# Iris project configuration
-default_provider: {{.Provider}}
-default_model: {{.Provider | defaultModel}}
+var ollamaMainGoTemplate = `package main
 
-# Provider configurations
-# API keys should be set via 'iris keys set <provider>' or environment variables
-providers:
-  {{.Provider}}:
-    api_key_env: {{.Provider | envVar}}
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/ollama"
+)
+
+func main() {
+	p := ollama.NewLocal()
+	c := core.NewClient(p)
+
+	resp, err := c.Chat("{{.Provider | defaultModel}}").
+		User("Hello, world!").
+		GetResponse(context.Background())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(resp.Output)
+}
+`
+
+var voyageAIMainGoTemplate = `package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/voyageai"
+)
+
+func main() {
+	apiKey := os.Getenv("{{.Provider | envVar}}")
+	if apiKey == "" {
+		fmt.Fprintln(os.Stderr, "{{.Provider | envVar}} not set")
+		os.Exit(1)
+	}
+
+	p := voyageai.New(apiKey)
+	resp, err := p.CreateEmbeddings(context.Background(), &core.EmbeddingRequest{
+		Model: "{{.Provider | defaultModel}}",
+		Input: []core.EmbeddingInput{
+			{Text: "Hello, world!"},
+		},
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Generated %d embedding(s)\n", len(resp.Vectors))
+}
+`
+
+var azureFoundryMainGoTemplate = `package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/azurefoundry"
+)
+
+func main() {
+	p, err := azurefoundry.NewFromEnv()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
+	}
+	c := core.NewClient(p)
+
+	resp, err := c.Chat("{{.Provider | defaultModel}}").
+		User("Hello, world!").
+		GetResponse(context.Background())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(resp.Output)
+}
+`
+
+var goModTemplate = `module {{.ProjectName}}
+
+go {{.GoVersion}}
+
+require github.com/petal-labs/iris {{.SDKVersion}}
 `

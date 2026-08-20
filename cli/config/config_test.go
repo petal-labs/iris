@@ -77,6 +77,11 @@ default_model: gpt-4o
 providers:
   openai:
     base_url: https://api.openai.com/v1
+  azurefoundry:
+    endpoint: https://example.openai.azure.com
+    deployment_id: production-chat
+    api_version: 2025-01-01-preview
+    use_openai_endpoint: true
   anthropic:
 `
 	tmpDir := t.TempDir()
@@ -96,13 +101,27 @@ providers:
 	if cfg.DefaultModel != "gpt-4o" {
 		t.Errorf("DefaultModel = %q, want gpt-4o", cfg.DefaultModel)
 	}
-	if len(cfg.Providers) != 2 {
-		t.Errorf("len(Providers) = %d, want 2", len(cfg.Providers))
+	if len(cfg.Providers) != 3 {
+		t.Errorf("len(Providers) = %d, want 3", len(cfg.Providers))
 	}
 
 	openai := cfg.Providers["openai"]
 	if openai.BaseURL != "https://api.openai.com/v1" {
 		t.Errorf("openai.BaseURL = %q, want https://api.openai.com/v1", openai.BaseURL)
+	}
+
+	azure := cfg.Providers["azurefoundry"]
+	if azure.Endpoint != "https://example.openai.azure.com" {
+		t.Errorf("azurefoundry.Endpoint = %q, want Azure endpoint", azure.Endpoint)
+	}
+	if azure.DeploymentID != "production-chat" {
+		t.Errorf("azurefoundry.DeploymentID = %q, want production-chat", azure.DeploymentID)
+	}
+	if azure.APIVersion != "2025-01-01-preview" {
+		t.Errorf("azurefoundry.APIVersion = %q, want 2025-01-01-preview", azure.APIVersion)
+	}
+	if !azure.UseOpenAIEndpoint {
+		t.Error("azurefoundry.UseOpenAIEndpoint = false, want true")
 	}
 }
 

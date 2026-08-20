@@ -166,6 +166,10 @@ iris keys set anthropic
 iris keys set gemini
 iris keys set xai
 iris keys set zai
+iris keys set huggingface
+iris keys set perplexity
+iris keys set voyageai
+iris keys set azurefoundry
 iris keys set ollama  # Only needed for Ollama Cloud
 
 # Upgrade the keystore to master-key encryption (V2)
@@ -199,8 +203,11 @@ iris chat --provider anthropic --model claude-sonnet-5 --prompt "Tell me a story
 # Get JSON output
 iris chat --provider openai --model gpt-5.6 --prompt "Hello" --json
 
-# Initialize a new project
-iris init myproject
+# Initialize a standalone project (creates main.go, go.mod, and tools/)
+iris init myproject --provider perplexity
+cd myproject
+export PERPLEXITY_API_KEY=<your-key>
+go run .
 ```
 
 ## 📚 Documentation
@@ -233,6 +240,10 @@ Iris looks for configuration at `~/.iris/config.yaml`. The schema is:
 | `default_provider` | Provider used when `--provider` is omitted |
 | `default_model` | Model used when `--model` is omitted |
 | `providers.<id>.base_url` | Override a provider's API base URL |
+| `providers.azurefoundry.endpoint` | Azure AI Foundry resource endpoint |
+| `providers.azurefoundry.deployment_id` | Optional Azure deployment ID |
+| `providers.azurefoundry.api_version` | Optional Azure API version override |
+| `providers.azurefoundry.use_openai_endpoint` | Use Azure OpenAI deployment-style request paths |
 
 ```yaml
 default_provider: openai
@@ -242,9 +253,13 @@ providers:
   ollama:
     # Custom base URL for a remote/local Ollama instance (default: http://localhost:11434)
     base_url: http://remote-host:11434
+  azurefoundry:
+    endpoint: https://my-resource.openai.azure.com
+    deployment_id: production-chat
+    use_openai_endpoint: true
 ```
 
-API keys are **not** configured here. The CLI reads provider keys from the encrypted keystore (`iris keys set <provider>`, see [Security](#-security)); the SDK reads them from environment variables when you use the provider packages directly.
+API keys are **not** configured here. The CLI reads provider keys from the encrypted keystore (`iris keys set <provider>`, see [Security](#-security)); the SDK reads them from environment variables when you use the provider packages directly. For Azure AI Foundry, `AZURE_AI_ENDPOINT` and `AZURE_AI_DEPLOYMENT_ID` are also accepted when their corresponding config fields are omitted. `base_url` remains a backward-compatible alias for the Azure endpoint.
 
 ## 🔒 Security
 
