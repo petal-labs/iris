@@ -138,6 +138,7 @@ func TestCreateEmbeddingsValidatesRequest(t *testing.T) {
 
 func TestCreateEmbeddingsRejectsNilContext(t *testing.T) {
 	provider := New("test-key")
+	//nolint:staticcheck // Intentionally verify that the public API rejects a nil context.
 	_, err := provider.CreateEmbeddings(nil, validGeminiEmbeddingRequest())
 	if err == nil || !strings.Contains(err.Error(), "context cannot be nil") {
 		t.Fatalf("error = %v, want nil context error", err)
