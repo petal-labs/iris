@@ -11,7 +11,7 @@ Cells reflect each provider's `Supports()` implementation. For chat-based featur
 |----------|------|-----------|--------------|-----------|----------------|----------------|--------------------|------------|-----------|--------|
 | OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | Yes | Yes | No | Yes |
 | Anthropic | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
-| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | No | No | Yes |
+| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | Yes | No | Yes |
 | xAI (Grok) | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
 | Perplexity | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
 | Z.ai (GLM) | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
@@ -30,9 +30,9 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 
 | Provider | Status | Features |
 |----------|--------|----------|
-| OpenAI | Supported | Chat, Streaming, Tools, Batch API, Structured Output, Embeddings, Images, Responses API (GPT-5+) |
+| OpenAI | Supported | Chat, Streaming, Tools, Reasoning, Batch API, Structured Output, Embeddings, Images, Responses API (GPT-5+) |
 | Anthropic | Supported | Chat, Streaming, Tools, Reasoning |
-| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Images |
+| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Embeddings, Images |
 | xAI Grok | Supported | Chat, Streaming, Tools, Reasoning |
 | Z.ai GLM | Supported | Chat, Streaming, Tools, Thinking |
 | Perplexity | Supported | Chat, Streaming, Tools, Reasoning, Web Search + Citations |
@@ -196,10 +196,17 @@ resp, err := client.Chat(anthropic.ModelClaudeSonnet46).
 
 **Image Generation Models**: gemini-3.1-flash-image-preview, gemini-3-pro-image-preview, gemini-2.5-flash-image (Nano Banana)
 
+**Embedding Models**:
+
+| Model | Display Name | Input Types | Notes |
+|-------|--------------|-------------|-------|
+| gemini-embedding-001 | Gemini Embedding 001 | Query, Document | Configurable output dimensions |
+
 **Special Features**:
 - Native multimodal support
 - Long context windows
 - Grounding with Google Search
+- Batch text embeddings with query/document retrieval optimization
 
 **Usage Example**:
 ```go
@@ -209,6 +216,13 @@ client := core.NewClient(provider)
 resp, err := client.Chat(gemini.ModelGemini25Flash).
     User("Summarize this document.").
     GetResponse(ctx)
+
+embeddingProvider := gemini.New(os.Getenv("GEMINI_API_KEY"))
+embeddingResp, err := embeddingProvider.CreateEmbeddings(ctx, &core.EmbeddingRequest{
+    Model:     gemini.ModelGeminiEmbedding001,
+    Input:     []core.EmbeddingInput{{Text: "A document to index"}},
+    InputType: core.InputTypeDocument,
+})
 ```
 
 ---
@@ -517,7 +531,7 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 | Web search integration | Perplexity |
 | Local/private deployment | Ollama |
 | Cost-sensitive applications | HuggingFace (routing), Ollama (local) |
-| Embeddings and RAG | VoyageAI |
+| Embeddings and RAG | Gemini, VoyageAI |
 | Code generation | OpenAI (Codex models), Anthropic |
 | Multimodal (vision) | OpenAI (GPT-4o), Anthropic (Claude), Gemini, Azure AI Foundry vision deployments |
 | Image generation | OpenAI (DALL-E, GPT-Image), Gemini (Nano Banana) |

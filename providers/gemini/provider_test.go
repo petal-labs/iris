@@ -63,8 +63,8 @@ func TestModels(t *testing.T) {
 	p := New("test-key")
 	models := p.Models()
 
-	if len(models) != 14 {
-		t.Errorf("Models() count = %d, want 14", len(models))
+	if len(models) != 15 {
+		t.Errorf("Models() count = %d, want 15", len(models))
 	}
 
 	// Verify model IDs
@@ -88,6 +88,7 @@ func TestModels(t *testing.T) {
 		ModelGemini25Pro,
 		ModelGemini20FlashLite,
 		ModelGemini25FlashImage,
+		ModelGeminiEmbedding001,
 	}
 
 	for _, id := range expected {
@@ -124,6 +125,7 @@ func TestSupports(t *testing.T) {
 		{core.FeatureToolCalling, true},
 		{core.FeatureReasoning, true},
 		{core.FeatureImageGeneration, true},
+		{core.FeatureEmbeddings, true},
 		{core.FeatureBuiltInTools, false},
 		{core.FeatureResponseChain, false},
 		{core.Feature("unknown"), false},
@@ -255,6 +257,20 @@ func TestModelCapabilities(t *testing.T) {
 
 func TestProviderImplementsInterface(t *testing.T) {
 	var _ core.Provider = (*Gemini)(nil)
+	var _ core.EmbeddingProvider = (*Gemini)(nil)
+}
+
+func TestEmbeddingModelCapabilities(t *testing.T) {
+	info := GetModelInfo(ModelGeminiEmbedding001)
+	if info == nil {
+		t.Fatal("GetModelInfo(gemini-embedding-001) = nil")
+	}
+	if !info.HasCapability(core.FeatureEmbeddings) {
+		t.Error("gemini-embedding-001 missing FeatureEmbeddings")
+	}
+	if info.HasCapability(core.FeatureChat) {
+		t.Error("gemini-embedding-001 should not declare FeatureChat")
+	}
 }
 
 func TestNewWithEmptyAPIKey(t *testing.T) {
