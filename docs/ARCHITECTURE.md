@@ -266,6 +266,13 @@ func isRetryable(err error) bool {
 }
 ```
 
+The default policy is intentionally classification-based: network failures,
+rate limits, and server failures are retried, while cancellation, timeouts,
+authentication, bad requests, not-found responses, decode failures, and
+unknown errors are not. This avoids replaying requests when an undecorated
+error has unclear side effects. Applications that can safely retry additional
+error types can supply a custom `RetryPolicy` with `core.WithRetryPolicy`.
+
 ---
 
 ## Default Execution Timeout

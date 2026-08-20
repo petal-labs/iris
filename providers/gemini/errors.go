@@ -54,11 +54,7 @@ func normalizeError(status int, body []byte) error {
 		code = "unknown_error"
 	}
 
-	sentinel := normalize.SentinelForStatusWithOverrides(status, map[int]error{
-		http.StatusNotFound: core.ErrBadRequest,
-	})
-
-	pe := normalize.ProviderError("gemini", status, "", code, message, sentinel)
+	pe := normalize.ProviderError("gemini", status, "", code, message, normalize.SentinelForStatus(status))
 	pe.(*core.ProviderError).Body = bodyStr
 	return pe
 }

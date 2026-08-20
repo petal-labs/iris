@@ -49,10 +49,13 @@ var (
 	ErrNotSupported = errors.New("operation not supported")
 )
 
+// ErrNilStream indicates that DrainStream was called without a stream.
+var ErrNilStream = errors.New("nil chat stream")
+
 // Batch processing errors.
 var (
 	ErrBatchTimeout   = errors.New("batch processing timed out")
-	ErrBatchNotFound  = errors.New("batch not found")
+	ErrBatchNotFound  = fmt.Errorf("batch %w", ErrNotFound)
 	ErrBatchCancelled = errors.New("batch was cancelled")
 )
 

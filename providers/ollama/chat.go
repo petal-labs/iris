@@ -17,14 +17,14 @@ func (p *Ollama) doChat(ctx context.Context, req *core.ChatRequest) (*core.ChatR
 
 	body, err := json.Marshal(ollamaReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, newDecodeError(fmt.Errorf("failed to marshal request: %w", err))
 	}
 
 	// Create HTTP request
 	url := p.config.BaseURL + "/api/chat"
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, newNetworkError(fmt.Errorf("failed to create request: %w", err))
 	}
 
 	// Set headers
@@ -37,12 +37,7 @@ func (p *Ollama) doChat(ctx context.Context, req *core.ChatRequest) (*core.ChatR
 	// Send request
 	resp, err := p.config.HTTPClient.Do(httpReq)
 	if err != nil {
-		return nil, &core.ProviderError{
-			Provider: "ollama",
-			Code:     "network_error",
-			Message:  err.Error(),
-			Err:      fmt.Errorf("%w: %w", core.ErrNetwork, err),
-		}
+		return nil, newNetworkError(err)
 	}
 	defer resp.Body.Close()
 
@@ -54,7 +49,7 @@ func (p *Ollama) doChat(ctx context.Context, req *core.ChatRequest) (*core.ChatR
 	// Parse response
 	var ollamaResp ollamaResponse
 	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return nil, newDecodeError(fmt.Errorf("failed to decode response: %w", err))
 	}
 
 	// Check for inline error

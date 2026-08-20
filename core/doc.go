@@ -118,9 +118,11 @@
 //   - [ErrUnauthorized]: Invalid or missing API key
 //   - [ErrRateLimited]: Provider rate limit exceeded
 //   - [ErrBadRequest]: Invalid request parameters
+//   - [ErrNotFound]: Requested provider resource was not found
 //   - [ErrServer]: Provider server error (5xx)
 //   - [ErrNetwork]: Network connectivity issues
 //   - [ErrDecode]: Response parsing failed
+//   - [ErrNilStream]: A nil stream was passed to [DrainStream]
 //   - [ErrModelRequired]: Model ID not specified
 //   - [ErrNoMessages]: No messages in request
 //

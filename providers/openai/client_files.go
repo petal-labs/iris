@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/internal/normalize"
 	"github.com/petal-labs/iris/providers/internal/timeoutx"
 )
 
@@ -126,21 +127,7 @@ func (p *OpenAI) parseFileError(resp *http.Response) error {
 
 // mapStatusToSentinel maps HTTP status codes to sentinel errors.
 func (p *OpenAI) mapStatusToSentinel(status int) error {
-	switch status {
-	case http.StatusUnauthorized, http.StatusForbidden:
-		return core.ErrUnauthorized
-	case http.StatusNotFound:
-		return core.ErrNotFound
-	case http.StatusTooManyRequests:
-		return core.ErrRateLimited
-	case http.StatusBadRequest:
-		return core.ErrBadRequest
-	default:
-		if status >= 500 {
-			return core.ErrServer
-		}
-		return core.ErrBadRequest
-	}
+	return normalize.SentinelForStatus(status)
 }
 
 // ListFiles returns a list of files.

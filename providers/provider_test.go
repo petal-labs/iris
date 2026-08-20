@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/petal-labs/iris/core"
@@ -67,6 +68,12 @@ func TestProviderImplementsInterface(t *testing.T) {
 
 	if p.ID() != "test" {
 		t.Errorf("ID() = %v, want test", p.ID())
+	}
+}
+
+func TestErrNotFoundAlias(t *testing.T) {
+	if !errors.Is(ErrNotFound, core.ErrNotFound) {
+		t.Errorf("ErrNotFound = %v, want core.ErrNotFound", ErrNotFound)
 	}
 }
 

@@ -13,6 +13,8 @@ type RetryPolicy interface {
 	// NextDelay returns the delay before the next retry attempt and whether to retry.
 	// If ok is false, no more retries should be attempted.
 	// attempt starts at 0 for the first retry after the initial failure.
+	// The default policy retries only errors explicitly classified as transient;
+	// custom policies may opt into retrying additional error types.
 	NextDelay(attempt int, err error) (delay time.Duration, ok bool)
 }
 
@@ -26,6 +28,8 @@ type RetryConfig struct {
 
 // DefaultRetryPolicy returns a retry policy with sensible defaults.
 // Uses exponential backoff with jitter, max 3 retries, 30s max delay.
+// It retries network, rate-limit, and server errors (including HTTP 429 and
+// 5xx provider errors). Unknown errors are not retried by default.
 func DefaultRetryPolicy() RetryPolicy {
 	return NewRetryPolicy(RetryConfig{
 		MaxRetries: 3,

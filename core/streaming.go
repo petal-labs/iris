@@ -29,6 +29,7 @@ type ChatStream struct {
 
 // DrainStream accumulates all deltas and returns the final ChatResponse.
 // Blocks until stream completes or context cancels.
+// Returns [ErrNilStream] when s is nil.
 //
 // Behavior:
 //  1. Read all chunks from Ch, accumulating Delta into output string
@@ -44,7 +45,7 @@ type ChatStream struct {
 //     context error, then return ctx.Err().
 func DrainStream(ctx context.Context, s *ChatStream) (*ChatResponse, error) {
 	if s == nil {
-		return nil, ErrBadRequest
+		return nil, ErrNilStream
 	}
 
 	var accumulated strings.Builder

@@ -18,14 +18,14 @@ func (p *Ollama) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core
 
 	body, err := json.Marshal(ollamaReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, newDecodeError(fmt.Errorf("failed to marshal request: %w", err))
 	}
 
 	// Create HTTP request
 	url := p.config.BaseURL + "/api/chat"
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, newNetworkError(fmt.Errorf("failed to create request: %w", err))
 	}
 
 	// Set headers
@@ -38,12 +38,7 @@ func (p *Ollama) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core
 	// Send request
 	resp, err := p.config.HTTPClient.Do(httpReq)
 	if err != nil {
-		return nil, &core.ProviderError{
-			Provider: "ollama",
-			Code:     "network_error",
-			Message:  err.Error(),
-			Err:      fmt.Errorf("%w: %w", core.ErrNetwork, err),
-		}
+		return nil, newNetworkError(err)
 	}
 
 	// Check for errors
@@ -103,7 +98,7 @@ func (p *Ollama) processNDJSONStream(
 
 		var chunk ollamaResponse
 		if err := json.Unmarshal(line, &chunk); err != nil {
-			errCh <- fmt.Errorf("failed to parse stream chunk: %w", err)
+			errCh <- newDecodeErrorWithBody(fmt.Errorf("failed to parse stream chunk: %w", err), line)
 			return
 		}
 
@@ -145,7 +140,7 @@ func (p *Ollama) processNDJSONStream(
 	}
 
 	if err := scanner.Err(); err != nil {
-		errCh <- fmt.Errorf("stream read error: %w", err)
+		errCh <- newNetworkError(fmt.Errorf("stream read error: %w", err))
 		return
 	}
 

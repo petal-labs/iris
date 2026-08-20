@@ -124,6 +124,9 @@ func TestNormalizeErrorDeploymentNotFound(t *testing.T) {
 	if !errors.Is(err, ErrDeploymentNotFound) {
 		t.Errorf("expected error to wrap ErrDeploymentNotFound, got %v", err)
 	}
+	if !errors.Is(err, core.ErrNotFound) {
+		t.Errorf("expected error to wrap core.ErrNotFound, got %v", err)
+	}
 }
 
 func TestNormalizeErrorContextLength(t *testing.T) {

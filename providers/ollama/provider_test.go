@@ -3,6 +3,7 @@ package ollama
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -64,6 +65,42 @@ func TestNew(t *testing.T) {
 		}
 		if p.config.APIKey.Expose() != "cloud-key" {
 			t.Errorf("APIKey = %q, want %q", p.config.APIKey.Expose(), "cloud-key")
+		}
+	})
+}
+
+func TestNewLocalUsesConfiguredHost(t *testing.T) {
+	t.Setenv(OllamaHostEnvVar, "http://ollama.internal:11434")
+
+	provider := NewLocal()
+	if provider.config.BaseURL != "http://ollama.internal:11434" {
+		t.Errorf("BaseURL = %q, want configured Ollama host", provider.config.BaseURL)
+	}
+}
+
+func TestNewCloudFromEnv(t *testing.T) {
+	t.Run("missing API key", func(t *testing.T) {
+		t.Setenv(OllamaAPIKeyEnvVar, "")
+		provider, err := NewCloudFromEnv()
+		if !errors.Is(err, ErrAPIKeyNotFound) {
+			t.Errorf("error = %v, want ErrAPIKeyNotFound", err)
+		}
+		if provider != nil {
+			t.Errorf("provider = %#v, want nil", provider)
+		}
+	})
+
+	t.Run("configured API key", func(t *testing.T) {
+		t.Setenv(OllamaAPIKeyEnvVar, "test-key")
+		provider, err := NewCloudFromEnv()
+		if err != nil {
+			t.Fatalf("NewCloudFromEnv() error = %v", err)
+		}
+		if provider.config.BaseURL != DefaultCloudURL {
+			t.Errorf("BaseURL = %q, want %q", provider.config.BaseURL, DefaultCloudURL)
+		}
+		if provider.config.APIKey.Expose() != "test-key" {
+			t.Error("API key was not loaded from the environment")
 		}
 	})
 }
@@ -577,6 +614,58 @@ func TestMapRequest(t *testing.T) {
 			t.Errorf("Think should be nil, got %v", *ollamaReq.Think)
 		}
 	})
+}
+
+func TestMapMessagesPreservesToolData(t *testing.T) {
+	messages := []core.Message{
+		{
+			Role: core.RoleAssistant,
+			ToolCalls: []core.ToolCall{
+				{Name: "weather", Arguments: json.RawMessage(`{"city":"Portland"}`)},
+				{Name: "invalid", Arguments: json.RawMessage(`not JSON`)},
+			},
+		},
+		{
+			Role: core.RoleTool,
+			ToolResults: []core.ToolResult{
+				{Content: "sunny"},
+				{Content: map[string]any{"temperature": 72}},
+			},
+		},
+	}
+
+	mapped := mapMessages(messages)
+	if len(mapped) != 3 {
+		t.Fatalf("len(mapped) = %d, want 3", len(mapped))
+	}
+	if got := mapped[0].ToolCalls[0].Function.Arguments["city"]; got != "Portland" {
+		t.Errorf("valid tool arguments = %#v, want Portland", got)
+	}
+	if len(mapped[0].ToolCalls[1].Function.Arguments) != 0 {
+		t.Errorf("invalid tool arguments = %#v, want empty object", mapped[0].ToolCalls[1].Function.Arguments)
+	}
+	if mapped[1].Content != "sunny" {
+		t.Errorf("string tool result = %q, want sunny", mapped[1].Content)
+	}
+	if mapped[2].Content != `{"temperature":72}` {
+		t.Errorf("object tool result = %q, want JSON object", mapped[2].Content)
+	}
+}
+
+func TestMapMessagesHandlesUnencodableToolResult(t *testing.T) {
+	mapped := mapMessages([]core.Message{{
+		Role: core.RoleTool,
+		ToolResults: []core.ToolResult{{
+			Content: func() {},
+		}},
+	}})
+
+	if len(mapped) != 1 {
+		t.Fatalf("len(mapped) = %d, want 1", len(mapped))
+	}
+	if mapped[0].Content != `{"error": "failed to marshal tool result"}` {
+		t.Errorf("Content = %q, want marshal error JSON", mapped[0].Content)
+	}
 }
 
 // TestMapResponse tests response mapping.

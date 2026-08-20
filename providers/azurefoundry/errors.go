@@ -22,10 +22,10 @@ var (
 	ErrToolArgsInvalidJSON = errors.New("azurefoundry: tool arguments are not valid JSON")
 
 	// ErrDeploymentNotFound is returned when the specified deployment does not exist.
-	ErrDeploymentNotFound = errors.New("azurefoundry: deployment not found")
+	ErrDeploymentNotFound = fmt.Errorf("azurefoundry: deployment %w", core.ErrNotFound)
 
 	// ErrModelNotFound is returned when the specified model is not available.
-	ErrModelNotFound = errors.New("azurefoundry: model not found")
+	ErrModelNotFound = fmt.Errorf("azurefoundry: model %w", core.ErrNotFound)
 
 	// ErrQuotaExceeded is returned when the account quota has been exceeded.
 	ErrQuotaExceeded = errors.New("azurefoundry: quota exceeded")

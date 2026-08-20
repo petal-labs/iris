@@ -274,6 +274,12 @@ func TestDoChatError(t *testing.T) {
 			wantSentinel: core.ErrUnauthorized,
 		},
 		{
+			name:         "not found",
+			statusCode:   404,
+			body:         `{"error":{"code":404,"message":"Model not found","status":"NOT_FOUND"}}`,
+			wantSentinel: core.ErrNotFound,
+		},
+		{
 			name:         "rate limited",
 			statusCode:   429,
 			body:         `{"error":{"code":429,"message":"Resource exhausted","status":"RESOURCE_EXHAUSTED"}}`,

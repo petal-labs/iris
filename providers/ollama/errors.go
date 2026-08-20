@@ -14,12 +14,14 @@ import (
 func parseErrorResponse(resp *http.Response) error {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return &core.ProviderError{
-			Provider: "ollama",
-			Code:     "read_error",
-			Message:  fmt.Sprintf("failed to read error response: %v", err),
-			Status:   resp.StatusCode,
-		}
+		return normalize.ProviderError(
+			"ollama",
+			resp.StatusCode,
+			"",
+			"read_error",
+			fmt.Sprintf("failed to read error response: %v", err),
+			fmt.Errorf("%w: %w", core.ErrNetwork, err),
+		)
 	}
 
 	var errResp ollamaErrorResponse
@@ -58,26 +60,30 @@ func mapOllamaError(statusCode int, errMsg string) error {
 		errType = "unknown"
 	}
 
-	baseErr := normalize.SentinelForStatusWithOverrides(statusCode, map[int]error{
-		http.StatusNotFound: core.ErrBadRequest,
-	})
+	baseErr := normalize.SentinelForStatus(statusCode)
 
-	return &core.ProviderError{
-		Provider: "ollama",
-		Code:     errType,
-		Message:  errMsg,
-		Status:   statusCode,
-		Err:      baseErr,
-	}
+	return normalize.ProviderError("ollama", statusCode, "", errType, errMsg, baseErr)
 }
 
 // newStreamError creates an error from an inline stream error.
 func newStreamError(errMsg string) error {
-	return &core.ProviderError{
-		Provider: "ollama",
-		Code:     "stream_error",
-		Message:  errMsg,
-		Status:   0,
-		Err:      core.ErrServer,
-	}
+	return normalize.ProviderError("ollama", 0, "", "stream_error", errMsg, core.ErrServer)
+}
+
+// newNetworkError creates a ProviderError for network-related failures.
+func newNetworkError(err error) error {
+	providerErr := normalize.NetworkError("ollama", err).(*core.ProviderError)
+	providerErr.Code = "network_error"
+	return providerErr
+}
+
+// newDecodeError creates a ProviderError for JSON encoding and decoding failures.
+func newDecodeError(err error) error {
+	return normalize.DecodeError("ollama", err)
+}
+
+// newDecodeErrorWithBody creates a ProviderError for JSON decoding failures
+// and preserves the payload that could not be decoded.
+func newDecodeErrorWithBody(err error, body []byte) error {
+	return normalize.DecodeErrorWithBody("ollama", err, body)
 }

@@ -8,9 +8,14 @@ import (
 	"sync"
 )
 
-// ErrDuplicateTool is returned when attempting to register a tool with a name
-// that is already registered.
-var ErrDuplicateTool = errors.New("tool already registered")
+var (
+	// ErrDuplicateTool is returned when attempting to register a tool with a
+	// name that is already registered.
+	ErrDuplicateTool = errors.New("tool already registered")
+
+	// ErrToolNotFound is returned when attempting to execute an unregistered tool.
+	ErrToolNotFound = errors.New("tool not found")
+)
 
 // RegistryOption configures a Registry.
 type RegistryOption func(*Registry)
@@ -103,11 +108,12 @@ func (r *Registry) List() []Tool {
 }
 
 // Execute finds a tool by name and calls it with the given arguments.
-// Returns an error if the tool is not found or if execution fails.
+// Returns an error wrapping ErrToolNotFound if the tool is not registered, or
+// returns the tool's execution error unchanged.
 func (r *Registry) Execute(ctx context.Context, name string, args json.RawMessage) (any, error) {
 	tool, ok := r.Get(name)
 	if !ok {
-		return nil, fmt.Errorf("tool %q not found", name)
+		return nil, fmt.Errorf("%w: %q", ErrToolNotFound, name)
 	}
 	return tool.Call(ctx, args)
 }

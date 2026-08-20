@@ -41,13 +41,13 @@ func (p *Ollama) CreateEmbeddings(ctx context.Context, req *core.EmbeddingReques
 
 	body, err := json.Marshal(ollamaReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, newDecodeError(fmt.Errorf("failed to marshal request: %w", err))
 	}
 
 	url := p.config.BaseURL + embedPath
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, newNetworkError(fmt.Errorf("failed to create request: %w", err))
 	}
 
 	for key, values := range p.buildHeaders() {
@@ -58,12 +58,7 @@ func (p *Ollama) CreateEmbeddings(ctx context.Context, req *core.EmbeddingReques
 
 	resp, err := p.config.HTTPClient.Do(httpReq)
 	if err != nil {
-		return nil, &core.ProviderError{
-			Provider: "ollama",
-			Code:     "network_error",
-			Message:  err.Error(),
-			Err:      fmt.Errorf("%w: %w", core.ErrNetwork, err),
-		}
+		return nil, newNetworkError(err)
 	}
 	defer resp.Body.Close()
 
@@ -73,7 +68,7 @@ func (p *Ollama) CreateEmbeddings(ctx context.Context, req *core.EmbeddingReques
 
 	var embedResp ollamaEmbedResponse
 	if err := json.NewDecoder(resp.Body).Decode(&embedResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return nil, newDecodeError(fmt.Errorf("failed to decode response: %w", err))
 	}
 
 	if embedResp.Error != "" {
