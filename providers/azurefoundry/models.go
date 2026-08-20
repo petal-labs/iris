@@ -482,12 +482,21 @@ var models = []core.ModelInfo{
 	},
 }
 
-// GetModelInfo returns the model info for a given model ID, or nil if not found.
+// GetModelInfo returns a copy of the model info for a given model ID, or nil
+// if not found. The returned pointer references a fresh copy whose fields
+// (including the Capabilities slice) do not alias the package's static
+// catalog, so mutating it cannot affect subsequent GetModelInfo or Models calls.
 func GetModelInfo(id core.ModelID) *core.ModelInfo {
 	for i := range models {
-		if models[i].ID == id {
-			return &models[i]
+		if models[i].ID != id {
+			continue
 		}
+		cp := models[i]
+		if caps := cp.Capabilities; caps != nil {
+			cp.Capabilities = make([]core.Feature, len(caps))
+			copy(cp.Capabilities, caps)
+		}
+		return &cp
 	}
 	return nil
 }
