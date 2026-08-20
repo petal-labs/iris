@@ -104,13 +104,14 @@ var docMatrixProviderID = map[string]string{
 // cannot silently drift from the code.
 func TestProvidersDocMatrixAccuracy(t *testing.T) {
 	content := readDocFile(t, "PROVIDERS.md")
+	matrix := featureMatrixSection(t, content)
 
 	// Parse matrix rows: | <Provider> | Yes | No | ... |
 	// Note: [^|\n] — without excluding newlines the greedy inner group
 	// swallows the whole table into a single match.
 	rowRe := regexp.MustCompile(`(?m)^\| ([^|\n]+) \|((?:[^|\n]+\|)+)$`)
 	cells := map[string][]string{}
-	for _, match := range rowRe.FindAllStringSubmatch(content, -1) {
+	for _, match := range rowRe.FindAllStringSubmatch(matrix, -1) {
 		name := strings.TrimSpace(match[1])
 		if _, ok := docMatrixProviderID[name]; !ok {
 			continue // header or separator row
@@ -127,7 +128,7 @@ func TestProvidersDocMatrixAccuracy(t *testing.T) {
 			len(cells), len(docMatrixProviderID), missingMatrixRows(cells))
 	}
 
-	header := matrixHeader(content)
+	header := matrixHeader(matrix)
 	if len(header) == 0 {
 		t.Fatal("could not parse feature matrix header row")
 	}
@@ -210,6 +211,27 @@ func missingMatrixRows(cells map[string][]string) []string {
 		}
 	}
 	return missing
+}
+
+// featureMatrixSection returns the body of the "## Feature Support Matrix"
+// section. The matrix is parsed by matching any table row whose first cell is
+// a provider display name, so the parse must be scoped: PROVIDERS.md carries
+// other provider-keyed tables (the "Supported Providers" status table) whose
+// rows would otherwise be mistaken for matrix rows and silently override them.
+func featureMatrixSection(t *testing.T, content string) string {
+	t.Helper()
+
+	const heading = "## Feature Support Matrix"
+	start := strings.Index(content, heading)
+	if start < 0 {
+		t.Fatalf("PROVIDERS.md missing %q section", heading)
+	}
+
+	body := content[start+len(heading):]
+	if end := strings.Index(body, "\n## "); end >= 0 {
+		body = body[:end]
+	}
+	return body
 }
 
 func matrixHeader(content string) []string {
