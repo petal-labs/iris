@@ -428,3 +428,96 @@ func readCoreDocFile(t *testing.T) string {
 
 	return string(content)
 }
+
+// TestDocSnippetsNoBrokenAPIs scans Go code in doc comments (iris.go,
+// core/doc.go) and markdown guides for API references that do not exist in
+// the current SDK, so documentation cannot silently drift from the code.
+//
+// Each check targets a specific class of broken reference previously merged
+// (issue #63). The scan is regex-based rather than a full compile because doc
+// snippets deliberately omit package declarations, imports, and context
+// setup; a compile pass would require scaffolding each fragment, while these
+// targeted guards catch the high-risk seams at low maintenance cost.
+func TestDocSnippetsNoBrokenAPIs(t *testing.T) {
+	sources := docSnippetSources(t)
+
+	type check struct {
+		name    string
+		pattern *regexp.Regexp
+	}
+	checks := []check{
+		{
+			name:    "ChatBuilder has no Send method (use GetResponse)",
+			pattern: regexp.MustCompile(`\.User\([^)]*\)\.Send\(`),
+		},
+		{
+			name:    "exponentialBackoff is unexported (use NewRetryPolicy)",
+			pattern: regexp.MustCompile(`(core\.)?ExponentialBackoff\{`),
+		},
+		{
+			name:    "ReasoningOutput has no Output field (use Summary)",
+			pattern: regexp.MustCompile(`\.Reasoning\.Output\b`),
+		},
+		{
+			name:    "WithResponse takes core.ChatResponse not a string",
+			pattern: regexp.MustCompile(`WithResponse\(\s*"`),
+		},
+		{
+			name:    "RecordingProvider has Recordings not Calls",
+			pattern: regexp.MustCompile(`recorder\.Calls\(\)`),
+		},
+	}
+
+	for _, src := range sources {
+		for _, c := range checks {
+			if loc := c.pattern.FindStringIndex(src.content); loc != nil {
+				line := strings.Count(src.content[:loc[0]], "\n") + 1
+				t.Errorf("%s:%d: %s", src.path, line, c.name)
+			}
+		}
+	}
+}
+
+type docSource struct {
+	path    string
+	content string
+}
+
+// docSnippetSources collects the files whose Go snippets are checked for
+// broken API references: the convenience-package doc comments, the core
+// package doc, and every markdown guide under docs/guides/.
+func docSnippetSources(t *testing.T) []docSource {
+	t.Helper()
+
+	var sources []docSource
+
+	// iris.go and core/doc.go carry illustrative snippets in their package
+	// doc comments.
+	for _, rel := range []string{filepath.Join("..", "iris.go"), filepath.Join("..", "core", "doc.go")} {
+		content, err := os.ReadFile(rel)
+		if err != nil {
+			t.Fatalf("Failed to read %s: %v", rel, err)
+		}
+		sources = append(sources, docSource{path: rel, content: string(content)})
+	}
+
+	// Markdown guides.
+	guidesDir := filepath.Join("..", "docs", "guides")
+	entries, err := os.ReadDir(guidesDir)
+	if err != nil {
+		t.Fatalf("Failed to read docs/guides: %v", err)
+	}
+	for _, e := range entries {
+		if !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		p := filepath.Join(guidesDir, e.Name())
+		content, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatalf("Failed to read %s: %v", p, err)
+		}
+		sources = append(sources, docSource{path: p, content: string(content)})
+	}
+
+	return sources
+}

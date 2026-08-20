@@ -148,11 +148,11 @@
 //
 // Configure retry behavior with [RetryPolicy]:
 //
-//	policy := &core.ExponentialBackoff{
-//	    MaxRetries:  3,
-//	    BaseDelay:   time.Second,
-//	    MaxDelay:    30 * time.Second,
-//	}
+//	policy := core.NewRetryPolicy(core.RetryConfig{
+//	    MaxRetries: 3,
+//	    BaseDelay:  time.Second,
+//	    MaxDelay:   30 * time.Second,
+//	})
 //	client := core.NewClient(provider, core.WithRetryPolicy(policy))
 //
 // The default policy retries transient errors (rate limits, server errors) with

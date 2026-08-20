@@ -90,8 +90,8 @@ resp, err := client.Chat("gemini-2.5-pro").
     GetResponse(ctx)
 
 // Access reasoning if available
-if resp.Reasoning != nil && resp.Reasoning.Output != "" {
-    fmt.Println("Thinking:", resp.Reasoning.Output)
+if resp.Reasoning != nil && len(resp.Reasoning.Summary) > 0 {
+    fmt.Println("Thinking:", resp.Reasoning.Summary[0])
 }
 ```
 
