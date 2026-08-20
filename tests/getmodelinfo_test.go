@@ -5,16 +5,6 @@ import (
 
 	"github.com/petal-labs/iris/core"
 	"github.com/petal-labs/iris/providers"
-	_ "github.com/petal-labs/iris/providers/anthropic"
-	_ "github.com/petal-labs/iris/providers/azurefoundry"
-	_ "github.com/petal-labs/iris/providers/gemini"
-	_ "github.com/petal-labs/iris/providers/ollama"
-	_ "github.com/petal-labs/iris/providers/openai"
-	_ "github.com/petal-labs/iris/providers/perplexity"
-	_ "github.com/petal-labs/iris/providers/voyageai"
-	_ "github.com/petal-labs/iris/providers/xai"
-	_ "github.com/petal-labs/iris/providers/zai"
-
 	"github.com/petal-labs/iris/providers/anthropic"
 	"github.com/petal-labs/iris/providers/azurefoundry"
 	"github.com/petal-labs/iris/providers/gemini"
