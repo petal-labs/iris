@@ -77,7 +77,7 @@ func (p *OpenAI) Supports(feature core.Feature) bool {
 	switch feature {
 	case core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling,
 		core.FeatureImageGeneration, core.FeatureEmbeddings, core.FeatureStructuredOutput,
-		core.FeatureBatch:
+		core.FeatureBatch, core.FeatureReasoning:
 		return true
 	default:
 		return false

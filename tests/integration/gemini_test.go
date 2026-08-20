@@ -71,6 +71,36 @@ func TestGemini_ChatCompletion_Flash(t *testing.T) {
 	t.Logf("Model: %s", gemini.ModelGemini25Flash)
 }
 
+func TestGemini_Embeddings(t *testing.T) {
+	skipIfNoGeminiKey(t)
+
+	provider := gemini.New(getGeminiKey(t))
+	dimensions := 128
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	resp, err := provider.CreateEmbeddings(ctx, &core.EmbeddingRequest{
+		Model:      gemini.ModelGeminiEmbedding001,
+		Input:      []core.EmbeddingInput{{Text: "Iris is a multi-provider Go SDK."}, {Text: "Gemini supports embeddings."}},
+		Dimensions: &dimensions,
+		InputType:  core.InputTypeDocument,
+	})
+	if err != nil {
+		t.Fatalf("CreateEmbeddings() error = %v", err)
+	}
+	if len(resp.Vectors) != 2 {
+		t.Fatalf("len(Vectors) = %d, want 2", len(resp.Vectors))
+	}
+	for i, vector := range resp.Vectors {
+		if len(vector.Vector) != dimensions {
+			t.Errorf("len(Vectors[%d].Vector) = %d, want %d", i, len(vector.Vector), dimensions)
+		}
+	}
+	if resp.Usage.TotalTokens != resp.Usage.PromptTokens {
+		t.Errorf("Usage = %+v, want matching total and prompt tokens", resp.Usage)
+	}
+}
+
 func TestGemini_ImageGeneration(t *testing.T) {
 	skipIfNoGeminiKey(t)
 

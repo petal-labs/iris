@@ -36,6 +36,9 @@ const (
 
 	// Image generation models (Nano Banana)
 	ModelGemini25FlashImage core.ModelID = "gemini-2.5-flash-image"
+
+	// Embedding models
+	ModelGeminiEmbedding001 core.ModelID = "gemini-embedding-001"
 )
 
 // models is the static list of supported models.
@@ -176,6 +179,13 @@ var models = []core.ModelInfo{
 		DisplayName: "Gemini 2.5 Flash Image (Nano Banana)",
 		Capabilities: []core.Feature{
 			core.FeatureImageGeneration,
+		},
+	},
+	{
+		ID:          ModelGeminiEmbedding001,
+		DisplayName: "Gemini Embedding 001",
+		Capabilities: []core.Feature{
+			core.FeatureEmbeddings,
 		},
 	},
 }

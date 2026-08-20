@@ -133,6 +133,22 @@ func TestSupportsEmbeddings(t *testing.T) {
 	}
 }
 
+func TestSupportsReasoning(t *testing.T) {
+	p := New("test-key")
+	if !p.Supports(core.FeatureReasoning) {
+		t.Error("Supports(FeatureReasoning) = false, want true")
+	}
+
+	reasoningModel := GetModelInfo(ModelGPT56)
+	if reasoningModel == nil || !reasoningModel.HasCapability(core.FeatureReasoning) {
+		t.Error("GPT-5.6 should declare model-level reasoning support")
+	}
+	nonReasoningModel := GetModelInfo(ModelGPT41)
+	if nonReasoningModel == nil || nonReasoningModel.HasCapability(core.FeatureReasoning) {
+		t.Error("GPT-4.1 should remain model-level non-reasoning")
+	}
+}
+
 func TestImplementsImageGenerator(t *testing.T) {
 	var _ core.ImageGenerator = (*OpenAI)(nil)
 }
