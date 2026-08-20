@@ -16,6 +16,13 @@ type ContentPartSupporter interface {
 	SupportsContentPart(model ModelID, role Role, part ContentPart) bool
 }
 
+// AsContentPartSupporter attempts to cast a Provider to ContentPartSupporter.
+// It returns nil and false when the provider does not declare per-part support.
+func AsContentPartSupporter(p Provider) (ContentPartSupporter, bool) {
+	supporter, ok := p.(ContentPartSupporter)
+	return supporter, ok
+}
+
 // ImageDetail specifies the level of detail for image processing.
 type ImageDetail string
 

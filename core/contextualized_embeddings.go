@@ -11,6 +11,14 @@ type ContextualizedEmbeddingProvider interface {
 	CreateContextualizedEmbeddings(ctx context.Context, req *ContextualizedEmbeddingRequest) (*ContextualizedEmbeddingResponse, error)
 }
 
+// AsContextualizedEmbeddingProvider attempts to cast a Provider to
+// ContextualizedEmbeddingProvider. It returns nil and false when the provider
+// does not implement contextualized embeddings.
+func AsContextualizedEmbeddingProvider(p Provider) (ContextualizedEmbeddingProvider, bool) {
+	embedder, ok := p.(ContextualizedEmbeddingProvider)
+	return embedder, ok
+}
+
 // ContextualizedEmbeddingRequest represents a request to generate contextualized embeddings.
 type ContextualizedEmbeddingRequest struct {
 	// Model specifies the embedding model to use.

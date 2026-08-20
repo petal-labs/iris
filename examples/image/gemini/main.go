@@ -27,12 +27,10 @@ func main() {
 	}
 
 	provider := gemini.New(apiKey)
-	client := core.NewClient(provider)
 
 	fmt.Println("Generating image with Gemini...")
 
-	// Type assert to ImageGenerator
-	imageGen, ok := client.Provider().(core.ImageGenerator)
+	imageGen, ok := core.AsImageGenerator(provider)
 	if !ok {
 		fmt.Fprintln(os.Stderr, "Provider does not support image generation")
 		os.Exit(1)

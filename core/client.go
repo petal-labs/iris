@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-// DefaultTimeout is the execution timeout applied to chat and streaming calls
-// when neither the caller's context nor a per-call Timeout() supplies one.
-// Disable it per client with WithTimeout(0).
+// DefaultTimeout is the execution timeout applied to calls routed through
+// Client, including chat, streaming, and embeddings, when the caller's
+// context does not already supply a deadline. Disable it with WithTimeout(0).
 const DefaultTimeout = 120 * time.Second
 
 // Provider is the interface that LLM providers must implement.
@@ -44,6 +44,13 @@ type ImageGenerator interface {
 	// StreamImage generates images with streaming partial results.
 	// Not all providers support streaming.
 	StreamImage(ctx context.Context, req *ImageGenerateRequest) (*ImageStream, error)
+}
+
+// AsImageGenerator attempts to cast a Provider to ImageGenerator. It returns
+// nil and false when the provider does not implement image operations.
+func AsImageGenerator(p Provider) (ImageGenerator, bool) {
+	generator, ok := p.(ImageGenerator)
+	return generator, ok
 }
 
 // Client is the main entry point for interacting with LLM providers.
@@ -107,9 +114,10 @@ func WithWarningHandler(h WarningHandler) ClientOption {
 	}
 }
 
-// WithTimeout sets the default execution timeout applied to chat and streaming
-// calls when the caller's context has no deadline of its own and no per-call
-// Timeout() is set. Pass 0 to disable the default and allow unbounded calls.
+// WithTimeout sets the default execution timeout applied to calls routed
+// through Client when the caller's context has no deadline of its own. Chat
+// builders can override it per call with Timeout(). Pass 0 to disable the
+// default and allow unbounded calls.
 func WithTimeout(d time.Duration) ClientOption {
 	return func(c *Client) {
 		c.timeout = d
@@ -1062,7 +1070,7 @@ func (c *Client) warnf(format string, args ...any) {
 }
 
 func (b *ChatBuilder) warnUnsupportedContentParts() {
-	supporter, declaresSupport := b.client.provider.(ContentPartSupporter)
+	supporter, declaresSupport := AsContentPartSupporter(b.client.provider)
 	for messageIndex, message := range b.req.Messages {
 		for partIndex, part := range message.Parts {
 			if declaresSupport && supporter.SupportsContentPart(b.req.Model, message.Role, part) {
