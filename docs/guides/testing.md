@@ -10,8 +10,8 @@ import "github.com/petal-labs/iris/testing"
 
 // MockProvider for predictable responses
 mock := testing.NewMockProvider().
-    WithResponse("Hello!").
-    WithResponse("Follow-up response")
+    WithResponse(core.ChatResponse{Output: "Hello!"}).
+    WithResponse(core.ChatResponse{Output: "Follow-up response"})
 
 client := core.NewClient(mock)
 resp, _ := client.Chat("any-model").User("Hi").GetResponse(ctx)
@@ -24,7 +24,7 @@ client := core.NewClient(recorder)
 // ... run your code ...
 
 // Inspect recorded calls
-for _, call := range recorder.Calls() {
+for _, call := range recorder.Recordings() {
     fmt.Printf("Model: %s, Messages: %d\n", call.Request.Model, len(call.Request.Messages))
 }
 ```
