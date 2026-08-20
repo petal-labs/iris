@@ -10,6 +10,13 @@ type RerankerProvider interface {
 	Rerank(ctx context.Context, req *RerankRequest) (*RerankResponse, error)
 }
 
+// AsReranker attempts to cast a Provider to RerankerProvider. It returns nil
+// and false when the provider does not implement reranking.
+func AsReranker(p Provider) (RerankerProvider, bool) {
+	reranker, ok := p.(RerankerProvider)
+	return reranker, ok
+}
+
 // RerankRequest represents a request to rerank documents.
 type RerankRequest struct {
 	// Model specifies the reranker model to use.

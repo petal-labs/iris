@@ -82,19 +82,61 @@ type Provider interface {
 - `Chat()`: Synchronous request for simple use cases
 - `StreamChat()`: Streaming request for real-time output
 
-### Optional Interfaces
+### Optional Provider Capability Interfaces
 
-Additional capabilities use separate interfaces:
+Additional operations use small optional interfaces so providers can opt into
+capabilities without polluting the required `Provider` contract. Capability
+discovery has two complementary layers:
+
+1. `provider.Supports(feature)` answers whether the provider family advertises
+   a feature. Model catalogs can narrow that support per model.
+2. `core.As*` helpers answer whether the concrete provider exposes the Go
+   operation needed to call that capability.
+
+Use the helper before calling a raw optional interface:
 
 ```go
-type ImageGenerator interface {
-    GenerateImage(ctx context.Context, req *ImageGenerateRequest) (*ImageResponse, error)
-    EditImage(ctx context.Context, req *ImageEditRequest) (*ImageResponse, error)
-    StreamImage(ctx context.Context, req *ImageGenerateRequest) (*ImageStream, error)
+embedder, ok := core.AsEmbeddingProvider(provider)
+if !ok {
+    return core.ErrNotSupported
 }
+
+response, err := embedder.CreateEmbeddings(ctx, request)
 ```
 
-This allows providers to opt into capabilities without polluting the core interface.
+The helper returns `(nil, false)` when the operation is unavailable. The
+current optional interfaces and built-in implementers are:
+
+| Interface | Discovery helper | Feature | Built-in implementers |
+|-----------|------------------|---------|-----------------------|
+| `BatchProvider` | `AsBatchProvider` | `FeatureBatch` | OpenAI |
+| `EmbeddingProvider` | `AsEmbeddingProvider` | `FeatureEmbeddings` | Azure AI Foundry, Gemini, Ollama, OpenAI, Voyage AI |
+| `ContextualizedEmbeddingProvider` | `AsContextualizedEmbeddingProvider` | `FeatureContextualizedEmbeddings` | Voyage AI |
+| `RerankerProvider` | `AsReranker` | `FeatureReranking` | Voyage AI |
+| `ImageGenerator` | `AsImageGenerator` | `FeatureImageGeneration` | Gemini, OpenAI |
+| `ContentPartSupporter` | `AsContentPartSupporter` | Per-content-part declaration | Anthropic, Azure AI Foundry, Gemini, OpenAI |
+
+Third-party providers can implement the same interfaces; this table describes
+only the implementations shipped with Iris.
+
+For the common embedding path, prefer `client.Embed(ctx, request)`. It performs
+the same interface discovery and delegates to `EmbeddingProvider` while also
+applying the client's retry policy, telemetry hooks, and default timeout. A
+caller-supplied context deadline takes precedence over the client timeout.
+
+```go
+response, err := client.Embed(ctx, &core.EmbeddingRequest{
+    Model: "text-embedding-3-small",
+    Input: []core.EmbeddingInput{{Text: "Text to index"}},
+})
+```
+
+Image operations intentionally remain on `ImageGenerator` for now. The image
+capability has three distinct lifecycles—generation, editing with multipart
+inputs, and streaming partial images—and image token usage does not map cleanly
+to the chat-oriented telemetry event. Until a client API can cover all three
+consistently, callers should use `AsImageGenerator` and bound raw image calls
+with their own context deadline.
 
 ### Alternatives Considered
 

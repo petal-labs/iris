@@ -1,6 +1,11 @@
 package core
 
-import "context"
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+)
 
 // EncodingFormat specifies the embedding output format.
 type EncodingFormat string
@@ -85,4 +90,93 @@ type EmbeddingResponse struct {
 type EmbeddingProvider interface {
 	// CreateEmbeddings generates embeddings for the given input texts.
 	CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error)
+}
+
+// AsEmbeddingProvider attempts to cast a Provider to EmbeddingProvider.
+// It returns nil and false when the provider does not implement embeddings.
+func AsEmbeddingProvider(p Provider) (EmbeddingProvider, bool) {
+	embedder, ok := p.(EmbeddingProvider)
+	return embedder, ok
+}
+
+// Embed generates embeddings through the client's provider. It applies the
+// client timeout, telemetry, and retry policy to the optional embedding
+// capability just as GetResponse does for chat requests.
+func (c *Client) Embed(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("iris: embedding context cannot be nil")
+	}
+	if req == nil {
+		return nil, fmt.Errorf("iris: embedding request cannot be nil")
+	}
+	embedder, ok := AsEmbeddingProvider(c.provider)
+	if !ok {
+		return nil, fmt.Errorf("iris: provider %s does not support embeddings: %w", c.provider.ID(), ErrNotSupported)
+	}
+
+	var timeout time.Duration
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline && c.timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, c.timeout)
+		defer cancel()
+		timeout = c.timeout
+	}
+
+	start := time.Now()
+	providerID := c.provider.ID()
+	ctx = c.startEmbeddingTelemetry(ctx, providerID, req.Model, start)
+	resp, err := c.createEmbeddingsWithRetry(ctx, embedder, req)
+	if timeout > 0 && err != nil && errors.Is(err, context.DeadlineExceeded) {
+		err = newTimeoutError(timeout, providerID, req.Model)
+	}
+	c.endEmbeddingTelemetry(ctx, providerID, req.Model, start, resp, err)
+	return resp, err
+}
+
+func (c *Client) createEmbeddingsWithRetry(ctx context.Context, provider EmbeddingProvider, req *EmbeddingRequest) (*EmbeddingResponse, error) {
+	for attempt := 0; ; attempt++ {
+		resp, err := provider.CreateEmbeddings(ctx, req)
+		if err == nil {
+			return resp, nil
+		}
+		delay, retry := c.retry.NextDelay(attempt, err)
+		if !retry {
+			return resp, err
+		}
+		select {
+		case <-ctx.Done():
+			return resp, ctx.Err()
+		case <-time.After(delay):
+		}
+	}
+}
+
+func (c *Client) startEmbeddingTelemetry(ctx context.Context, provider string, model ModelID, start time.Time) context.Context {
+	event := RequestStartEvent{Provider: provider, Model: model, Start: start}
+	if hook, ok := c.telemetry.(ContextualTelemetryHook); ok {
+		return hook.OnRequestStartWithContext(ctx, event)
+	}
+	c.telemetry.OnRequestStart(event)
+	return ctx
+}
+
+func (c *Client) endEmbeddingTelemetry(ctx context.Context, provider string, model ModelID, start time.Time, resp *EmbeddingResponse, err error) {
+	usage := TokenUsage{}
+	if resp != nil {
+		usage.PromptTokens = resp.Usage.PromptTokens
+		usage.TotalTokens = resp.Usage.TotalTokens
+	}
+	event := RequestEndEvent{
+		Provider: provider,
+		Model:    model,
+		Start:    start,
+		End:      time.Now(),
+		Usage:    usage,
+		Err:      err,
+	}
+	if hook, ok := c.telemetry.(ContextualTelemetryHook); ok {
+		hook.OnRequestEndWithContext(ctx, event)
+		return
+	}
+	c.telemetry.OnRequestEnd(event)
 }
