@@ -1,6 +1,7 @@
 # Provider Comparison
 
 This document provides a comprehensive comparison of the AI providers supported by Iris.
+Model catalogs mirror each provider's `Models()` implementation in `providers/<name>/models.go`.
 
 ## Feature Support Matrix
 
@@ -24,6 +25,21 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 *Feature availability varies by model. See model-specific tables below.
 
 †"No" means a `ResponseJSONSchema` request against this provider fails fast with `core.ErrStructuredOutputUnsupported` before being sent, rather than silently ignoring the schema (the prior behavior). Plain `ResponseJSON()` (`json_object` mode) is unaffected and is not gated by this check.
+
+## Supported Providers
+
+| Provider | Status | Features |
+|----------|--------|----------|
+| OpenAI | Supported | Chat, Streaming, Tools, Batch API, Structured Output, Embeddings, Images, Responses API (GPT-5+) |
+| Anthropic | Supported | Chat, Streaming, Tools, Reasoning |
+| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Images |
+| xAI Grok | Supported | Chat, Streaming, Tools, Reasoning |
+| Z.ai GLM | Supported | Chat, Streaming, Tools, Thinking |
+| Perplexity | Supported | Chat, Streaming, Tools, Reasoning, Web Search + Citations |
+| Ollama | Supported | Chat, Streaming, Tools, Thinking, Embeddings |
+| Hugging Face | Supported | Chat, Streaming, Tools (Inference Providers router, model discovery) |
+| Azure AI Foundry | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Embeddings (Entra ID auth) |
+| Voyage AI | Supported | Embeddings, Contextualized Embeddings, Reranking (no chat) |
 
 ## Provider Details
 
@@ -137,17 +153,22 @@ resp, err := client.Chat(anthropic.ModelClaudeSonnet46).
 
 **Models**:
 
-| Model | Display Name | Reasoning | Notes |
-|-------|--------------|-----------|-------|
-| gemini-3.1-flash-image-preview | Gemini 3.1 Flash Image Preview | No | Image generation |
-| gemini-3-pro-preview | Gemini 3 Pro Preview | Yes | Latest preview |
-| gemini-3-flash-preview | Gemini 3 Flash Preview | Yes | Fast preview |
-| gemini-3-pro-image-preview | Gemini 3 Pro Image Preview | No | Image generation (Nano Banana Pro) |
-| gemini-2.5-pro | Gemini 2.5 Pro | Yes | Production ready |
-| gemini-2.5-flash | Gemini 2.5 Flash | Yes | Fast, efficient |
-| gemini-2.5-flash-lite | Gemini 2.5 Flash Lite | Yes | Lightweight |
-| gemini-2.5-flash-image | Gemini 2.5 Flash Image | No | Image generation (Nano Banana) |
-| gemini-2.0-flash-lite | Gemini 2.0 Flash Lite | No | Legacy lightweight |
+| Model | Display Name | Reasoning | Tool Calling | Notes |
+|-------|--------------|-----------|--------------|-------|
+| gemini-3.6-flash | Gemini 3.6 Flash | Yes | Yes | Latest (`thinkingLevel`) |
+| gemini-3.5-flash | Gemini 3.5 Flash | Yes | Yes | `thinkingLevel` |
+| gemini-3.5-flash-lite | Gemini 3.5 Flash Lite | Yes | Yes | `thinkingLevel`, lightweight |
+| gemini-3.1-pro-preview | Gemini 3.1 Pro Preview | Yes | Yes | `thinkingLevel` |
+| gemini-3.1-flash-lite | Gemini 3.1 Flash Lite | Yes | Yes | `thinkingLevel`, lightweight |
+| gemini-3.1-flash-image-preview | Gemini 3.1 Flash Image Preview | No | No | Chat, streaming, image generation |
+| gemini-3-pro-preview | Gemini 3 Pro Preview | Yes | Yes | `thinkingLevel` |
+| gemini-3-flash-preview | Gemini 3 Flash Preview | Yes | Yes | `thinkingLevel` |
+| gemini-3-pro-image-preview | Gemini 3 Pro Image Preview | No | No | Image generation only (Nano Banana Pro) |
+| gemini-2.5-pro | Gemini 2.5 Pro | Yes | Yes | `thinkingBudget`, production ready |
+| gemini-2.5-flash | Gemini 2.5 Flash | Yes | Yes | `thinkingBudget`, fast |
+| gemini-2.5-flash-lite | Gemini 2.5 Flash Lite | Yes | Yes | `thinkingBudget`, lightweight |
+| gemini-2.5-flash-image | Gemini 2.5 Flash Image | No | No | Image generation only (Nano Banana) |
+| gemini-2.0-flash-lite | Gemini 2.0 Flash Lite | No | No | Legacy lightweight |
 
 **Image Generation Models**: gemini-3.1-flash-image-preview, gemini-3-pro-image-preview, gemini-2.5-flash-image (Nano Banana)
 
@@ -178,18 +199,21 @@ resp, err := client.Chat(gemini.ModelGemini25Flash).
 
 | Model | Display Name | Reasoning | Notes |
 |-------|--------------|-----------|-------|
+| grok-4.5 | Grok 4.5 | Yes | Latest |
+| grok-4.3 | Grok 4.3 | Yes | |
 | grok-4.20-multi-agent-beta-0309 | Grok 4.20 Multi-Agent Beta | Yes | Multi-agent beta |
 | grok-4.20-beta-0309-reasoning | Grok 4.20 Beta (Reasoning) | Yes | Beta with reasoning |
 | grok-4.20-beta-0309-non-reasoning | Grok 4.20 Beta (Non-Reasoning) | No | Beta without reasoning |
-| grok-4.1 | Grok 4.1 | No | Latest stable |
-| grok-4-1-fast-non-reasoning | Grok 4.1 Fast (Non-Reasoning) | No | Fast without reasoning |
+| grok-4.1 | Grok 4.1 | No | |
+| grok-4-1-fast-non-reasoning | Grok 4.1 Fast (Non-Reasoning) | No | Fast; default model in `iris init` scaffolds |
 | grok-4-1-fast-reasoning | Grok 4.1 Fast (Reasoning) | Yes | Fast with reasoning |
 | grok-4 | Grok 4 | Yes | Flagship |
 | grok-4-fast-reasoning | Grok 4 Fast (Reasoning) | Yes | Fast with reasoning |
 | grok-4-fast-non-reasoning | Grok 4 Fast (Non-Reasoning) | No | Fast without reasoning |
 | grok-3 | Grok 3 | Yes | Previous generation |
-| grok-3-mini | Grok 3 Mini | Yes | Smaller model |
+| grok-3-mini | Grok 3 Mini | Yes | Smaller model; exposes `reasoning_content` |
 | grok-code-fast | Grok Code Fast | No | Code specialized |
+| grok-build-0.1 | Grok Build 0.1 | Yes | Build / agentic workloads |
 
 **Special Features**:
 - Real-time information access
@@ -263,12 +287,13 @@ for _, url := range resp.Citations {
 
 | Model | Display Name | Reasoning | Vision | Notes |
 |-------|--------------|-----------|--------|-------|
-| glm-5.1 | GLM-5.1 | Yes | No | Latest flagship |
+| glm-5.2 | GLM-5.2 | Yes | No | Latest flagship |
+| glm-5.1 | GLM-5.1 | Yes | No | |
 | glm-5 | GLM-5 | Yes | No | |
 | glm-5-turbo | GLM-5 Turbo | Yes | No | Fast |
 | glm-5v-turbo | GLM-5V Turbo | Yes | Yes | Vision capable |
 | glm-4.7 | GLM-4.7 | Yes | No | |
-| glm-4.7-flash | GLM-4.7 Flash | No | No | Fast |
+| glm-4.7-flash | GLM-4.7 Flash | No | No | Fast; default model in `iris init` scaffolds |
 | glm-4.7-flashx | GLM-4.7 FlashX | No | No | Extra fast |
 | glm-4.6 | GLM-4.6 | Yes | No | |
 | glm-4.6v | GLM-4.6V | Yes | Yes | Vision capable |
@@ -281,7 +306,7 @@ for _, url := range resp.Citations {
 | glm-4.5-airx | GLM-4.5 AirX | No | No | Extra lightweight |
 | glm-4.5-flash | GLM-4.5 Flash | No | No | Fast |
 | glm-for-coding | GLM for Coding | Yes | No | Code specialized |
-| glm-4-32b-0414-128k | GLM-4 32B | No | No | Large context |
+| glm-4-32b-0414-128k | GLM-4 32B | No | No | 128K context |
 
 **Special Features**:
 - Vision models for image understanding
@@ -307,12 +332,20 @@ resp, err := client.Chat(zai.ModelGLM47).
 
 **Authentication**: No key required for local; API key for Ollama Cloud
 
-**Models**: Dynamic - any model pulled locally. Common models:
-- llama3.2, llama3.2:70b
-- mistral, mixtral
-- qwen3
-- gemma3
-- deepseek-coder
+**Models**: Dynamic — any model you have pulled locally with `ollama pull <model>`.
+The models below ship in the built-in catalog; see
+[ollama.com/library](https://ollama.com/library) for everything else.
+
+| Model | Display Name | Reasoning | Tool Calling |
+|-------|--------------|-----------|--------------|
+| llama3.2 | Llama 3.2 | No | Yes |
+| llama3.2:70b | Llama 3.2 70B | No | Yes |
+| mistral | Mistral 7B | No | Yes |
+| mixtral | Mixtral 8x7B | No | Yes |
+| qwen3 | Qwen 3 | Yes | Yes |
+| gemma3 | Gemma 3 | No | No |
+| deepseek-coder | DeepSeek Coder | No | No |
+| codellama | Code Llama | No | No |
 
 **Special Features**:
 - Local-first operation
