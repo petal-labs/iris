@@ -120,7 +120,7 @@ func TestCLI_Init(t *testing.T) {
 	// Verify files exist
 	files := []string{
 		"main.go",
-		"iris.yaml",
+		"go.mod",
 		"tools/.gitkeep",
 	}
 

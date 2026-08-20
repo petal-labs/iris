@@ -130,7 +130,7 @@ Use Iris to manage API keys, chat with models, and scaffold projects.`,
 
 	// Global flags available to all commands.
 	root.PersistentFlags().StringVar(&a.cfgFile, "config", "", "config file (default is ~/.iris/config.yaml)")
-	root.PersistentFlags().StringVar(&a.provider, "provider", "", "provider ID (openai, anthropic, ollama)")
+	root.PersistentFlags().StringVar(&a.provider, "provider", "", "provider ID (for example: openai, anthropic, perplexity, ollama)")
 	root.PersistentFlags().StringVar(&a.model, "model", "", "model ID (e.g. gpt-4o)")
 	root.PersistentFlags().BoolVar(&a.jsonOutput, "json", false, "emit JSON output")
 	root.PersistentFlags().BoolVar(&a.verbose, "verbose", false, "print token usage summary after each response")

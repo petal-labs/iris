@@ -1,7 +1,9 @@
 package commands
 
 import (
+	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -45,6 +47,9 @@ func TestEnvVarForProvider(t *testing.T) {
 		{"openai", "OPENAI_API_KEY"},
 		{"anthropic", "ANTHROPIC_API_KEY"},
 		{"ollama", "OLLAMA_API_KEY"},
+		{"huggingface", "HF_TOKEN"},
+		{"voyageai", "VOYAGE_API_KEY"},
+		{"azurefoundry", "AZURE_AI_API_KEY"},
 	}
 
 	for _, tt := range tests {
@@ -65,7 +70,14 @@ func TestDefaultModel(t *testing.T) {
 		{"openai", "gpt-4o"},
 		{"anthropic", "claude-sonnet-4-5"},
 		{"gemini", "gemini-2.5-flash"},
-		{"unknown", "default"},
+		{"xai", "grok-4-1-fast-non-reasoning"},
+		{"zai", "glm-4.7-flash"},
+		{"ollama", "llama3.2"},
+		{"perplexity", "sonar"},
+		{"huggingface", "meta-llama/Llama-3-8B-Instruct"},
+		{"azurefoundry", "gpt-4o"},
+		{"voyageai", "voyage-4-large"},
+		{"unknown", ""},
 	}
 
 	for _, tt := range tests {
@@ -83,7 +95,7 @@ func TestGenerateFile(t *testing.T) {
 	path := filepath.Join(tmpDir, "test.txt")
 
 	tmpl := "Hello {{.Provider}}!"
-	data := templateData{Provider: "world"}
+	data := templateData{ProjectName: "testproject", Provider: "world"}
 
 	err := generateFile(path, tmpl, data)
 	if err != nil {
@@ -105,7 +117,7 @@ func TestGenerateFileWithFuncs(t *testing.T) {
 	path := filepath.Join(tmpDir, "test.txt")
 
 	tmpl := "Provider: {{.Provider}}, Env: {{.Provider | envVar}}, Model: {{.Provider | defaultModel}}"
-	data := templateData{Provider: "openai"}
+	data := templateData{ProjectName: "testproject", Provider: "openai"}
 
 	err := generateFile(path, tmpl, data)
 	if err != nil {
@@ -175,15 +187,53 @@ func TestInitCreatesProjectStructure(t *testing.T) {
 		t.Error("main.go missing 'openai.New'")
 	}
 
-	// Verify iris.yaml exists and contains expected content
-	configPath := filepath.Join(projectPath, "iris.yaml")
-	configContent, err := os.ReadFile(configPath)
+	// Verify go.mod exists and declares a runnable module with Iris.
+	goModPath := filepath.Join(projectPath, "go.mod")
+	goModContent, err := os.ReadFile(goModPath)
 	if err != nil {
-		t.Fatalf("iris.yaml not created: %v", err)
+		t.Fatalf("go.mod not created: %v", err)
+	}
+	if !strings.Contains(string(goModContent), "module testproject") {
+		t.Error("go.mod missing generated module name")
+	}
+	if !strings.Contains(string(goModContent), "github.com/petal-labs/iris") {
+		t.Error("go.mod missing Iris dependency")
 	}
 
-	if !strings.Contains(string(configContent), "default_provider: openai") {
-		t.Error("iris.yaml missing 'default_provider: openai'")
+	if _, err := os.Stat(filepath.Join(projectPath, "iris.yaml")); !os.IsNotExist(err) {
+		t.Errorf("unused iris.yaml should not be generated, stat error = %v", err)
+	}
+}
+
+func TestInitRejectsUnsupportedProvider(t *testing.T) {
+	projectPath := filepath.Join(t.TempDir(), "badprovider")
+
+	err := runInitWithPath(projectPath, "not-a-provider")
+	if err == nil {
+		t.Fatal("runInit() should reject an unsupported provider")
+	}
+	if !strings.Contains(err.Error(), "unsupported provider") {
+		t.Errorf("error = %q, want unsupported provider guidance", err)
+	}
+	if _, statErr := os.Stat(projectPath); !os.IsNotExist(statErr) {
+		t.Errorf("project directory should not be created, stat error = %v", statErr)
+	}
+}
+
+func TestGeneratedProjectsCompile(t *testing.T) {
+	providers := []string{
+		"openai", "anthropic", "gemini", "xai", "zai",
+		"ollama", "huggingface", "perplexity", "voyageai", "azurefoundry",
+	}
+
+	for _, provider := range providers {
+		t.Run(provider, func(t *testing.T) {
+			projectPath := filepath.Join(t.TempDir(), "scaffold")
+			if err := runInitWithPath(projectPath, provider); err != nil {
+				t.Fatalf("runInitWithPath(%q) error = %v", provider, err)
+			}
+			compileGeneratedProject(t, projectPath)
+		})
 	}
 }
 
@@ -206,49 +256,30 @@ func TestInitErrorOnExistingDirectory(t *testing.T) {
 	}
 }
 
-// Helper function to run init with a specific path
 func runInitWithPath(projectPath, provider string) error {
-	projectName := filepath.Base(projectPath)
+	app := NewApp(WithIO(strings.NewReader(""), &bytes.Buffer{}, &bytes.Buffer{}))
+	app.initProvider = provider
+	return app.runInit(nil, []string{projectPath})
+}
 
-	if err := validateProjectName(projectName); err != nil {
-		return err
+func compileGeneratedProject(t *testing.T, projectPath string) {
+	t.Helper()
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatalf("resolve repository root: %v", err)
 	}
 
-	if _, err := os.Stat(projectPath); err == nil {
-		return os.ErrExist
-	}
+	runGoCommand(t, projectPath, "mod", "edit", "-replace=github.com/petal-labs/iris="+repoRoot)
+	runGoCommand(t, projectPath, "test", "./...")
+}
 
-	dirs := []string{
-		projectPath,
-		filepath.Join(projectPath, "tools"),
+func runGoCommand(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("go", args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOWORK=off")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go %s failed: %v\n%s", strings.Join(args, " "), err, output)
 	}
-
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return err
-		}
-	}
-
-	gitkeepDirs := []string{
-		filepath.Join(projectPath, "tools"),
-	}
-
-	for _, dir := range gitkeepDirs {
-		path := filepath.Join(dir, ".gitkeep")
-		if err := os.WriteFile(path, []byte{}, 0644); err != nil {
-			return err
-		}
-	}
-
-	mainPath := filepath.Join(projectPath, "main.go")
-	if err := generateFile(mainPath, mainGoTemplate, templateData{Provider: provider}); err != nil {
-		return err
-	}
-
-	configPath := filepath.Join(projectPath, "iris.yaml")
-	if err := generateFile(configPath, irisYamlTemplate, templateData{Provider: provider}); err != nil {
-		return err
-	}
-
-	return nil
 }
