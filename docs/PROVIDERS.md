@@ -49,43 +49,60 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 
 **Authentication**: API key via `OPENAI_API_KEY` environment variable
 
-**API Types**:
-- Chat Completions API (GPT-4o, GPT-4, GPT-3.5 series)
-- Responses API (GPT-5.x, GPT-4.1, o-series models)
+**API Types**: the provider picks the route per model, from each model's
+`APIEndpoint`. The Route column below records which one applies.
+- Chat Completions API — GPT-4o, GPT-4, and GPT-3.5 series
+- Responses API — GPT-5.x, GPT-4.1, and o-series models; required for reasoning,
+  built-in tools, and response chaining
 
 **Models**:
 
-| Model | Display Name | Reasoning | Built-in Tools | Notes |
-|-------|--------------|-----------|----------------|-------|
-| gpt-5.4 | GPT-5.4 | Yes | Yes | Latest flagship |
-| gpt-5.4-pro | GPT-5.4 Pro | Yes | Yes | Enhanced capabilities |
-| gpt-5.4-mini | GPT-5.4 Mini | Yes | Yes | Smaller, faster |
-| gpt-5.4-nano | GPT-5.4 Nano | Yes | Yes | Lightweight |
-| gpt-5.2 | GPT-5.2 | Yes | Yes | |
-| gpt-5.2-pro | GPT-5.2 Pro | Yes | Yes | Enhanced capabilities |
-| gpt-5.2-codex | GPT-5.2 Codex | Yes | Yes | Code specialized |
-| gpt-5.1 | GPT-5.1 | Yes | Yes | |
-| gpt-5.1-codex | GPT-5.1 Codex | Yes | Yes | Code specialized |
-| gpt-5.1-codex-mini | GPT-5.1 Codex Mini | Yes | Yes | Smaller codex |
-| gpt-5.1-codex-max | GPT-5.1 Codex Max | Yes | Yes | Largest codex |
-| gpt-5 | GPT-5 | Yes | Yes | |
-| gpt-5-mini | GPT-5 Mini | Yes | Yes | Smaller, faster |
-| gpt-5-nano | GPT-5 Nano | No | Yes | Lightweight |
-| gpt-5-codex | GPT-5 Codex | Yes | Yes | Code specialized |
-| gpt-5-thinking | GPT-5 Thinking | Yes | Yes | Extended reasoning |
-| gpt-4.1 | GPT-4.1 | No | Yes | |
-| gpt-4.1-mini | GPT-4.1 Mini | No | Yes | |
-| gpt-4.1-nano | GPT-4.1 Nano | No | Yes | |
-| gpt-4o | GPT-4o | No | No | Multimodal |
-| gpt-4o-mini | GPT-4o Mini | No | No | Cost-effective |
-| o4-mini | o4-mini | Yes | Yes | Reasoning focused |
-| o4-mini-deep-research | o4-mini Deep Research | Yes | Yes | Research focused |
-| o3 | o3 | Yes | Yes | Reasoning focused |
-| o3-mini | o3-mini | Yes | Yes | Smaller reasoning |
-| o1 | o1 | Yes | No | Reasoning focused |
-| o1-pro | o1 Pro | Yes | No | Enhanced reasoning |
+| Model | Display Name | Route | Reasoning | Built-in Tools | Notes |
+|-------|--------------|-------|-----------|----------------|-------|
+| gpt-5.6 | GPT-5.6 | Responses | Yes | Yes | Latest flagship |
+| gpt-5.6-luna | GPT-5.6 Luna | Responses | Yes | Yes | GPT-5.6 variant |
+| gpt-5.6-sol | GPT-5.6 Sol | Responses | Yes | Yes | GPT-5.6 variant |
+| gpt-5.6-terra | GPT-5.6 Terra | Responses | Yes | Yes | GPT-5.6 variant |
+| gpt-5.5 | GPT-5.5 | Responses | Yes | Yes |  |
+| gpt-5.5-pro | GPT-5.5 Pro | Responses | Yes | Yes | Enhanced capabilities |
+| gpt-5.3-codex | GPT-5.3 Codex | Responses | Yes | Yes | Code specialized |
+| gpt-5.3-codex-spark | GPT-5.3 Codex Spark | Responses | Yes | Yes | Code specialized, lightweight |
+| gpt-5.4 | GPT-5.4 | Responses | Yes | Yes |  |
+| gpt-5.4-pro | GPT-5.4 Pro | Responses | Yes | Yes | Enhanced capabilities |
+| gpt-5.4-mini | GPT-5.4 Mini | Responses | Yes | Yes | Smaller, faster |
+| gpt-5.4-nano | GPT-5.4 Nano | Responses | Yes | Yes | Lightweight |
+| gpt-5.2 | GPT-5.2 | Responses | Yes | Yes |  |
+| gpt-5.2-pro | GPT-5.2 Pro | Responses | Yes | Yes | Enhanced capabilities |
+| gpt-5.2-codex | GPT-5.2 Codex | Responses | Yes | Yes | Code specialized |
+| gpt-5.1 | GPT-5.1 | Responses | Yes | Yes |  |
+| gpt-5.1-codex | GPT-5.1 Codex | Responses | Yes | Yes | Code specialized |
+| gpt-5.1-codex-mini | GPT-5.1 Codex Mini | Responses | Yes | Yes | Smaller codex |
+| gpt-5.1-codex-max | GPT-5.1 Codex Max | Responses | Yes | Yes | Largest codex |
+| gpt-5 | GPT-5 | Responses | Yes | Yes |  |
+| gpt-5-mini | GPT-5 Mini | Responses | Yes | Yes | Smaller, faster |
+| gpt-5-nano | GPT-5 Nano | Responses | No | Yes | Lightweight |
+| gpt-5-pro | GPT-5 Pro | Responses | Yes | Yes | Enhanced capabilities |
+| gpt-5-codex | GPT-5 Codex | Responses | Yes | Yes | Code specialized |
+| gpt-5-thinking | GPT-5 Thinking | Responses | Yes | Yes | Extended reasoning |
+| gpt-4.1 | GPT-4.1 | Responses | No | Yes |  |
+| gpt-4.1-mini | GPT-4.1 Mini | Responses | No | Yes |  |
+| gpt-4.1-nano | GPT-4.1 Nano | Responses | No | Yes |  |
+| gpt-4o | GPT-4o | Chat Completions | No | No | Multimodal |
+| gpt-4o-mini | GPT-4o Mini | Chat Completions | No | No | Cost-effective |
+| gpt-4-turbo | GPT-4 Turbo | Chat Completions | No | No | Legacy |
+| gpt-4 | GPT-4 | Chat Completions | No | No | Legacy |
+| gpt-3.5-turbo | GPT-3.5 Turbo | Chat Completions | No | No | Legacy; no structured output |
+| gpt-3.5-turbo-16k | GPT-3.5 Turbo 16k | Chat Completions | No | No | Legacy, 16K context |
+| gpt-3.5-turbo-instruct | GPT-3.5 Turbo Instruct | Chat Completions | No | No | Legacy; no tool calling |
+| o4-mini | o4-mini | Responses | Yes | Yes | Reasoning focused |
+| o4-mini-deep-research | o4-mini Deep Research | Responses | Yes | Yes | Research focused |
+| o3 | o3 | Responses | Yes | Yes | Reasoning focused |
+| o3-pro | o3-pro | Responses | Yes | Yes | Enhanced reasoning |
+| o3-mini | o3-mini | Responses | Yes | Yes | Smaller reasoning |
+| o1 | o1 | Responses | Yes | No | Reasoning focused |
+| o1-pro | o1 Pro | Responses | Yes | No | Enhanced reasoning |
 
-**Image Generation Models**: gpt-image-1.5, gpt-image-1, gpt-image-1-mini, dall-e-3, dall-e-2, chatgpt-image-latest
+**Image Generation Models**: gpt-image-2, gpt-image-1.5, gpt-image-1, gpt-image-1-mini, dall-e-3, dall-e-2, chatgpt-image-latest
 
 **Structured Output**: `ResponseJSONSchema` works on both the Chat Completions API and the Responses API (GPT-5.x), mapped to each API's native `response_format`/`text.format` shape respectively. Requesting it against a Chat Completions-only model that lacks `core.FeatureStructuredOutput` (e.g. gpt-3.5-turbo) fails with `core.ErrStructuredOutputUnsupported`.
 
@@ -113,7 +130,14 @@ resp, err := client.Chat(openai.ModelGPT4o).
 
 | Model | Display Name | Reasoning | Notes |
 |-------|--------------|-----------|-------|
-| claude-opus-4-7 | Claude Opus 4.7 | Yes | Latest flagship |
+| claude-opus-5 | Claude Opus 5 | Yes | Latest flagship |
+| claude-opus-5-thinking | Claude Opus 5 (Thinking) | Yes | Extended reasoning |
+| claude-sonnet-5 | Claude Sonnet 5 | Yes | Balanced performance |
+| claude-sonnet-5-thinking | Claude Sonnet 5 (Thinking) | Yes | Extended reasoning |
+| claude-fable-5 | Claude Fable 5 | Yes |  |
+| claude-opus-4-8 | Claude Opus 4.8 | Yes | High capability |
+| claude-opus-4-8-thinking | Claude Opus 4.8 (Thinking) | Yes | Extended reasoning |
+| claude-opus-4-7 | Claude Opus 4.7 | Yes | High capability |
 | claude-sonnet-4-6 | Claude Sonnet 4.6 | Yes | Balanced performance |
 | claude-sonnet-4-6-thinking | Claude Sonnet 4.6 (Thinking) | Yes | Extended reasoning |
 | claude-opus-4-6 | Claude Opus 4.6 | Yes | High capability |
