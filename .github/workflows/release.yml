@@ -78,8 +78,7 @@ jobs:
                       iris-windows-amd64.exe iris-${GITHUB_REF_NAME}.spdx.json \
                       checksums.txt; do
             cosign sign-blob \
-              --output-signature "${file}.sig" \
-              --output-certificate "${file}.crt" \
+              --bundle "${file}.sig" \
               "${file}"
           done
 
@@ -94,5 +93,4 @@ jobs:
             dist/iris-${{ github.ref_name }}.spdx.json
             dist/checksums.txt
             dist/*.sig
-            dist/*.crt
           generate_release_notes: true

@@ -69,20 +69,20 @@ without release linker flags.
 
 Every release binary, the SBOM, and `checksums.txt` are keyless-signed with
 [Sigstore](https://docs.sigstore.dev/) Cosign using GitHub Actions OIDC. Each
-artifact ships with a `.sig` (signature) and `.crt` (Fulcio certificate) file.
-Install Cosign from the [official guide](https://docs.sigstore.dev/cosign/installation/),
-then verify a downloaded binary:
+artifact ships with a `.sig` bundle containing the signature, Fulcio certificate,
+and Rekor transparency-log entry. Install Cosign from the
+[official guide](https://docs.sigstore.dev/cosign/installation/), then verify a
+downloaded binary:
 
 ```bash
 cosign verify-blob \
-  --certificate iris-linux-amd64.crt \
-  --signature iris-linux-amd64.sig \
-  --certificate-identity "https://github.com/petal-labs/iris/.github/workflows/release.yml@refs/tags/v1.2.3" \
+  --bundle iris-linux-amd64.sig \
+  --certificate-identity "https://github.com/petal-labs/iris/.github/workflows/release.yml@refs/tags/v1.0.0" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   iris-linux-amd64
 ```
 
-Replace `v1.2.3` with the tag you downloaded. The command exits `0` only when
+Replace `v1.0.0` with the tag you downloaded. The command exits `0` only when
 the signature is valid **and** the certificate was issued to the
 `petal-labs/iris` release workflow at that exact tag. Always verify both the
 `--certificate-identity` and `--certificate-oidc-issuer`; checking only the

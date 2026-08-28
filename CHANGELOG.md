@@ -32,7 +32,7 @@ wiring that landed across the 0.18.0 development cycle.
 - **CLI provider coverage:** the CLI can now construct all ten built-in providers, including Perplexity, Voyage AI, and Azure AI Foundry, without losing provider-specific configuration; `iris init` emits a standalone Go module, selects a real model for all ten providers, and generates provider-appropriate starter code that compiles without hand-editing; Azure config fields (`endpoint`, `deployment_id`, `api_version`, `use_openai_endpoint`) (#66)
 - **Secure keystore:** the CLI keystore now honors the `IRIS_KEYSTORE_KEY` environment variable (V2: Argon2id + AES-256-GCM); `iris keys migrate` re-encrypts legacy stores under the master key with a `.bak` backup; legacy stores remain readable during transition via a decryption fallback (#54)
 - **Testing utilities:** `core.ProviderUnwrapper` convention so `RecordingProvider` preserves discovery of every optional interface through `As*` helpers; a bare `MockProvider` advertises a chat-focused capability baseline that passes structured-output and web-search builder gates (#72)
-- **Signed releases:** every release binary, the SBOM, and `checksums.txt` are keyless-signed with Sigstore Cosign using GitHub Actions OIDC; each artifact ships with `.sig` and `.crt` files recorded in the Rekor transparency log (#118)
+- **Signed releases:** every release binary, the SBOM, and `checksums.txt` are keyless-signed with Sigstore Cosign using GitHub Actions OIDC; each artifact ships with a `.sig` bundle (signature, Fulcio certificate, and Rekor transparency-log entry) (#118)
 - **Community health files:** `CODE_OF_CONDUCT.md`, expanded `CONTRIBUTING.md`, issue/PR templates, `dependabot.yml`, and `CODEOWNERS` (#75)
 
 ### Changed
