@@ -86,7 +86,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7
         with:
-          version: v2.1.6
+          version: v2.13.2
 
   security:
     name: Security Scan
@@ -99,12 +99,19 @@ jobs:
           go-version: "1.27.x"
           cache: true
 
+      # Built from source rather than via securego/gosec's Docker action: that
+      # image bundles its own Go toolchain with GOTOOLCHAIN=local, so it cannot
+      # load a module declaring a newer Go version than the image ships.
+      # Installing here compiles gosec with the toolchain setup-go provisioned.
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.29.0
+
       - name: Run gosec
-        uses: securego/gosec@b72378a2da300339c40788e1eddf1ddea6498558 # v2.22.11
-        with:
-          # G101: env var names (not actual secrets)
-          # G104: unhandled errors on non-critical JSON encoding
-          # G301/G306: standard CLI permissions (0755 dirs, 0644 files)
-          # G304: CLI intentionally handles user-specified paths
-          # G404: math/rand for retry jitter (not security-critical)
-          args: -exclude=G101,G104,G301,G304,G306,G404 -exclude-dir=examples -exclude-dir=contrib ./...
+        # G101: env var names (not actual secrets)
+        # G104: unhandled errors on non-critical JSON encoding
+        # G301/G306: standard CLI permissions (0755 dirs, 0644 files)
+        # G304: CLI intentionally handles user-specified paths
+        # G404: math/rand for retry jitter (not security-critical)
+        # G703: keystore backup path derives from the user's own keystore
+        #       location (same rationale as G304); written beside it at 0600
+        run: gosec -exclude=G101,G104,G301,G304,G306,G404,G703 -exclude-dir=examples -exclude-dir=contrib ./...

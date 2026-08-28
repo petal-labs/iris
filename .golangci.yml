@@ -43,6 +43,8 @@ linters:
         - G304  # File path from variable (necessary for config loading)
         - G101  # False positive: env var names, not credentials
         - G404  # Retry jitter doesn't need cryptographic randomness
+        - G703  # Keystore backup path derives from the user's own keystore
+                # location, not untrusted input (same rationale as G304)
 
   exclusions:
     rules:
@@ -55,6 +57,13 @@ linters:
         linters:
           - gosec
         text: "G301|G306"
+      # Test-only patterns: httptest handlers parse fixed-size fixture forms,
+      # test names build runes from small loop counters, and the scaffold test
+      # shells out to the Go toolchain by design.
+      - path: _test\.go
+        linters:
+          - gosec
+        text: "G115|G120|G204"
       # Project scaffolding needs standard permissions (0755 dirs, 0644 files)
       - path: cli/commands/init\.go
         linters:
