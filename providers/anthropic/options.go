@@ -26,7 +26,7 @@ type Config struct {
 	Headers http.Header
 
 	// Timeout sets the timeout for this provider's direct (non-chat)
-	// operations — embeddings, files, images, batch, and vector stores.
+	// operations — token counting, embeddings, files, images, batch, and vector stores.
 	// Chat and streaming honor core.WithTimeout and context deadlines.
 	Timeout time.Duration
 
@@ -85,7 +85,7 @@ func WithHeader(key, value string) Option {
 }
 
 // WithTimeout sets the timeout for this provider's direct (non-chat)
-// operations — embeddings, files, images, batch, and vector stores. Chat and
+// operations — token counting, embeddings, files, images, batch, and vector stores. Chat and
 // streaming honor core.WithTimeout and context deadlines.
 func WithTimeout(d time.Duration) Option {
 	return func(c *Config) {

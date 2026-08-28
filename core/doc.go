@@ -108,6 +108,7 @@
 //   - [FeatureReasoning]: Extended reasoning capabilities
 //   - [FeatureBuiltInTools]: Web search, file search, code interpreter
 //   - [FeatureResponseChain]: Multi-turn response chaining
+//   - [FeatureTokenCounting]: Native input-token counting
 //   - [FeatureEmbeddings]: Text embedding generation
 //   - [FeatureContextualizedEmbeddings]: Document-aware embeddings
 //   - [FeatureReranking]: Search result reranking

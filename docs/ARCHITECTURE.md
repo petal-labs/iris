@@ -113,6 +113,7 @@ current optional interfaces and built-in implementers are:
 | `EmbeddingProvider` | `AsEmbeddingProvider` | `FeatureEmbeddings` | Azure AI Foundry, Gemini, Ollama, OpenAI, Voyage AI |
 | `ContextualizedEmbeddingProvider` | `AsContextualizedEmbeddingProvider` | `FeatureContextualizedEmbeddings` | Voyage AI |
 | `RerankerProvider` | `AsReranker` | `FeatureReranking` | Voyage AI |
+| `TokenCounter` | `AsTokenCounter` | `FeatureTokenCounting` | Anthropic, Gemini |
 | `ImageGenerator` | `AsImageGenerator` | `FeatureImageGeneration` | Gemini, OpenAI |
 | `ContentPartSupporter` | `AsContentPartSupporter` | Per-content-part declaration | Anthropic, Azure AI Foundry, Gemini, OpenAI |
 

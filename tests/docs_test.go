@@ -79,6 +79,7 @@ var matrixColumns = []struct {
 	{"Reasoning", core.FeatureReasoning},
 	{"Built-in Tools", core.FeatureBuiltInTools},
 	{"Response Chain", core.FeatureResponseChain},
+	{"Token Counting", core.FeatureTokenCounting},
 	{"Structured Output", core.FeatureStructuredOutput},
 	{"Embeddings", core.FeatureEmbeddings},
 	{"Reranking", core.FeatureReranking},

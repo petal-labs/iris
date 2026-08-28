@@ -80,7 +80,7 @@ func (p *Gemini) Models() []core.ModelInfo {
 func (p *Gemini) Supports(feature core.Feature) bool {
 	switch feature {
 	case core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling, core.FeatureReasoning,
-		core.FeatureImageGeneration, core.FeatureStructuredOutput, core.FeatureEmbeddings:
+		core.FeatureImageGeneration, core.FeatureStructuredOutput, core.FeatureEmbeddings, core.FeatureTokenCounting:
 		return true
 	default:
 		return false

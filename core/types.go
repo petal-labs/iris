@@ -13,6 +13,7 @@ const (
 	FeatureReasoning                Feature = "reasoning"
 	FeatureBuiltInTools             Feature = "builtin_tools"
 	FeatureResponseChain            Feature = "response_chain"
+	FeatureTokenCounting            Feature = "token_counting"
 	FeatureEmbeddings               Feature = "embeddings"
 	FeatureContextualizedEmbeddings Feature = "contextualized_embeddings"
 	FeatureReranking                Feature = "reranking"

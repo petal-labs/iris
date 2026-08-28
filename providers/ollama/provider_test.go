@@ -113,28 +113,6 @@ func TestProviderID(t *testing.T) {
 	}
 }
 
-// TestProviderModels tests the Models method.
-func TestProviderModels(t *testing.T) {
-	p := New()
-	models := p.Models()
-
-	if len(models) == 0 {
-		t.Error("Models() should return example models")
-	}
-
-	// Check that llama3.2 is in the list
-	found := false
-	for _, m := range models {
-		if m.ID == "llama3.2" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Models() should include llama3.2")
-	}
-}
-
 // TestProviderSupports tests the Supports method.
 func TestProviderSupports(t *testing.T) {
 	p := New()

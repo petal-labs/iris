@@ -1,12 +1,48 @@
 package gemini
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/petal-labs/iris/core"
 )
+
+func TestNewFromEnv(t *testing.T) {
+	t.Run("missing keys", func(t *testing.T) {
+		t.Setenv(GeminiAPIKeyEnvVar, "")
+		t.Setenv(GoogleAPIKeyEnvVar, "")
+		provider, err := NewFromEnv()
+		if !errors.Is(err, ErrAPIKeyNotFound) || provider != nil {
+			t.Fatalf("NewFromEnv() = (%v, %v), want nil, ErrAPIKeyNotFound", provider, err)
+		}
+	})
+
+	t.Run("Google fallback", func(t *testing.T) {
+		t.Setenv(GeminiAPIKeyEnvVar, "")
+		t.Setenv(GoogleAPIKeyEnvVar, "google-key")
+		provider, err := NewFromEnv()
+		if err != nil {
+			t.Fatalf("NewFromEnv() error = %v", err)
+		}
+		if provider.config.APIKey.Expose() != "google-key" {
+			t.Error("NewFromEnv() did not use GOOGLE_API_KEY")
+		}
+	})
+
+	t.Run("Gemini key takes precedence", func(t *testing.T) {
+		t.Setenv(GeminiAPIKeyEnvVar, "gemini-key")
+		t.Setenv(GoogleAPIKeyEnvVar, "google-key")
+		provider, err := NewFromEnv()
+		if err != nil {
+			t.Fatalf("NewFromEnv() error = %v", err)
+		}
+		if provider.config.APIKey.Expose() != "gemini-key" {
+			t.Error("NewFromEnv() did not prefer GEMINI_API_KEY")
+		}
+	})
+}
 
 func TestNew(t *testing.T) {
 	p := New("test-key")
