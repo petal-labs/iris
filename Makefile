@@ -1,6 +1,6 @@
 # Iris SDK Makefile
 
-.PHONY: all build test lint fmt vet clean install-hooks help coverage
+.PHONY: all build test lint lint-ci install-golangci-lint fmt vet clean install-hooks help coverage
 
 # Version information
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -9,6 +9,11 @@ BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS := -ldflags "-X github.com/petal-labs/iris/cli/commands.Version=$(VERSION) \
 	-X github.com/petal-labs/iris/cli/commands.Commit=$(COMMIT) \
 	-X github.com/petal-labs/iris/cli/commands.BuildDate=$(BUILD_DATE)"
+
+# Keep this pin synchronized with .github/workflows/ci.yml.
+GOLANGCI_LINT_VERSION := v2.5.0
+GOLANGCI_LINT_VERSION_NUMBER := $(patsubst v%,%,$(GOLANGCI_LINT_VERSION))
+GOLANGCI_LINT ?= golangci-lint
 
 # Default target
 all: lint test build
@@ -39,8 +44,30 @@ coverage-html: coverage
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "HTML report generated: coverage.html"
 
-# Lint: format check and vet
-lint: fmt-check vet
+# Run the same formatting, vet, and golangci-lint checks as CI
+lint: fmt-check vet lint-ci
+
+# Run the CI-pinned golangci-lint version and repository configuration
+lint-ci:
+	@if ! command -v "$(GOLANGCI_LINT)" >/dev/null 2>&1; then \
+		echo "golangci-lint $(GOLANGCI_LINT_VERSION) is required."; \
+		echo "Run 'make install-golangci-lint' and retry."; \
+		exit 1; \
+	fi
+	@VERSION_OUTPUT=$$("$(GOLANGCI_LINT)" version 2>&1); \
+	case "$$VERSION_OUTPUT" in \
+		*"version $(GOLANGCI_LINT_VERSION_NUMBER)"*) ;; \
+		*) \
+			echo "Expected golangci-lint $(GOLANGCI_LINT_VERSION), but found: $$VERSION_OUTPUT"; \
+			echo "Run 'make install-golangci-lint' and retry."; \
+			exit 1; \
+		;; \
+	esac
+	"$(GOLANGCI_LINT)" run
+
+# Install the exact golangci-lint release used by CI
+install-golangci-lint:
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 # Check formatting (fails if files need formatting)
 fmt-check:
@@ -97,7 +124,9 @@ help:
 	@echo "  test-cover     Run tests with coverage summary"
 	@echo "  coverage       Generate coverage.out profile for Codecov"
 	@echo "  coverage-html  Generate HTML coverage report"
-	@echo "  lint           Run fmt-check and vet"
+	@echo "  lint           Run fmt-check, vet, and the CI-pinned golangci-lint"
+	@echo "  lint-ci        Run golangci-lint with CI version validation"
+	@echo "  install-golangci-lint  Install the golangci-lint version used by CI"
 	@echo "  fmt-check      Check if files are formatted"
 	@echo "  fmt            Format all Go files"
 	@echo "  vet            Run go vet"
