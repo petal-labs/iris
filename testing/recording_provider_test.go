@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers/anthropic"
+	"github.com/petal-labs/iris/providers/openai"
+	"github.com/petal-labs/iris/providers/voyageai"
 )
 
 func TestRecordingProvider_DelegatesID(t *testing.T) {
@@ -143,11 +146,16 @@ func TestRecordingProvider_StreamChat_RecordsCall(t *testing.T) {
 	mock := NewMockProvider().
 		WithStreamingResponse([]string{"Hello"}, nil)
 	recorder := NewRecordingProvider(mock)
+	req := &core.ChatRequest{
+		Model:    "test",
+		Messages: []core.Message{{Role: core.RoleUser, Content: "stream me"}},
+	}
 
-	stream, err := recorder.StreamChat(ctx, &core.ChatRequest{Model: "test"})
+	stream, err := recorder.StreamChat(ctx, req)
 	if err != nil {
 		t.Fatalf("StreamChat() error = %v", err)
 	}
+	req.Model = "mutated-after-call"
 
 	// Drain stream
 	for range stream.Ch {
@@ -162,6 +170,9 @@ func TestRecordingProvider_StreamChat_RecordsCall(t *testing.T) {
 	rec := recordings[0]
 	if rec.Method != "StreamChat" {
 		t.Errorf("Recording.Method = %q, want %q", rec.Method, "StreamChat")
+	}
+	if rec.Request == nil || rec.Request.Model != "test" || rec.Request.Messages[0].Content != "stream me" {
+		t.Errorf("Recording.Request = %#v, want cloned stream request", rec.Request)
 	}
 	// Response should be nil for streaming (captured separately)
 	if rec.Response != nil {
@@ -235,6 +246,60 @@ func TestRecordingProvider_Underlying(t *testing.T) {
 	if recorder.Underlying() != mock {
 		t.Error("Underlying() did not return the wrapped provider")
 	}
+	if recorder.Unwrap() != mock {
+		t.Error("Unwrap() did not return the wrapped provider")
+	}
+}
+
+func TestRecordingProvider_PreservesOptionalInterfaces(t *testing.T) {
+	t.Run("OpenAI capabilities", func(t *testing.T) {
+		provider := openai.New("test-key")
+		recorder := NewRecordingProvider(provider)
+
+		if got, ok := core.AsContentPartSupporter(recorder); !ok || got != provider {
+			t.Error("AsContentPartSupporter() did not unwrap the recording provider")
+		}
+		if got, ok := core.AsEmbeddingProvider(recorder); !ok || got != provider {
+			t.Error("AsEmbeddingProvider() did not unwrap the recording provider")
+		}
+		if got, ok := core.AsImageGenerator(recorder); !ok || got != provider {
+			t.Error("AsImageGenerator() did not unwrap the recording provider")
+		}
+		if got, ok := core.AsBatchProvider(recorder); !ok || got != provider {
+			t.Error("AsBatchProvider() did not unwrap the recording provider")
+		}
+	})
+
+	t.Run("Voyage AI capabilities through nested recorders", func(t *testing.T) {
+		provider := voyageai.New("test-key")
+		recorder := NewRecordingProvider(NewRecordingProvider(provider))
+
+		if got, ok := core.AsEmbeddingProvider(recorder); !ok || got != provider {
+			t.Error("AsEmbeddingProvider() did not unwrap nested recording providers")
+		}
+		if got, ok := core.AsContextualizedEmbeddingProvider(recorder); !ok || got != provider {
+			t.Error("AsContextualizedEmbeddingProvider() did not unwrap nested recording providers")
+		}
+		if got, ok := core.AsReranker(recorder); !ok || got != provider {
+			t.Error("AsReranker() did not unwrap nested recording providers")
+		}
+	})
+
+	t.Run("Anthropic token counting", func(t *testing.T) {
+		provider := anthropic.New("test-key")
+		recorder := NewRecordingProvider(provider)
+
+		if got, ok := core.AsTokenCounter(recorder); !ok || got != provider {
+			t.Error("AsTokenCounter() did not unwrap the recording provider")
+		}
+	})
+
+	t.Run("unsupported capability stays unsupported", func(t *testing.T) {
+		recorder := NewRecordingProvider(NewMockProvider())
+		if got, ok := core.AsEmbeddingProvider(recorder); ok || got != nil {
+			t.Errorf("AsEmbeddingProvider() = (%v, %v), want (nil, false)", got, ok)
+		}
+	})
 }
 
 func TestRecordingProvider_ConcurrentAccess(t *testing.T) {

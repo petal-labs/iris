@@ -27,9 +27,10 @@ type MockStreamConfig struct {
 type MockProvider struct {
 	mu sync.Mutex
 
-	id       string
-	models   []core.ModelInfo
-	features map[core.Feature]bool
+	id                 string
+	models             []core.ModelInfo
+	features           map[core.Feature]bool
+	featuresCustomized bool
 
 	// Response queue (responses are consumed in order)
 	responses []core.ChatResponse
@@ -54,19 +55,16 @@ type MockProvider struct {
 // NewMockProvider creates a mock provider with optional canned responses.
 // Responses are returned in order; after exhaustion, a default response is used.
 func NewMockProvider(responses ...core.ChatResponse) *MockProvider {
+	defaultFeatures := defaultMockFeatures()
 	return &MockProvider{
 		id:        "mock",
-		features:  make(map[core.Feature]bool),
+		features:  featureSet(defaultFeatures),
 		responses: responses,
 		models: []core.ModelInfo{
 			{
-				ID:          "mock-model",
-				DisplayName: "Mock Model",
-				Capabilities: []core.Feature{
-					core.FeatureChat,
-					core.FeatureChatStreaming,
-					core.FeatureToolCalling,
-				},
+				ID:           "mock-model",
+				DisplayName:  "Mock Model",
+				Capabilities: defaultFeatures,
 			},
 		},
 		defaultResponse: &core.ChatResponse{
@@ -75,6 +73,24 @@ func NewMockProvider(responses ...core.ChatResponse) *MockProvider {
 			Output: "mock response",
 		},
 	}
+}
+
+func defaultMockFeatures() []core.Feature {
+	return []core.Feature{
+		core.FeatureChat,
+		core.FeatureChatStreaming,
+		core.FeatureToolCalling,
+		core.FeatureStructuredOutput,
+		core.FeatureWebSearch,
+	}
+}
+
+func featureSet(features []core.Feature) map[core.Feature]bool {
+	result := make(map[core.Feature]bool, len(features))
+	for _, feature := range features {
+		result[feature] = true
+	}
+	return result
 }
 
 // WithID sets the provider ID.
@@ -93,12 +109,18 @@ func (m *MockProvider) WithModels(models ...core.ModelInfo) *MockProvider {
 	return m
 }
 
-// WithFeatures sets the supported features.
+// WithFeatures customizes the supported feature set. The first call replaces
+// the defaults; later calls add features, preserving the existing chaining
+// behavior. Call WithFeatures() without arguments to disable all features.
 func (m *MockProvider) WithFeatures(features ...core.Feature) *MockProvider {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	for _, f := range features {
-		m.features[f] = true
+	if !m.featuresCustomized {
+		m.features = make(map[core.Feature]bool, len(features))
+		m.featuresCustomized = true
+	}
+	for _, feature := range features {
+		m.features[feature] = true
 	}
 	return m
 }

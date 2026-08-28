@@ -63,9 +63,8 @@ type BatchProvider interface {
 	ListBatches(ctx context.Context, limit int) ([]BatchInfo, error)
 }
 
-// AsBatchProvider attempts to cast a Provider to BatchProvider.
-// Returns the BatchProvider and true if the provider supports batch operations,
-// or nil and false otherwise.
+// AsBatchProvider discovers batch operations on a Provider or its unwrap chain.
+// It returns nil and false when no provider implements batch operations.
 //
 // Example:
 //
@@ -74,8 +73,7 @@ type BatchProvider interface {
 //	    // ...
 //	}
 func AsBatchProvider(p Provider) (BatchProvider, bool) {
-	bp, ok := p.(BatchProvider)
-	return bp, ok
+	return asProviderCapability[BatchProvider](p)
 }
 
 // BatchWaiter provides utilities for waiting on batch completion.

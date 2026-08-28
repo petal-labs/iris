@@ -123,6 +123,12 @@ discovery has two complementary layers:
 2. `core.As*` helpers answer whether the concrete provider exposes the Go
    operation needed to call that capability.
 
+Provider decorators can implement `core.ProviderUnwrapper` with
+`Unwrap() core.Provider`. Every `core.As*` helper follows nested unwrap chains,
+so decorators such as `testing.RecordingProvider` preserve optional capability
+discovery without falsely implementing capabilities that the wrapped provider
+does not support. Invalid, nil, or cyclic chains safely return `(nil, false)`.
+
 Use the helper before calling a raw optional interface:
 
 ```go

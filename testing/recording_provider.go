@@ -128,6 +128,11 @@ func (r *RecordingProvider) Clear() {
 	r.recordings = nil
 }
 
+// Unwrap returns the wrapped provider for core capability discovery.
+func (r *RecordingProvider) Unwrap() core.Provider {
+	return r.underlying
+}
+
 // Underlying returns the wrapped provider.
 func (r *RecordingProvider) Underlying() core.Provider {
 	return r.underlying
@@ -135,3 +140,6 @@ func (r *RecordingProvider) Underlying() core.Provider {
 
 // Compile-time verification that RecordingProvider implements Provider.
 var _ core.Provider = (*RecordingProvider)(nil)
+
+// Compile-time verification that optional capabilities can be unwrapped.
+var _ core.ProviderUnwrapper = (*RecordingProvider)(nil)

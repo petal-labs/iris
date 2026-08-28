@@ -16,9 +16,8 @@ type TokenCounter interface {
 	CountTokens(ctx context.Context, req *ChatRequest) (*TokenCountResponse, error)
 }
 
-// AsTokenCounter attempts to cast a Provider to TokenCounter. It returns nil
-// and false when the provider does not implement native token counting.
+// AsTokenCounter discovers token counting on a Provider or its unwrap chain.
+// It returns nil and false when no provider implements native token counting.
 func AsTokenCounter(p Provider) (TokenCounter, bool) {
-	counter, ok := p.(TokenCounter)
-	return counter, ok
+	return asProviderCapability[TokenCounter](p)
 }
