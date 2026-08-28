@@ -160,17 +160,29 @@ This prevents CI failures due to formatting issues.
 
 ## Module Structure
 
-Iris uses a Go workspace with two modules:
+Iris uses a Go workspace with three modules:
 
 ```
 iris/
-├── go.mod        # Main SDK module (github.com/petal-labs/iris)
-├── go.work       # Workspace file for local development
+├── go.mod             # Main SDK module (github.com/petal-labs/iris)
+├── go.work            # Workspace file for local development
+├── contrib/otel/
+│   └── go.mod         # OpenTelemetry integration module
 └── examples/
-    └── go.mod    # Examples module (github.com/petal-labs/iris/examples)
+    └── go.mod         # Examples module (github.com/petal-labs/iris/examples)
 ```
 
-The workspace allows you to develop on both modules simultaneously. When you run `go build ./...` or `go test ./...` from the root, it builds/tests both modules.
+The workspace keeps local imports pointed at the current SDK checkout. Go's
+`./...` pattern does not cross nested module boundaries, so include nested
+modules explicitly when validating them. CI uses:
+
+```bash
+go build ./... ./contrib/otel/...
+go test ./... ./contrib/otel/...
+```
+
+This ensures changes to interfaces such as `core.TelemetryHook` are compiled
+against the OpenTelemetry integration on every pull request.
 
 **Importing the SDK:**
 
