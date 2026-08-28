@@ -43,19 +43,51 @@ func TestMockProvider_Models(t *testing.T) {
 
 func TestMockProvider_Supports(t *testing.T) {
 	provider := NewMockProvider()
-	if provider.Supports(core.FeatureChat) {
-		t.Error("Supports(FeatureChat) = true, want false (no features set)")
+	for _, feature := range []core.Feature{
+		core.FeatureChat,
+		core.FeatureChatStreaming,
+		core.FeatureToolCalling,
+		core.FeatureStructuredOutput,
+		core.FeatureWebSearch,
+	} {
+		if !provider.Supports(feature) {
+			t.Errorf("Supports(%s) = false, want true by default", feature)
+		}
 	}
 
-	provider.WithFeatures(core.FeatureChat, core.FeatureToolCalling)
+	provider.WithFeatures(core.FeatureChat)
 	if !provider.Supports(core.FeatureChat) {
 		t.Error("Supports(FeatureChat) = false, want true")
 	}
-	if !provider.Supports(core.FeatureToolCalling) {
-		t.Error("Supports(FeatureToolCalling) = false, want true")
+	if provider.Supports(core.FeatureStructuredOutput) {
+		t.Error("WithFeatures should replace the default feature set")
 	}
-	if provider.Supports(core.FeatureReasoning) {
-		t.Error("Supports(FeatureReasoning) = true, want false")
+	provider.WithFeatures(core.FeatureToolCalling)
+	if !provider.Supports(core.FeatureChat) || !provider.Supports(core.FeatureToolCalling) {
+		t.Error("subsequent WithFeatures calls should preserve additive chaining")
+	}
+}
+
+func TestMockProvider_BareMockPassesBuilderCapabilityGates(t *testing.T) {
+	provider := NewMockProvider()
+	client := core.NewClient(provider)
+	schema := &core.JSONSchemaDefinition{
+		Name:   "result",
+		Schema: []byte(`{"type":"object"}`),
+	}
+
+	if _, err := client.Chat("mock-model").
+		User("return JSON").
+		ResponseJSONSchemaNonStrict(schema).
+		GetResponse(context.Background()); err != nil {
+		t.Fatalf("bare mock structured-output request failed: %v", err)
+	}
+
+	if _, err := client.Chat("mock-model").
+		User("search").
+		SearchOptions(&core.SearchOptions{}).
+		GetResponse(context.Background()); err != nil {
+		t.Fatalf("bare mock web-search request failed: %v", err)
 	}
 }
 

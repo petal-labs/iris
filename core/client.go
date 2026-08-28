@@ -46,11 +46,10 @@ type ImageGenerator interface {
 	StreamImage(ctx context.Context, req *ImageGenerateRequest) (*ImageStream, error)
 }
 
-// AsImageGenerator attempts to cast a Provider to ImageGenerator. It returns
-// nil and false when the provider does not implement image operations.
+// AsImageGenerator discovers image operations on a Provider or its unwrap
+// chain. It returns nil and false when no provider implements them.
 func AsImageGenerator(p Provider) (ImageGenerator, bool) {
-	generator, ok := p.(ImageGenerator)
-	return generator, ok
+	return asProviderCapability[ImageGenerator](p)
 }
 
 // Client is the main entry point for interacting with LLM providers.

@@ -92,11 +92,10 @@ type EmbeddingProvider interface {
 	CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error)
 }
 
-// AsEmbeddingProvider attempts to cast a Provider to EmbeddingProvider.
-// It returns nil and false when the provider does not implement embeddings.
+// AsEmbeddingProvider discovers embeddings on a Provider or its unwrap chain.
+// It returns nil and false when no provider implements embeddings.
 func AsEmbeddingProvider(p Provider) (EmbeddingProvider, bool) {
-	embedder, ok := p.(EmbeddingProvider)
-	return embedder, ok
+	return asProviderCapability[EmbeddingProvider](p)
 }
 
 // Embed generates embeddings through the client's provider. It applies the

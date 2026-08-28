@@ -19,6 +19,11 @@
 //	// Second call returns "How can I help?"
 //	resp, _ = client.Chat("gpt-4o").User("What's up?").GetResponse(ctx)
 //
+// A bare mock advertises chat, streaming, tool calling, structured output, and
+// web search so chat-builder capability gates do not obstruct ordinary tests.
+// The first WithFeatures call replaces those defaults; later calls add to the
+// customized set.
+//
 // # Error Simulation
 //
 // Queue errors to test error handling:
@@ -63,4 +68,7 @@
 //
 //	// Save recordings for later replay
 //	recordings := recorder.Recordings()
+//
+// RecordingProvider implements core.ProviderUnwrapper, so optional operations
+// remain discoverable through helpers such as core.AsEmbeddingProvider.
 package testing
