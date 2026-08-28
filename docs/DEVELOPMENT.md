@@ -20,10 +20,12 @@ iris/
 │   ├── azurefoundry/# Azure AI Foundry provider (Entra ID auth, embeddings)
 │   └── voyageai/   # Voyage AI provider (embeddings, reranking)
 ├── tools/          # Tool/function calling framework + middleware
-├── testing/        # Test utilities (MockProvider, RecordingProvider)
+├── iristest/       # Test utilities (MockProvider, RecordingProvider)
 ├── contrib/        # Optional integrations (OpenTelemetry hook)
-├── cli/            # Command-line interface
-│   ├── cmd/iris/   # CLI entry point
+├── cmd/            # Command entry points
+│   ├── iris/       # CLI entry point
+│   └── gen-models/ # Model catalog generator
+├── cli/            # Command-line interface implementation
 │   ├── commands/   # CLI commands
 │   ├── config/     # Configuration loading
 │   └── keystore/   # Encrypted key storage
@@ -108,7 +110,7 @@ DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 go build -ldflags "-X github.com/petal-labs/iris/cli/commands.Version=$VERSION \
   -X github.com/petal-labs/iris/cli/commands.Commit=$COMMIT \
   -X github.com/petal-labs/iris/cli/commands.BuildDate=$DATE" \
-  -o bin/iris ./cli/cmd/iris
+  -o bin/iris ./cmd/iris
 ```
 
 ## Running Tests
@@ -200,7 +202,7 @@ import (
     "github.com/petal-labs/iris/providers/azurefoundry"
     "github.com/petal-labs/iris/providers/voyageai"
     "github.com/petal-labs/iris/tools"
-    "github.com/petal-labs/iris/testing"  // Test utilities
+    "github.com/petal-labs/iris/iristest"  // Test utilities
 )
 ```
 

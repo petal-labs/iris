@@ -73,11 +73,11 @@ install-hooks:
 
 # Build the CLI with version information
 build-cli:
-	go build $(LDFLAGS) -o bin/iris ./cli/cmd/iris
+	go build $(LDFLAGS) -o bin/iris ./cmd/iris
 
 # Install the CLI locally with version information
 install-cli:
-	go install $(LDFLAGS) ./cli/cmd/iris
+	go install $(LDFLAGS) ./cmd/iris
 
 # Run integration tests (requires API keys)
 test-integration:

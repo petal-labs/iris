@@ -1,6 +1,6 @@
 // Example: Testing Utilities
 //
-// This example demonstrates the testing package utilities:
+// This example demonstrates the iristest package utilities:
 // - MockProvider for deterministic test responses
 // - RecordingProvider for capturing provider interactions
 //
@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/iristest"
 	"github.com/petal-labs/iris/providers/openai"
-	"github.com/petal-labs/iris/testing"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 
 func demonstrateMockProvider(ctx context.Context) {
 	// Create a mock provider with queued responses
-	mock := testing.NewMockProvider().
+	mock := iristest.NewMockProvider().
 		WithResponse(core.ChatResponse{
 			ID:     "resp-1",
 			Model:  "mock-model",
@@ -102,7 +102,7 @@ func demonstrateMockProvider(ctx context.Context) {
 
 	// Demonstrate error injection
 	fmt.Println("\nError injection:")
-	errorMock := testing.NewMockProvider().
+	errorMock := iristest.NewMockProvider().
 		WithError(core.ErrRateLimited)
 
 	errorClient := core.NewClient(errorMock)
@@ -113,7 +113,7 @@ func demonstrateMockProvider(ctx context.Context) {
 
 	// Demonstrate streaming mock
 	fmt.Println("\nStreaming mock:")
-	streamMock := testing.NewMockProvider().
+	streamMock := iristest.NewMockProvider().
 		WithStreamingResponse(
 			[]string{"Hello", " ", "world", "!"},
 			&core.ChatResponse{
@@ -144,7 +144,7 @@ func demonstrateRecordingProvider(ctx context.Context) {
 	if apiKey == "" {
 		fmt.Println("OPENAI_API_KEY not set - using mock for demonstration")
 		// Fall back to mock
-		mock := testing.NewMockProvider().
+		mock := iristest.NewMockProvider().
 			WithResponse(core.ChatResponse{
 				ID:     "recorded",
 				Model:  "gpt-5.4-mini",
@@ -162,7 +162,7 @@ func demonstrateRecordingProvider(ctx context.Context) {
 
 func demonstrateRecordingWithProvider(ctx context.Context, provider core.Provider) {
 	// Wrap with recording
-	recorder := testing.NewRecordingProvider(provider)
+	recorder := iristest.NewRecordingProvider(provider)
 	client := core.NewClient(recorder)
 
 	// Make some calls

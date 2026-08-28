@@ -1,13 +1,13 @@
 # Testing Utilities
 
-The `testing` package provides deterministic stand-ins for real providers so
+The `iristest` package provides deterministic stand-ins for real providers so
 your tests never make network calls.
 
 ```go
-import "github.com/petal-labs/iris/testing"
+import "github.com/petal-labs/iris/iristest"
 
 // MockProvider for predictable responses
-mock := testing.NewMockProvider().
+mock := iristest.NewMockProvider().
     WithResponse(core.ChatResponse{Output: "Hello!"}).
     WithResponse(core.ChatResponse{Output: "Follow-up response"})
 
@@ -18,10 +18,10 @@ resp, _ := client.Chat("any-model").User("Hi").GetResponse(ctx)
 // Bare mocks support chat-builder features, including JSON schema and search.
 // The first WithFeatures call replaces those defaults when a test needs to
 // model an unsupported capability.
-limitedMock := testing.NewMockProvider().WithFeatures(core.FeatureChat)
+limitedMock := iristest.NewMockProvider().WithFeatures(core.FeatureChat)
 
 // RecordingProvider for capturing interactions
-recorder := testing.NewRecordingProvider(realProvider)
+recorder := iristest.NewRecordingProvider(realProvider)
 client := core.NewClient(recorder)
 
 // ... run your code ...

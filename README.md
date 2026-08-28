@@ -55,7 +55,7 @@ go get github.com/petal-labs/iris
 ### CLI
 
 ```bash
-go install github.com/petal-labs/iris/cli/cmd/iris@latest
+go install github.com/petal-labs/iris/cmd/iris@latest
 ```
 
 ## 🚀 Quick Start
