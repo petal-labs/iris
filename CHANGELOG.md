@@ -7,10 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-28
+
+Iris 1.0.0 is the first stable release. The API surface is now locked, and release
+binaries are keyless-signed with Sigstore Cosign. This release consolidates the
+unified tool contract, provider API consistency, client resilience, native token
+counting, Gemini embeddings, Perplexity citations, CLI parity, and secure keystore
+wiring that landed across the 0.18.0 development cycle.
+
 ### Added
 
-- `Conversation.AddToolResults(ctx, results)` for recording tool execution results before the next conversational turn (#60)
-- Provider content-part capability declarations and `WithWarningHandler` warnings before unsupported multimodal parts are omitted (#61)
+- **Unified tool interface:** `core.Tool` now requires `Schema() ToolSchema`, with `core.ToolSchema` owned by `core` and aliased by the `tools` package. A tool whose `Schema()` has the wrong signature is now a compile error instead of silently transmitting `{}` as the parameters schema (#58)
+- **Capability discovery helpers:** symmetric `As*` helpers for every optional provider interface — `AsEmbeddingProvider`, `AsContextualizedEmbeddingProvider`, `AsReranker`, `AsImageGenerator`, `AsContentPartSupporter`, `AsTokenCounter` — removing the need for raw type assertions (#45, #72)
+- **Client-managed embeddings:** `(*core.Client).Embed` delegates embedding requests with client-level timeout, retry, and telemetry behavior (#45)
+- **Token counting:** provider-neutral `core.TokenCounter` / `core.TokenCountResponse` / `AsTokenCounter` / `FeatureTokenCounting`, with native Anthropic (`/v1/messages/count_tokens`) and Gemini (`/v1beta/models/{model}:countTokens`) implementations (#70)
+- **Ollama dynamic model discovery:** `ollama.ListModels(ctx)` reads the configured instance's `/api/tags` endpoint; `Models()` performs live discovery with a bounded fallback to the illustrative catalog only when discovery fails (#70)
+- **Client resilience:** `core.RateLimiter` / `RateLimiterFunc` / `IntervalRateLimiter` / `WithRateLimiter` for client-side request pacing; `ProviderError.RetryAfter` preserves server-advised delays; stream setup failures now use the configured retry policy; `Retry-After` headers are honored as a minimum delay (#69)
+- **Perplexity citations and search options:** `core.ChatResponse.Citations` populated for unary and streaming calls; provider-agnostic `core.SearchOptions` (domain filter, recency, search mode) via `ChatBuilder.SearchOptions`; `core.ErrSearchUnsupported` sentinel and `core.FeatureWebSearch` capability; requests with search options against unsupported providers fail fast (#55)
+- **Gemini embeddings:** `(*gemini.Gemini).CreateEmbeddings` through the synchronous `batchEmbedContents` API and `gemini.ModelGeminiEmbedding001` in the model catalog; OpenAI provider now reports provider-level `FeatureReasoning` (#67)
+- **Provider API consistency:** every provider package exposes `NewFromEnv`, `WithAPIKey`, `WithHeader`, and `DefaultAPIKeyEnvVar`; registry gains `ProviderConfig`, `RegisterConfigured`, and `CreateWithConfig` so endpoint-dependent providers (Azure AI Foundry) participate without encoding resource endpoints into API keys (#71)
+- **Conversations:** `Conversation.AddToolResults(ctx, results)` for recording tool execution results before the next conversational turn (#60)
+- **Multimodal:** provider content-part capability declarations and `WithWarningHandler` warnings before unsupported multimodal parts are omitted (#61)
+- **CLI parity:** `iris chat` gains REPL mode, timeout, JSON-schema structured output, and `iris models` for listing provider catalogs (#62)
+- **CLI provider coverage:** the CLI can now construct all ten built-in providers, including Perplexity, Voyage AI, and Azure AI Foundry, without losing provider-specific configuration; `iris init` emits a standalone Go module, selects a real model for all ten providers, and generates provider-appropriate starter code that compiles without hand-editing; Azure config fields (`endpoint`, `deployment_id`, `api_version`, `use_openai_endpoint`) (#66)
+- **Secure keystore:** the CLI keystore now honors the `IRIS_KEYSTORE_KEY` environment variable (V2: Argon2id + AES-256-GCM); `iris keys migrate` re-encrypts legacy stores under the master key with a `.bak` backup; legacy stores remain readable during transition via a decryption fallback (#54)
+- **Testing utilities:** `core.ProviderUnwrapper` convention so `RecordingProvider` preserves discovery of every optional interface through `As*` helpers; a bare `MockProvider` advertises a chat-focused capability baseline that passes structured-output and web-search builder gates (#72)
+- **Signed releases:** every release binary, the SBOM, and `checksums.txt` are keyless-signed with Sigstore Cosign using GitHub Actions OIDC; each artifact ships with `.sig` and `.crt` files recorded in the Rekor transparency log (#118)
+- **Community health files:** `CODE_OF_CONDUCT.md`, expanded `CONTRIBUTING.md`, issue/PR templates, `dependabot.yml`, and `CODEOWNERS` (#75)
 
 ### Changed
 
@@ -18,11 +41,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** the SDK test-utility package moved from `github.com/petal-labs/iris/testing` to `github.com/petal-labs/iris/iristest` (package `iristest`); the old import path is removed. Update imports and drop any alias used to avoid the standard-library `testing` collision (#102)
 - **Breaking:** the CLI entrypoint moved from `cli/cmd/iris` to `cmd/iris`. Install with `go install github.com/petal-labs/iris/cmd/iris@latest`; `cli/commands`, `cli/config`, and `cli/keystore` are unchanged and `cmd/gen-models` keeps its path (#102)
 - **Breaking:** the minimum Go version is now 1.25.0, raised from 1.24.0 across all four workspace modules, every CI workflow, and the `iris init` project scaffold. Dependency updates pulled in modules requiring Go >= 1.25.0, which the 1.24.0 workspace could not build
+- The partial `providers` re-export layer (aliases of `core` types) is now deprecated and frozen in favor of direct `core` imports; existing aliases remain source-compatible (#71)
+- `iris init` no longer generates the unused `iris.yaml` file; it emits a `go.mod` instead (#66)
+- `iris init` now derives its scaffolded SDK dependency from validated build metadata (release linker flags, then `debug.ReadBuildInfo`, then a changelog-guarded fallback) instead of a hardcoded stale version (#110)
+- `iris chat --provider ollama` no longer requires a keystore entry for local inference; other providers keep the actionable `iris keys set X` hint (#56)
+- Local lint toolchain aligned with CI: golangci-lint pinned to v2.5.0 (#76)
+- All ten provider model tables in `docs/PROVIDERS.md` reconciled against each provider's `Models()` implementation; a docs test now enforces the feature matrix against `Supports()` so it cannot silently drift (#57)
+- README trimmed from 1,241 to 297 lines; reference material restructured into ten topic guides under `docs/guides/`, a `docs/README.md` index, and `docs/DEVELOPMENT.md` (#63)
 
 ### Fixed
 
 - Conversation replay now preserves complete messages, including assistant tool calls, tool results, and multimodal parts; unary and streaming tool-call responses are retained in history (#60)
 - Anthropic image blocks, OpenAI Chat Completions image parts, and Azure AI Foundry vision messages are now transmitted instead of silently dropping `Message.Parts`; Gemini now accepts the pointer parts produced by `UserMultimodal` (#61)
+- `GetModelInfo` returns copies, not shared pointers into the provider registry, preventing accidental mutation of catalog entries (#64)
+- `ChatBuilder` no longer aliases caller input slices, preventing mutation of request data after submission (#59)
+- Provider HTTP errors are normalized through a shared `providers/internal/normalize` path, preserving `Retry-After` and response bodies consistently across all ten providers (#69, #82)
+- Keystore V1 decryption key-schedule bug (a double hash that could not decrypt files written by the original v1 implementation) corrected (#54)
+- `iris init` no longer pins generated projects to an SDK release older than the CLI that created them (#110)
+
+### Security
+
+- The CLI keystore now genuinely encrypts API keys with Argon2id key derivation and AES-256-GCM under `IRIS_KEYSTORE_KEY`; previously the secure path was implemented but unreachable, and keys were encrypted with a predictable machine-derived key (#54)
+- GitHub Actions workflows hardened with SHA-pinned third-party actions and least-privilege `permissions` blocks (#74)
+- Release artifacts are keyless-signed with Sigstore Cosign and recorded in the Rekor transparency log, binding each binary to the `petal-labs/iris` workflow identity (#118)
 
 ## [0.17.0] - 2026-08-02
 
@@ -223,7 +264,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telemetry hooks and retry policies
 - Typed error handling
 
-[Unreleased]: https://github.com/petal-labs/iris/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/petal-labs/iris/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/petal-labs/iris/compare/v0.17.0...v1.0.0
 [0.17.0]: https://github.com/petal-labs/iris/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/petal-labs/iris/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/petal-labs/iris/compare/v0.14.0...v0.15.0
