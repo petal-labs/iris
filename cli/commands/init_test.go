@@ -1,10 +1,12 @@
 package commands
 
 import (
+	"bufio"
 	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -132,6 +134,113 @@ func TestGenerateFileWithFuncs(t *testing.T) {
 	expected := "Provider: openai, Env: OPENAI_API_KEY, Model: gpt-4o"
 	if string(content) != expected {
 		t.Errorf("generateFile() content = %q, want %q", string(content), expected)
+	}
+}
+
+func TestGenerateFileRejectsInvalidTemplate(t *testing.T) {
+	err := generateFile(filepath.Join(t.TempDir(), "invalid.txt"), "{{", templateData{})
+	if err == nil {
+		t.Fatal("generateFile() should reject an invalid template")
+	}
+}
+
+func TestCreateProjectRejectsFilePath(t *testing.T) {
+	projectPath := filepath.Join(t.TempDir(), "project")
+	if err := os.WriteFile(projectPath, []byte("occupied"), 0600); err != nil {
+		t.Fatalf("write project-path fixture: %v", err)
+	}
+	err := createProject(projectPath, "project", "openai")
+	if err == nil || !strings.Contains(err.Error(), "failed to create project directories") {
+		t.Fatalf("createProject() error = %v, want project-directory error", err)
+	}
+}
+
+func TestCreateProjectReportsMainFileError(t *testing.T) {
+	projectPath := filepath.Join(t.TempDir(), "project")
+	if err := os.MkdirAll(filepath.Join(projectPath, "main.go"), 0755); err != nil {
+		t.Fatalf("create main.go directory fixture: %v", err)
+	}
+	err := createProject(projectPath, "project", "openai")
+	if err == nil || !strings.Contains(err.Error(), "failed to create main.go") {
+		t.Fatalf("createProject() error = %v, want main.go creation error", err)
+	}
+}
+
+func TestResolveScaffoldSDKVersion(t *testing.T) {
+	tests := []struct {
+		name          string
+		linkedVersion string
+		moduleVersion string
+		want          string
+	}{
+		{name: "release build", linkedVersion: "v0.18.0", moduleVersion: "(devel)", want: "v0.18.0"},
+		{name: "tagged go install", linkedVersion: "dev", moduleVersion: "v0.18.0", want: "v0.18.0"},
+		{name: "pseudo-version install", linkedVersion: "dev", moduleVersion: "v0.0.0-20260828120000-abcdef123456", want: "v0.0.0-20260828120000-abcdef123456"},
+		{name: "module version after development linker version", linkedVersion: "v0.17.0-74-g243be7c", moduleVersion: "v0.18.0", want: "v0.18.0"},
+		{name: "make development build", linkedVersion: "v0.17.0-74-g243be7c", moduleVersion: "(devel)", want: scaffoldSDKVersionFallback},
+		{name: "dirty tagged build", linkedVersion: "v0.18.0-dirty", moduleVersion: "(devel)", want: scaffoldSDKVersionFallback},
+		{name: "go development build", linkedVersion: "dev", moduleVersion: "(devel)", want: scaffoldSDKVersionFallback},
+		{name: "missing build version", linkedVersion: "", moduleVersion: "", want: scaffoldSDKVersionFallback},
+		{name: "malformed linked version", linkedVersion: "release", moduleVersion: "(devel)", want: scaffoldSDKVersionFallback},
+		{name: "leading-zero prerelease", linkedVersion: "v1.2.3-01", moduleVersion: "(devel)", want: scaffoldSDKVersionFallback},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveScaffoldSDKVersion(tt.linkedVersion, tt.moduleVersion)
+			if got != tt.want {
+				t.Errorf("resolveScaffoldSDKVersion(%q, %q) = %q, want %q", tt.linkedVersion, tt.moduleVersion, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestScaffoldSDKVersionFallbackMatchesLatestChangelogRelease(t *testing.T) {
+	file, err := os.Open(filepath.Join("..", "..", "CHANGELOG.md"))
+	if err != nil {
+		t.Fatalf("open CHANGELOG.md: %v", err)
+	}
+	t.Cleanup(func() { _ = file.Close() })
+
+	releaseHeading := regexp.MustCompile(`^## \[([^]]+)\] - [0-9]{4}-[0-9]{2}-[0-9]{2}\r?$`)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "## [") || line == "## [Unreleased]" {
+			continue
+		}
+		match := releaseHeading.FindStringSubmatch(line)
+		if len(match) != 2 {
+			t.Fatalf("latest CHANGELOG release heading %q is malformed", line)
+		}
+		want := "v" + match[1]
+		if scaffoldSDKVersionFallback != want {
+			t.Errorf("scaffoldSDKVersionFallback = %q, want latest CHANGELOG release %q", scaffoldSDKVersionFallback, want)
+		}
+		return
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("scan CHANGELOG.md: %v", err)
+	}
+	t.Fatal("CHANGELOG.md contains no dated release heading")
+}
+
+func TestInitUsesBuildVersionForSDKDependency(t *testing.T) {
+	originalVersion := Version
+	Version = "v0.18.0"
+	t.Cleanup(func() { Version = originalVersion })
+
+	projectPath := filepath.Join(t.TempDir(), "scaffold")
+	if err := runInitWithPath(projectPath, "openai"); err != nil {
+		t.Fatalf("runInitWithPath() error = %v", err)
+	}
+	content, err := os.ReadFile(filepath.Join(projectPath, "go.mod"))
+	if err != nil {
+		t.Fatalf("read generated go.mod: %v", err)
+	}
+	want := "require github.com/petal-labs/iris v0.18.0"
+	if !strings.Contains(string(content), want) {
+		t.Errorf("generated go.mod missing %q:\n%s", want, content)
 	}
 }
 

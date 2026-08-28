@@ -42,11 +42,14 @@ func (a *App) newVersionCommand() *cobra.Command {
 }
 
 func resolvedVersion() string {
-	moduleVersion := ""
+	return resolveVersion(Version, mainModuleVersion())
+}
+
+func mainModuleVersion() string {
 	if info, ok := debug.ReadBuildInfo(); ok {
-		moduleVersion = info.Main.Version
+		return info.Main.Version
 	}
-	return resolveVersion(Version, moduleVersion)
+	return ""
 }
 
 func resolveVersion(linkedVersion, moduleVersion string) string {

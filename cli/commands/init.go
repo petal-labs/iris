@@ -78,7 +78,7 @@ func createProject(projectPath, projectName, provider string) error {
 		ProjectName: projectName,
 		Provider:    provider,
 		GoVersion:   scaffoldGoVersion,
-		SDKVersion:  scaffoldSDKVersion,
+		SDKVersion:  scaffoldSDKVersion(),
 	}
 	if err := generateFile(filepath.Join(projectPath, "main.go"), mainTemplateForProvider(provider), data); err != nil {
 		return fmt.Errorf("failed to create main.go: %w", err)
@@ -135,9 +135,43 @@ type templateData struct {
 }
 
 const (
-	scaffoldGoVersion  = "1.25.0"
-	scaffoldSDKVersion = "v0.17.0"
+	scaffoldGoVersion          = "1.25.0"
+	scaffoldSDKVersionFallback = "v0.17.0"
 )
+
+var (
+	scaffoldSemanticVersionPattern = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$`)
+	gitDescribeVersionPattern      = regexp.MustCompile(`(?:-[0-9]+-g[0-9a-f]+|-dirty)$`)
+)
+
+func scaffoldSDKVersion() string {
+	return resolveScaffoldSDKVersion(Version, mainModuleVersion())
+}
+
+func resolveScaffoldSDKVersion(linkedVersion, moduleVersion string) string {
+	for _, version := range []string{linkedVersion, moduleVersion} {
+		if validScaffoldSDKVersion(version) {
+			return version
+		}
+	}
+	return scaffoldSDKVersionFallback
+}
+
+func validScaffoldSDKVersion(version string) bool {
+	if gitDescribeVersionPattern.MatchString(version) {
+		return false
+	}
+	match := scaffoldSemanticVersionPattern.FindStringSubmatch(version)
+	if len(match) == 0 {
+		return false
+	}
+	for _, identifier := range strings.Split(match[4], ".") {
+		if len(identifier) > 1 && identifier[0] == '0' && strings.Trim(identifier, "0123456789") == "" {
+			return false
+		}
+	}
+	return true
+}
 
 var templateFuncs = template.FuncMap{
 	"envVar":       envVarForProvider,
