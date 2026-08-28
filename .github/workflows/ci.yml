@@ -23,15 +23,15 @@ jobs:
           cache: true
 
       - name: Build
-        run: go build ./...
+        run: go build ./... ./contrib/otel/...
 
       - name: Test
         if: matrix.os != 'ubuntu-latest'
-        run: go test ./...
+        run: go test ./... ./contrib/otel/...
 
       - name: Test with coverage
         if: matrix.os == 'ubuntu-latest'
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./... ./contrib/otel/...
 
       - name: Upload coverage artifact
         if: matrix.os == 'ubuntu-latest'
@@ -51,7 +51,7 @@ jobs:
           verbose: true
 
       - name: Vet
-        run: go vet ./...
+        run: go vet ./... ./contrib/otel/...
 
       - name: Format check
         shell: bash
