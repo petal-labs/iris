@@ -183,6 +183,19 @@ The repository workflows apply these supply-chain controls:
 Action version comments are informational. The full SHA after `@` is the
 security boundary and must not be replaced with a mutable tag.
 
+### Release Artifacts
+
+Each GitHub Release includes SHA-256 checksums and an SPDX JSON software bill of
+materials generated from the packaged CLI binaries with a pinned Syft release.
+The release workflow verifies the tag against the latest dated changelog entry,
+executes the Linux binary's `version` command, and inspects Go build metadata in
+all cross-compiled binaries before publishing.
+
+Checksums and SBOMs improve integrity checking and dependency transparency, but
+they are not cryptographic proof of publisher identity. Keyless Sigstore signing
+is deferred until the project defines its OIDC identity, certificate, and
+verification policy; no long-lived signing key is stored in repository secrets.
+
 ### Environment-Specific Keys
 
 Use different master keys for different environments:

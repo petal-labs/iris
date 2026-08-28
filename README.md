@@ -58,6 +58,13 @@ go get github.com/petal-labs/iris
 go install github.com/petal-labs/iris/cmd/iris@latest
 ```
 
+The CLI reads the module version recorded by Go, so binaries installed with
+`@latest` report that released version from `iris version`. Release downloads
+also include an injected commit and build date. Other source builds report the
+module or VCS-derived pseudo-version when Go records one, falling back to `dev`
+when build information is unavailable; commit and build date remain unknown
+without release linker flags.
+
 ## 🚀 Quick Start
 
 ### Using the SDK
