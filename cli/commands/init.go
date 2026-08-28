@@ -135,7 +135,7 @@ type templateData struct {
 }
 
 const (
-	scaffoldGoVersion  = "1.24.0"
+	scaffoldGoVersion  = "1.25.0"
 	scaffoldSDKVersion = "v0.17.0"
 )
 

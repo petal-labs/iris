@@ -12,7 +12,7 @@ You can run examples from:
 
 ## Prerequisites
 
-- Go 1.24+
+- Go 1.25+
 - Provider credentials for the examples you run:
 
 ```bash
