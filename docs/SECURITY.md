@@ -272,9 +272,12 @@ The V2 keystore uses Argon2id with OWASP-recommended parameters:
 
 ## Reporting Security Issues
 
-If you discover a security vulnerability in Iris, please report it responsibly:
+If you discover a security vulnerability in Iris, use
+[GitHub private vulnerability reporting](https://github.com/petal-labs/iris/security/advisories/new)
+to contact the maintainers privately. Do not open a public GitHub issue or
+discussion for suspected vulnerabilities.
 
-1. **Do not** open a public GitHub issue
-2. Email security concerns to the maintainers
-3. Include steps to reproduce the issue
-4. Allow time for a fix before public disclosure
+Include the affected version or commit, impact, reproduction steps, and any
+suggested mitigation. Remove credentials, API keys, and unrelated personal data
+from the report. The maintainers will coordinate investigation, remediation,
+and disclosure through the private advisory.
