@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/providers"
 )
 
 // TestNew tests the provider constructor.
@@ -75,6 +76,77 @@ func TestNewLocalUsesConfiguredHost(t *testing.T) {
 	provider := NewLocal()
 	if provider.config.BaseURL != "http://ollama.internal:11434" {
 		t.Errorf("BaseURL = %q, want configured Ollama host", provider.config.BaseURL)
+	}
+}
+
+func TestNewFromEnv(t *testing.T) {
+	t.Run("keyless local defaults", func(t *testing.T) {
+		t.Setenv(OllamaHostEnvVar, "")
+		t.Setenv(OllamaAPIKeyEnvVar, "")
+		provider, err := NewFromEnv()
+		if err != nil {
+			t.Fatalf("NewFromEnv() error = %v", err)
+		}
+		if provider.config.BaseURL != DefaultLocalURL || !provider.config.APIKey.IsEmpty() {
+			t.Errorf("config = %#v, want keyless local defaults", provider.config)
+		}
+	})
+
+	t.Run("host and optional key", func(t *testing.T) {
+		t.Setenv(OllamaHostEnvVar, "http://ollama.internal:11434")
+		t.Setenv(OllamaAPIKeyEnvVar, "env-key")
+		provider, err := NewFromEnv()
+		if err != nil {
+			t.Fatalf("NewFromEnv() error = %v", err)
+		}
+		if provider.config.BaseURL != "http://ollama.internal:11434" || provider.config.APIKey.Expose() != "env-key" {
+			t.Errorf("NewFromEnv() did not apply environment configuration")
+		}
+	})
+
+	t.Run("API key without host selects cloud", func(t *testing.T) {
+		t.Setenv(OllamaHostEnvVar, "")
+		t.Setenv(OllamaAPIKeyEnvVar, "env-key")
+		provider, err := NewFromEnv()
+		if err != nil {
+			t.Fatalf("NewFromEnv() error = %v", err)
+		}
+		if provider.config.BaseURL != DefaultCloudURL || provider.config.APIKey.Expose() != "env-key" {
+			t.Errorf("config = %#v, want authenticated Ollama Cloud", provider.config)
+		}
+	})
+
+	t.Run("explicit options win", func(t *testing.T) {
+		t.Setenv(OllamaHostEnvVar, "http://env-host:11434")
+		t.Setenv(OllamaAPIKeyEnvVar, "env-key")
+		provider, err := NewFromEnv(WithBaseURL("http://option-host:11434"), WithAPIKey("option-key"))
+		if err != nil {
+			t.Fatalf("NewFromEnv() error = %v", err)
+		}
+		if provider.config.BaseURL != "http://option-host:11434" || provider.config.APIKey.Expose() != "option-key" {
+			t.Error("explicit options should override environment configuration")
+		}
+	})
+}
+
+func TestWithHeader(t *testing.T) {
+	provider := New(WithHeader("X-Custom", "value"), WithHeader("X-Second", "two"))
+	if provider.config.Headers.Get("X-Custom") != "value" || provider.config.Headers.Get("X-Second") != "two" {
+		t.Errorf("headers = %v, want both custom headers", provider.config.Headers)
+	}
+}
+
+func TestRegistryFactoryUsesAPIKey(t *testing.T) {
+	created, err := providers.Create("ollama", "registry-key")
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	provider, ok := created.(*Ollama)
+	if !ok {
+		t.Fatalf("provider type = %T, want *Ollama", created)
+	}
+	if provider.config.APIKey.Expose() != "registry-key" {
+		t.Error("registry factory should preserve the optional Ollama API key")
 	}
 }
 

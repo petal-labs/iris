@@ -15,6 +15,13 @@ func TestWithBaseURL(t *testing.T) {
 	}
 }
 
+func TestWithAPIKeyOverridesConstructorArg(t *testing.T) {
+	p := New("constructor-key", WithAPIKey("option-key"))
+	if got := p.config.APIKey.Expose(); got != "option-key" {
+		t.Errorf("APIKey = %q, want option-key", got)
+	}
+}
+
 func TestWithHTTPClient(t *testing.T) {
 	customClient := &http.Client{Timeout: 30 * time.Second}
 	cfg := Config{}

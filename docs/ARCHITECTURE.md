@@ -82,6 +82,36 @@ type Provider interface {
 - `Chat()`: Synchronous request for simple use cases
 - `StreamChat()`: Streaming request for real-time output
 
+### Provider Construction Conventions
+
+Provider packages expose a common construction and option surface:
+
+- `New(apiKey string, opts ...Option)` for API-key providers
+- `NewFromEnv(opts ...Option) (*Provider, error)`
+- `WithAPIKey(key string) Option`
+- `WithHeader(key, value string) Option`
+- `DefaultAPIKeyEnvVar` as the preferred credential environment variable
+
+Two constructor signatures are intentional exceptions because their runtime
+requirements differ:
+
+- `ollama.New(opts ...Option)` — local Ollama is keyless by default. Use
+  `WithAPIKey` for authenticated remote or cloud instances.
+- `azurefoundry.New(endpoint, apiKey string, opts ...Option)` — Azure resource
+  endpoints are deployment-specific and cannot be derived from the API key.
+
+The legacy constructors remain source-compatible; changing them to one uniform
+signature would break existing Go callers because Go does not support overloads.
+`providers.CreateWithConfig` supplies both API key and endpoint values for
+registry users while the original `providers.Create(name, apiKey)` remains
+available.
+
+The type, feature, role, and error aliases in `providers/provider.go` are
+deprecated and frozen rather than expanded. Import `core` directly for those
+APIs; the `providers` package remains the supported home of registry functions.
+This avoids maintaining a second public namespace that can silently drift from
+`core`.
+
 ### Optional Provider Capability Interfaces
 
 Additional operations use small optional interfaces so providers can opt into

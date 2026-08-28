@@ -14,10 +14,32 @@ import (
 const (
 	OllamaAPIKeyEnvVar = "OLLAMA_API_KEY"
 	OllamaHostEnvVar   = "OLLAMA_HOST"
+	// DefaultAPIKeyEnvVar is the canonical API-key environment variable alias.
+	DefaultAPIKeyEnvVar = OllamaAPIKeyEnvVar
 )
 
 // ErrAPIKeyNotFound is returned when the API key environment variable is not set.
 var ErrAPIKeyNotFound = errors.New("ollama: OLLAMA_API_KEY environment variable not set")
+
+// NewFromEnv creates an Ollama provider using OLLAMA_HOST and the optional
+// OLLAMA_API_KEY. A missing API key is valid for local Ollama instances, so the
+// current implementation returns a nil error; the error result preserves the
+// common provider-factory shape. Explicit options override environment values.
+func NewFromEnv(opts ...Option) (*Ollama, error) {
+	envOpts := make([]Option, 0, len(opts)+2)
+	host := os.Getenv(OllamaHostEnvVar)
+	apiKey := os.Getenv(OllamaAPIKeyEnvVar)
+	if host != "" {
+		envOpts = append(envOpts, WithBaseURL(host))
+	} else if apiKey != "" {
+		envOpts = append(envOpts, WithCloud())
+	}
+	if apiKey != "" {
+		envOpts = append(envOpts, WithAPIKey(apiKey))
+	}
+	envOpts = append(envOpts, opts...)
+	return New(envOpts...), nil
+}
 
 // NewLocal creates a new Ollama provider for a local Ollama instance.
 // This is a convenience factory for quick local setup:

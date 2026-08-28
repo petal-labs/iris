@@ -6,8 +6,9 @@ import (
 )
 
 func init() {
-	// Ollama doesn't require an API key, so we ignore the apiKey parameter.
+	// Ollama does not require an API key locally, but preserve one when registry
+	// callers target an authenticated remote or cloud instance.
 	providers.Register("ollama", func(apiKey string) core.Provider {
-		return New()
+		return New(WithAPIKey(apiKey))
 	})
 }

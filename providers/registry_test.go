@@ -86,6 +86,31 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+func TestCreateWithConfig(t *testing.T) {
+	RegisterConfigured("configured-test", func(config ProviderConfig) core.Provider {
+		return &mockProvider{id: config.Endpoint + "-" + config.APIKey}
+	})
+
+	provider, err := CreateWithConfig("configured-test", ProviderConfig{
+		APIKey:   "my-key",
+		Endpoint: "https://example.test",
+	})
+	if err != nil {
+		t.Fatalf("CreateWithConfig() error = %v", err)
+	}
+	if provider.ID() != "https://example.test-my-key" {
+		t.Errorf("provider ID = %q, want configured values", provider.ID())
+	}
+
+	legacyProvider, err := Create("configured-test", "legacy-key")
+	if err != nil {
+		t.Fatalf("Create() adapter error = %v", err)
+	}
+	if legacyProvider.ID() != "-legacy-key" {
+		t.Errorf("legacy provider ID = %q, want API-key adapter", legacyProvider.ID())
+	}
+}
+
 func TestList(t *testing.T) {
 	// Register some test providers
 	Register("list-a", func(apiKey string) core.Provider { return nil })
