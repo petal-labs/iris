@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** `NewConversation`, primary `Conversation` operations, and every `Memory` method now require `context.Context`; `SendWithContext` and `StreamWithContext` remain as deprecated aliases (#60)
 - **Breaking:** the SDK test-utility package moved from `github.com/petal-labs/iris/testing` to `github.com/petal-labs/iris/iristest` (package `iristest`); the old import path is removed. Update imports and drop any alias used to avoid the standard-library `testing` collision (#102)
 - **Breaking:** the CLI entrypoint moved from `cli/cmd/iris` to `cmd/iris`. Install with `go install github.com/petal-labs/iris/cmd/iris@latest`; `cli/commands`, `cli/config`, and `cli/keystore` are unchanged and `cmd/gen-models` keeps its path (#102)
+- **Breaking:** the minimum Go version is now 1.27.0, raised from 1.24.0 across all four workspace modules, every CI workflow, and the `iris init` project scaffold. Dependency updates pulled in modules requiring Go >= 1.25.0, which the 1.24.0 workspace could not build
 
 ### Fixed
 

@@ -204,7 +204,7 @@ Pass the keystore key at runtime, never bake it into images:
 
 ```dockerfile
 # Dockerfile
-FROM golang:1.24-alpine
+FROM golang:1.27-alpine
 # ... build steps ...
 # DO NOT: ENV IRIS_KEYSTORE_KEY=...
 ```

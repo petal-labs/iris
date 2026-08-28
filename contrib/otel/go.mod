@@ -1,6 +1,6 @@
 module github.com/petal-labs/iris/contrib/otel
 
-go 1.24.0
+go 1.27.0
 
 require (
 	github.com/petal-labs/iris v0.13.0

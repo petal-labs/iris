@@ -34,7 +34,7 @@ iris/
 ```
 
 ## Prerequisites
-- Go 1.24 or later
+- Go 1.27 or later
 - Make (optional, for using Makefile commands)
 
 ## Getting Started
@@ -80,12 +80,12 @@ make build-cli
 # iris v0.18.0
 #   commit:     abc1234
 #   built:      2026-08-17T12:00:00Z
-#   go version: go1.24.0
+#   go version: go1.27.0
 #   platform:   darwin/arm64
 
 # JSON output
 ./bin/iris version --json
-# Output: {"version":"v0.18.0","commit":"abc1234","buildDate":"2026-08-17T12:00:00Z","goVersion":"go1.24.0","platform":"darwin/arm64"}
+# Output: {"version":"v0.18.0","commit":"abc1234","buildDate":"2026-08-17T12:00:00Z","goVersion":"go1.27.0","platform":"darwin/arm64"}
 ```
 
 ## Building (without Make)
