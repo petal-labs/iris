@@ -242,6 +242,27 @@ func TestRetryPolicyProviderErrorStatusCodes(t *testing.T) {
 	}
 }
 
+func TestRetryPolicyHonorsProviderRetryAfter(t *testing.T) {
+	policy := NewRetryPolicy(RetryConfig{
+		MaxRetries: 3,
+		BaseDelay:  time.Second,
+		MaxDelay:   5 * time.Second,
+		Jitter:     0,
+	})
+
+	delay, ok := policy.NextDelay(0, &ProviderError{
+		Provider:   "test",
+		Status:     429,
+		RetryAfter: 30 * time.Second,
+	})
+	if !ok {
+		t.Fatal("Retry-After error should be retryable")
+	}
+	if delay < 30*time.Second {
+		t.Fatalf("delay = %v, want at least 30s", delay)
+	}
+}
+
 func TestIsRetryable(t *testing.T) {
 	tests := []struct {
 		name string

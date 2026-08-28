@@ -34,7 +34,7 @@ var (
 )
 
 // normalizeError converts an HTTP error response to a ProviderError with the appropriate sentinel.
-func normalizeError(status int, body []byte) error {
+func normalizeError(status int, body []byte, headers ...http.Header) error {
 	// Parse error response if possible
 	var errResp geminiErrorResponse
 	_ = json.Unmarshal(body, &errResp)
@@ -56,7 +56,7 @@ func normalizeError(status int, body []byte) error {
 
 	pe := normalize.ProviderError("gemini", status, "", code, message, normalize.SentinelForStatus(status))
 	pe.(*core.ProviderError).Body = bodyStr
-	return pe
+	return normalize.WithRetryAfter(pe, headers...)
 }
 
 // newNetworkError creates a ProviderError for network-related failures.

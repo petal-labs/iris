@@ -9,13 +9,14 @@ import (
 
 // ProviderError represents an error returned by a provider with full context.
 type ProviderError struct {
-	Provider  string
-	Status    int
-	RequestID string
-	Code      string
-	Message   string
-	Body      string // raw response body (truncated); preserved when Message lacks detail
-	Err       error
+	Provider   string
+	Status     int
+	RequestID  string
+	Code       string
+	Message    string
+	Body       string        // raw response body (truncated); preserved when Message lacks detail
+	RetryAfter time.Duration // server-advised minimum delay before retrying
+	Err        error
 }
 
 // Error implements the error interface.

@@ -3,12 +3,68 @@ package normalize
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/petal-labs/iris/core"
 )
+
+// WithRetryAfter attaches a server-advised retry delay to a normalized
+// ProviderError. It accepts the standard Retry-After header plus common
+// provider-specific millisecond and reset headers.
+func WithRetryAfter(err error, headers ...http.Header) error {
+	if err == nil || len(headers) == 0 {
+		return err
+	}
+
+	var providerErr *core.ProviderError
+	if !errors.As(err, &providerErr) {
+		return err
+	}
+	providerErr.RetryAfter = retryAfterDuration(headers[0])
+	return err
+}
+
+func retryAfterDuration(headers http.Header) time.Duration {
+	if value := headers.Get("Retry-After"); value != "" {
+		if delay := parseRetryAfterValue(value); delay > 0 {
+			return delay
+		}
+	}
+	if value := headers.Get("x-ms-retry-after-ms"); value != "" {
+		if milliseconds, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64); err == nil && milliseconds > 0 {
+			return time.Duration(milliseconds) * time.Millisecond
+		}
+	}
+	for _, name := range []string{"x-ratelimit-reset-requests", "x-ratelimit-reset-tokens"} {
+		if value := headers.Get(name); value != "" {
+			if delay := parseRetryAfterValue(value); delay > 0 {
+				return delay
+			}
+		}
+	}
+	return 0
+}
+
+func parseRetryAfterValue(value string) time.Duration {
+	value = strings.TrimSpace(value)
+	if seconds, err := strconv.ParseInt(value, 10, 64); err == nil && seconds > 0 {
+		return time.Duration(seconds) * time.Second
+	}
+	if date, err := http.ParseTime(value); err == nil {
+		if delay := time.Until(date); delay > 0 {
+			return delay
+		}
+	}
+	if duration, err := time.ParseDuration(value); err == nil && duration > 0 {
+		return duration
+	}
+	return 0
+}
 
 // maxBodyLen caps how much of a raw response body is retained on
 // ProviderError.Body so oversized error pages don't bloat logs.

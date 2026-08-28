@@ -117,7 +117,7 @@ func (p *HuggingFace) GetModelStatus(ctx context.Context, modelID string) (Model
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return ModelStatusUnknown, normalizeError(resp.StatusCode, body, "")
+		return ModelStatusUnknown, normalizeError(resp.StatusCode, body, "", resp.Header)
 	}
 
 	var result hubModelDetailResponse
@@ -158,7 +158,7 @@ func (p *HuggingFace) GetModelProviders(ctx context.Context, modelID string) ([]
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, normalizeError(resp.StatusCode, body, "")
+		return nil, normalizeError(resp.StatusCode, body, "", resp.Header)
 	}
 
 	var result hubModelDetailResponse
@@ -222,7 +222,7 @@ func (p *HuggingFace) ListModels(ctx context.Context, opts ListModelsOptions) ([
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, normalizeError(resp.StatusCode, body, "")
+		return nil, normalizeError(resp.StatusCode, body, "", resp.Header)
 	}
 
 	var results []hubModelInfoResponse

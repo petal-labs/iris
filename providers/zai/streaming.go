@@ -89,7 +89,7 @@ func (p *Zai) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core.Ch
 		}
 		_ = json.Unmarshal(respBody, &tempResp)
 
-		return nil, normalizeError(resp.StatusCode, respBody, tempResp.RequestID)
+		return nil, normalizeError(resp.StatusCode, respBody, tempResp.RequestID, resp.Header)
 	}
 
 	// Create channels

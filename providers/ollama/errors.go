@@ -14,27 +14,27 @@ import (
 func parseErrorResponse(resp *http.Response) error {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return normalize.ProviderError(
+		return normalize.WithRetryAfter(normalize.ProviderError(
 			"ollama",
 			resp.StatusCode,
 			"",
 			"read_error",
 			fmt.Sprintf("failed to read error response: %v", err),
 			fmt.Errorf("%w: %w", core.ErrNetwork, err),
-		)
+		), resp.Header)
 	}
 
 	var errResp ollamaErrorResponse
 	if err := json.Unmarshal(body, &errResp); err != nil {
 		// If we can't parse JSON, use the raw body
-		return mapOllamaError(resp.StatusCode, string(body))
+		return normalize.WithRetryAfter(mapOllamaError(resp.StatusCode, string(body)), resp.Header)
 	}
 
 	if errResp.Error != "" {
-		return mapOllamaError(resp.StatusCode, errResp.Error)
+		return normalize.WithRetryAfter(mapOllamaError(resp.StatusCode, errResp.Error), resp.Header)
 	}
 
-	return mapOllamaError(resp.StatusCode, "unknown error")
+	return normalize.WithRetryAfter(mapOllamaError(resp.StatusCode, "unknown error"), resp.Header)
 }
 
 // mapOllamaError converts an Ollama error to a core.ProviderError.

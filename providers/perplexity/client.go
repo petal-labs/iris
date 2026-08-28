@@ -56,7 +56,7 @@ func (p *Perplexity) doChat(ctx context.Context, req *core.ChatRequest) (*core.C
 
 	// Check for error status
 	if resp.StatusCode >= 400 {
-		return nil, normalizeError(resp.StatusCode, respBody, requestID)
+		return nil, normalizeError(resp.StatusCode, respBody, requestID, resp.Header)
 	}
 
 	// Parse response

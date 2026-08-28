@@ -57,7 +57,7 @@ func (p *VoyageAI) Rerank(ctx context.Context, req *core.RerankRequest) (*core.R
 	requestID := resp.Header.Get("x-request-id")
 
 	if resp.StatusCode >= 400 {
-		return nil, normalizeError(resp.StatusCode, respBody, requestID)
+		return nil, normalizeError(resp.StatusCode, respBody, requestID, resp.Header)
 	}
 
 	var voyageResp voyageRerankResponse

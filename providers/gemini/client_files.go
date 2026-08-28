@@ -70,7 +70,7 @@ func (p *Gemini) initiateResumableUpload(ctx context.Context, req *FileUploadReq
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
-		return "", normalizeError(resp.StatusCode, respBody)
+		return "", normalizeError(resp.StatusCode, respBody, resp.Header)
 	}
 
 	uploadURL := resp.Header.Get("X-Goog-Upload-URL")
@@ -109,7 +109,7 @@ func (p *Gemini) uploadFileContent(ctx context.Context, uploadURL string, req *F
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, normalizeError(resp.StatusCode, body)
+		return nil, normalizeError(resp.StatusCode, body, resp.Header)
 	}
 
 	var result fileUploadResponse
@@ -146,7 +146,7 @@ func (p *Gemini) GetFile(ctx context.Context, name string) (*File, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, normalizeError(resp.StatusCode, body)
+		return nil, normalizeError(resp.StatusCode, body, resp.Header)
 	}
 
 	var file File
@@ -196,7 +196,7 @@ func (p *Gemini) ListFiles(ctx context.Context, req *FileListRequest) (*FileList
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, normalizeError(resp.StatusCode, body)
+		return nil, normalizeError(resp.StatusCode, body, resp.Header)
 	}
 
 	var result FileListResponse
@@ -259,7 +259,7 @@ func (p *Gemini) DeleteFile(ctx context.Context, name string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return normalizeError(resp.StatusCode, body)
+		return normalizeError(resp.StatusCode, body, resp.Header)
 	}
 
 	return nil

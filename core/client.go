@@ -52,6 +52,7 @@ type Client struct {
 	provider          Provider
 	telemetry         TelemetryHook
 	retry             RetryPolicy
+	rateLimiter       RateLimiter
 	warningHandler    WarningHandler
 	timeout           time.Duration
 	streamIdleTimeout time.Duration
@@ -93,6 +94,16 @@ func WithRetryPolicy(r RetryPolicy) ClientOption {
 	return func(c *Client) {
 		if r != nil {
 			c.retry = r
+		}
+	}
+}
+
+// WithRateLimiter configures a limiter used before every provider attempt,
+// including retries. Pass nil to leave rate limiting disabled.
+func WithRateLimiter(l RateLimiter) ClientOption {
+	return func(c *Client) {
+		if l != nil {
+			c.rateLimiter = l
 		}
 	}
 }
@@ -668,6 +679,9 @@ func (b *ChatBuilder) GetResponse(ctx context.Context) (*ChatResponse, error) {
 	// Execute with retry logic
 retryLoop:
 	for attempt := 0; ; attempt++ {
+		if err = b.client.waitForRateLimit(ctx); err != nil {
+			break
+		}
 		resp, err = b.client.provider.Chat(ctx, &b.req)
 		if err == nil {
 			break
@@ -778,7 +792,30 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 		ctx, idleCancel = context.WithCancel(ctx)
 	}
 
-	stream, err := b.client.provider.StreamChat(ctx, &b.req)
+	var stream *ChatStream
+	var err error
+
+retryLoop:
+	for attempt := 0; ; attempt++ {
+		if err = b.client.waitForRateLimit(ctx); err != nil {
+			break
+		}
+		stream, err = b.client.provider.StreamChat(ctx, &b.req)
+		if err == nil {
+			break
+		}
+
+		delay, shouldRetry := b.client.retry.NextDelay(attempt, err)
+		if !shouldRetry {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+			break retryLoop
+		case <-time.After(delay):
+		}
+	}
 	if err != nil {
 		if idleCancel != nil {
 			idleCancel()
@@ -847,6 +884,13 @@ func (b *ChatBuilder) Stream(ctx context.Context) (*ChatStream, error) {
 
 	// Wrap the stream to emit telemetry when it completes
 	return wrapStreamWithTelemetry(ctx, stream, b.client.telemetry, providerID, b.req.Model, start, onDone, mapErr), nil
+}
+
+func (c *Client) waitForRateLimit(ctx context.Context) error {
+	if c.rateLimiter == nil {
+		return contextError(ctx)
+	}
+	return c.rateLimiter.Wait(ctx)
 }
 
 // MessageBuilder provides a fluent API for building multimodal messages.

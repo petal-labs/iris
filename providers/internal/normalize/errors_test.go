@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/petal-labs/iris/core"
 )
@@ -142,6 +143,102 @@ func TestProviderErrorDefaults(t *testing.T) {
 	}
 	if !errors.Is(err, core.ErrServer) {
 		t.Error("error should wrap core.ErrServer")
+	}
+}
+
+func TestWithRetryAfterAttachesServerDelay(t *testing.T) {
+	err := ProviderError("test-provider", http.StatusTooManyRequests, "", "", "busy", core.ErrRateLimited)
+	wrapped := WithRetryAfter(err, http.Header{"Retry-After": []string{"30"}})
+
+	var providerErr *core.ProviderError
+	if !errors.As(wrapped, &providerErr) {
+		t.Fatal("expected *core.ProviderError")
+	}
+	if providerErr.RetryAfter != 30*time.Second {
+		t.Fatalf("RetryAfter = %v, want 30s", providerErr.RetryAfter)
+	}
+}
+
+func TestWithRetryAfterSupportsHTTPDate(t *testing.T) {
+	err := ProviderError("test-provider", http.StatusTooManyRequests, "", "", "busy", core.ErrRateLimited)
+	when := time.Now().Add(2 * time.Second).UTC().Format(http.TimeFormat)
+	wrapped := WithRetryAfter(err, http.Header{"Retry-After": []string{when}})
+
+	var providerErr *core.ProviderError
+	if !errors.As(wrapped, &providerErr) {
+		t.Fatal("expected *core.ProviderError")
+	}
+	if providerErr.RetryAfter <= 0 || providerErr.RetryAfter > 2*time.Second {
+		t.Fatalf("RetryAfter = %v, want a positive delay no greater than 2s", providerErr.RetryAfter)
+	}
+}
+
+func TestWithRetryAfterNoopCases(t *testing.T) {
+	if WithRetryAfter(nil, http.Header{"Retry-After": []string{"30"}}) != nil {
+		t.Fatal("nil error should remain nil")
+	}
+
+	original := errors.New("not a provider error")
+	if got := WithRetryAfter(original, http.Header{"Retry-After": []string{"30"}}); got != original {
+		t.Fatal("non-provider error should remain unchanged")
+	}
+
+	providerErr := ProviderError("test-provider", http.StatusTooManyRequests, "", "", "busy", core.ErrRateLimited)
+	if got := WithRetryAfter(providerErr); got != providerErr {
+		t.Fatal("provider error without headers should remain unchanged")
+	}
+}
+
+func TestWithRetryAfterSupportsProviderHeaders(t *testing.T) {
+	tests := []struct {
+		name    string
+		header  string
+		value   string
+		wantMin time.Duration
+	}{
+		{name: "azure milliseconds", header: "x-ms-retry-after-ms", value: "1500", wantMin: 1500 * time.Millisecond},
+		{name: "reset duration", header: "x-ratelimit-reset-requests", value: "2s", wantMin: 2 * time.Second},
+		{name: "token reset duration", header: "x-ratelimit-reset-tokens", value: "3s", wantMin: 3 * time.Second},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ProviderError("test-provider", http.StatusTooManyRequests, "", "", "busy", core.ErrRateLimited)
+			headers := http.Header{}
+			headers.Set(tt.header, tt.value)
+			WithRetryAfter(err, headers)
+
+			var providerErr *core.ProviderError
+			if !errors.As(err, &providerErr) {
+				t.Fatal("expected *core.ProviderError")
+			}
+			if providerErr.RetryAfter != tt.wantMin {
+				t.Fatalf("RetryAfter = %v, want %v", providerErr.RetryAfter, tt.wantMin)
+			}
+		})
+	}
+}
+
+func TestWithRetryAfterIgnoresInvalidHints(t *testing.T) {
+	err := ProviderError("test-provider", http.StatusTooManyRequests, "", "", "busy", core.ErrRateLimited)
+	WithRetryAfter(err, http.Header{"Retry-After": []string{"not-a-delay"}})
+
+	var providerErr *core.ProviderError
+	if !errors.As(err, &providerErr) {
+		t.Fatal("expected *core.ProviderError")
+	}
+	if providerErr.RetryAfter != 0 {
+		t.Fatalf("RetryAfter = %v, want 0", providerErr.RetryAfter)
+	}
+
+	WithRetryAfter(err, http.Header{"Retry-After": []string{"1.5s"}})
+	if providerErr.RetryAfter != 1500*time.Millisecond {
+		t.Fatalf("duration RetryAfter = %v, want 1.5s", providerErr.RetryAfter)
+	}
+
+	WithRetryAfter(err, http.Header{"Retry-After": []string{time.Unix(1, 0).UTC().Format(http.TimeFormat)}})
+	if providerErr.RetryAfter != 0 {
+		t.Fatalf("expired RetryAfter = %v, want 0", providerErr.RetryAfter)
 	}
 }
 

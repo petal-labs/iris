@@ -91,6 +91,14 @@ func (e *exponentialBackoff) NextDelay(attempt int, err error) (time.Duration, b
 		delay = 0
 	}
 
+	// A server-provided delay is a minimum. It is intentionally applied after
+	// jitter and the local cap so Retry-After is never shortened by client-side
+	// backoff configuration.
+	var pe *ProviderError
+	if errors.As(err, &pe) && pe.RetryAfter > time.Duration(delay) {
+		delay = float64(pe.RetryAfter)
+	}
+
 	return time.Duration(delay), true
 }
 

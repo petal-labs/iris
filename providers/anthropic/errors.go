@@ -31,7 +31,7 @@ var ErrToolArgsInvalidJSON = errors.New("tool args invalid json")
 var ErrFileNotDownloadable = errors.New("file not downloadable")
 
 // normalizeError converts an HTTP error response to a ProviderError with the appropriate sentinel.
-func normalizeError(status int, body []byte, requestID string) error {
+func normalizeError(status int, body []byte, requestID string, headers ...http.Header) error {
 	// Parse error response if possible
 	var errResp anthropicErrorResponse
 	_ = json.Unmarshal(body, &errResp)
@@ -53,7 +53,7 @@ func normalizeError(status int, body []byte, requestID string) error {
 
 	pe := normalize.ProviderError("anthropic", status, requestID, code, message, normalize.SentinelForStatus(status))
 	pe.(*core.ProviderError).Body = bodyStr
-	return pe
+	return normalize.WithRetryAfter(pe, headers...)
 }
 
 // newNetworkError creates a ProviderError for network-related failures.

@@ -76,7 +76,7 @@ func (p *Anthropic) UploadFile(ctx context.Context, req *FileUploadRequest) (*Fi
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"))
+		return nil, normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"), resp.Header)
 	}
 
 	var file File
@@ -117,7 +117,7 @@ func (p *Anthropic) GetFile(ctx context.Context, fileID string) (*File, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"))
+		return nil, normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"), resp.Header)
 	}
 
 	var file File
@@ -174,7 +174,7 @@ func (p *Anthropic) ListFiles(ctx context.Context, req *FileListRequest) (*FileL
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"))
+		return nil, normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"), resp.Header)
 	}
 
 	var result FileListResponse
@@ -256,7 +256,7 @@ func (p *Anthropic) DownloadFile(ctx context.Context, fileID string) (io.ReadClo
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
-		return nil, normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"))
+		return nil, normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"), resp.Header)
 	}
 
 	return resp.Body, nil
@@ -292,7 +292,7 @@ func (p *Anthropic) DeleteFile(ctx context.Context, fileID string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"))
+		return normalizeError(resp.StatusCode, body, resp.Header.Get("request-id"), resp.Header)
 	}
 
 	return nil
