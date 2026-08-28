@@ -79,10 +79,84 @@ In CI, integration tests fail on missing required keys unless `IRIS_SKIP_INTEGRA
 - Prefer small, composable functions over large control blocks.
 - Add tests for behavior changes and regressions.
 
+## Change Documentation
+
+Every repository change must create or update one change record under
+`docs/changes/`. These files feed the automated documentation pipeline and are
+part of the implementation, not an optional follow-up.
+
+Use this filename convention:
+
+```text
+docs/changes/YYYY-MM-DD_v{version}_{feature-slug}.md
+```
+
+- Use the current UTC date.
+- Use the semantic version declared by the nearest module or `VERSION` file;
+  use `v0.0.0-dev` when no release version is declared.
+- Use a specific kebab-case feature slug.
+- Keep related edits in one record; use separate records for unrelated work.
+- Do not overwrite another feature's record. If the same feature record already
+  exists for the day, add a timestamped revision section.
+
+Every record must include YAML front matter with `date`, `version`, `feature`,
+`product`, `change_type`, exhaustive `affected_components`, and `related_frds`.
+Use `product: iris`; valid change types are `feature`, `bugfix`, `breaking`,
+`deprecation`, `refactor`, `schema`, `api`, `cli`, `docs`, and
+`infrastructure`.
+
+Include all of these sections, writing `N/A` with a brief reason when a section
+does not apply:
+
+1. Summary
+2. Motivation
+3. What Changed (New Additions, Modifications, and Removals)
+4. Technical Specification
+5. Usage Examples
+6. Integration Notes
+7. Breaking Changes & Migration
+8. Deferred / Out of Scope
+9. Testing Notes
+
+Be concrete: name changed APIs and files, include exact signatures or schemas
+when applicable, explain intent and compatibility, and record the checks that
+actually ran. Existing records in `docs/changes/` are useful examples.
+
+## Release Process
+
+Releases are cut from `main` using semantic-version tags. Maintainers should:
+
+1. Open and merge a release-preparation pull request that moves the relevant
+   `CHANGELOG.md` entries from `Unreleased` into a `X.Y.Z` section dated in UTC,
+   confirms all required `docs/changes/` records are present, and passes CI.
+2. Update local `main` and confirm the release commit:
+
+   ```bash
+   git checkout main
+   git pull --ff-only
+   git status --short
+   ```
+
+3. Create and push an annotated semantic-version tag. Never move or reuse a
+   published tag:
+
+   ```bash
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+4. The tag triggers `.github/workflows/release.yml`, which builds Linux, macOS,
+   and Windows CLI binaries, generates SHA-256 checksums, and creates the GitHub
+   Release with generated notes.
+5. Verify the workflow succeeded and the release contains all four binaries
+   plus `checksums.txt`. If it fails, fix the cause on `main` and cut a new
+   patch version; do not replace the published tag.
+
 ## Pull Request Checklist
 
 - [ ] Scope is focused and described clearly.
 - [ ] `make lint`, `make test`, and `make build` pass locally.
 - [ ] Integration tests were run when relevant, or explicitly noted as not run.
 - [ ] New behavior is covered by tests.
+- [ ] A complete `docs/changes/` record is added or updated.
 - [ ] User-facing docs are updated when behavior or APIs change.
