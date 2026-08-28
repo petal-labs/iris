@@ -169,6 +169,20 @@ env:
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 ```
 
+The repository workflows apply these supply-chain controls:
+
+- every external action is pinned to a full commit SHA, with Dependabot
+  maintaining GitHub Actions and all three Go workspace modules;
+- workflows default to `contents: read`, while release and CodeQL jobs receive
+  only their required write permissions;
+- superseded pull-request CI, smoke, and CodeQL runs are cancelled;
+- gosec and CodeQL run complementary static analysis;
+- race-enabled tests run on Linux and macOS; Windows retains a plain test pass;
+- Codecov enforces 80% project and patch targets, with a 1% project tolerance.
+
+Action version comments are informational. The full SHA after `@` is the
+security boundary and must not be replaced with a mutable tag.
+
 ### Environment-Specific Keys
 
 Use different master keys for different environments:
