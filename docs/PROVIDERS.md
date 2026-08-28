@@ -1,24 +1,25 @@
 # Provider Comparison
 
 This document provides a comprehensive comparison of the AI providers supported by Iris.
-Model catalogs mirror each provider's `Models()` implementation in `providers/<name>/models.go`.
+Static model catalogs mirror each provider's `Models()` implementation in `providers/<name>/models.go`.
+Ollama is the exception: its catalog is discovered from the configured instance at runtime.
 
 ## Feature Support Matrix
 
 Cells reflect each provider's `Supports()` implementation. For chat-based features, availability can also vary by model — see the model-specific tables below.
 
-| Provider | Chat | Streaming | Tool Calling | Reasoning | Built-in Tools | Response Chain | Structured Output | Embeddings | Reranking | Images |
-|----------|------|-----------|--------------|-----------|----------------|----------------|--------------------|------------|-----------|--------|
-| OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | Yes | Yes | No | Yes |
-| Anthropic | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
-| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | Yes | No | Yes |
-| xAI (Grok) | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
-| Perplexity | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
-| Z.ai (GLM) | Yes | Yes | Yes | Yes | No | No | No† | No | No | No |
-| Ollama | Yes | Yes | Yes | Yes | No | No | No† | Yes | No | No |
-| HuggingFace | Yes | Yes | Yes | No | No | No | No† | No | No | No |
-| Azure AI Foundry | Yes | Yes | Yes | Yes | No | No | Yes | Yes | No | No |
-| VoyageAI | No | No | No | No | No | No | N/A | Yes | Yes | No |
+| Provider | Chat | Streaming | Tool Calling | Reasoning | Built-in Tools | Response Chain | Token Counting | Structured Output | Embeddings | Reranking | Images |
+|----------|------|-----------|--------------|-----------|----------------|----------------|----------------|--------------------|------------|-----------|--------|
+| OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | No | Yes | Yes | No | Yes |
+| Anthropic | Yes | Yes | Yes | Yes | No | No | Yes | No† | No | No | No |
+| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | Yes | Yes | No | Yes |
+| xAI (Grok) | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No |
+| Perplexity | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No |
+| Z.ai (GLM) | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No |
+| Ollama | Yes | Yes | Yes | Yes | No | No | No | No† | Yes | No | No |
+| HuggingFace | Yes | Yes | Yes | No | No | No | No | No† | No | No | No |
+| Azure AI Foundry | Yes | Yes | Yes | Yes | No | No | No | Yes | Yes | No | No |
+| VoyageAI | No | No | No | No | No | No | No | N/A | Yes | Yes | No |
 
 Perplexity additionally supports web-search grounding (`core.SearchOptions`, response citations) via `core.FeatureWebSearch`.
 
@@ -31,8 +32,8 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 | Provider | Status | Features |
 |----------|--------|----------|
 | OpenAI | Supported | Chat, Streaming, Tools, Reasoning, Batch API, Structured Output, Embeddings, Images, Responses API (GPT-5+) |
-| Anthropic | Supported | Chat, Streaming, Tools, Reasoning |
-| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Embeddings, Images |
+| Anthropic | Supported | Chat, Streaming, Tools, Reasoning, Token Counting |
+| Google Gemini | Supported | Chat, Streaming, Tools, Reasoning, Token Counting, Structured Output, Embeddings, Images |
 | xAI Grok | Supported | Chat, Streaming, Tools, Reasoning |
 | Z.ai GLM | Supported | Chat, Streaming, Tools, Thinking |
 | Perplexity | Supported | Chat, Streaming, Tools, Reasoning, Web Search + Citations |
@@ -155,6 +156,7 @@ resp, err := client.Chat(openai.ModelGPT4o).
 - Built-in safety guardrails
 - Thinking/reasoning modes
 - Vision input via hosted image URLs or base64 data URLs
+- Native input-token counting through `POST /v1/messages/count_tokens`
 
 **Usage Example**:
 ```go
@@ -165,6 +167,13 @@ resp, err := client.Chat(anthropic.ModelClaudeSonnet46).
     System("You are a helpful assistant.").
     User("Explain quantum computing.").
     GetResponse(ctx)
+
+counter, _ := core.AsTokenCounter(provider)
+count, err := counter.CountTokens(ctx, &core.ChatRequest{
+    Model: anthropic.ModelClaudeSonnet46,
+    Messages: []core.Message{{Role: core.RoleUser, Content: "Explain quantum computing."}},
+})
+fmt.Println(count.InputTokens)
 ```
 
 ---
@@ -207,6 +216,7 @@ resp, err := client.Chat(anthropic.ModelClaudeSonnet46).
 - Long context windows
 - Grounding with Google Search
 - Batch text embeddings with query/document retrieval optimization
+- Native input-token counting through `POST /v1beta/models/{model}:countTokens`
 
 **Usage Example**:
 ```go
@@ -370,8 +380,15 @@ resp, err := client.Chat(zai.ModelGLM47).
 
 **Authentication**: No key required for local; API key for Ollama Cloud
 
-**Models**: Dynamic — any model you have pulled locally with `ollama pull <model>`.
-The models below ship in the built-in catalog; see
+**Models**: Dynamic — `Models()` queries `GET /api/tags` on the configured
+instance and returns the installed model IDs. Use `ListModels(ctx)` when the
+caller needs an explicit discovery error. Because the upstream endpoint does
+not report per-model capabilities, dynamically discovered `ModelInfo` entries
+leave `Capabilities` empty.
+
+If discovery fails, `Models()` returns the illustrative fallback catalog below
+after a maximum two-second discovery attempt. A successful empty response stays
+empty and does not activate the fallback. See
 [ollama.com/library](https://ollama.com/library) for everything else.
 
 | Model | Display Name | Reasoning | Tool Calling |
@@ -404,6 +421,8 @@ provider := ollama.New(
     ollama.WithCloud(),
     ollama.WithAPIKey(os.Getenv("OLLAMA_API_KEY")),
 )
+
+models, err := provider.ListModels(ctx) // explicit /api/tags discovery
 
 client := core.NewClient(provider)
 resp, err := client.Chat("llama3.2").

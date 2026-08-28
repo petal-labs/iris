@@ -84,21 +84,18 @@ func (p *Ollama) ID() string {
 	return "ollama"
 }
 
-// Models returns example models available through Ollama.
-// Note: Ollama models are dynamic - you can use any model you have pulled locally.
+// Models returns models installed on the configured Ollama instance. Because
+// Provider.Models cannot return an error or accept a context, discovery is
+// bounded to two seconds and falls back to an illustrative catalog when the
+// instance cannot be reached. Use ListModels for error-aware discovery.
 func (p *Ollama) Models() []core.ModelInfo {
-	// Return common example models for documentation purposes
-	// Users can use any model they have pulled
-	return []core.ModelInfo{
-		{ID: "llama3.2", DisplayName: "Llama 3.2", Capabilities: []core.Feature{core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling}},
-		{ID: "llama3.2:70b", DisplayName: "Llama 3.2 70B", Capabilities: []core.Feature{core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling}},
-		{ID: "mistral", DisplayName: "Mistral 7B", Capabilities: []core.Feature{core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling}},
-		{ID: "mixtral", DisplayName: "Mixtral 8x7B", Capabilities: []core.Feature{core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling}},
-		{ID: "qwen3", DisplayName: "Qwen 3", Capabilities: []core.Feature{core.FeatureChat, core.FeatureChatStreaming, core.FeatureToolCalling, core.FeatureReasoning}},
-		{ID: "gemma3", DisplayName: "Gemma 3", Capabilities: []core.Feature{core.FeatureChat, core.FeatureChatStreaming}},
-		{ID: "deepseek-coder", DisplayName: "DeepSeek Coder", Capabilities: []core.Feature{core.FeatureChat, core.FeatureChatStreaming}},
-		{ID: "codellama", DisplayName: "Code Llama", Capabilities: []core.Feature{core.FeatureChat, core.FeatureChatStreaming}},
+	ctx, cancel := p.discoveryContext()
+	defer cancel()
+	models, err := p.ListModels(ctx)
+	if err == nil {
+		return models
 	}
+	return illustrativeModels()
 }
 
 // Supports reports whether the provider supports the given feature.

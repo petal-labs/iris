@@ -42,7 +42,10 @@
 // # Models
 //
 // Unlike other providers, Ollama models are dynamic - you can use any model
-// that you have pulled locally. Common models include:
+// that you have pulled locally. Models queries the configured instance's
+// /api/tags endpoint and uses a short, illustrative catalog only when discovery
+// fails. ListModels provides context-aware, error-returning discovery. Common
+// models include:
 //   - llama3.2, llama3.2:70b
 //   - mistral, mixtral
 //   - qwen3

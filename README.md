@@ -25,6 +25,7 @@ Iris solves these problems by providing:
 
 ### SDK Features
 - Fluent chat builder with `System()`, `User()`, `Assistant()`, `Temperature()`, `MaxTokens()`, and `Tools()`
+- Native token counting for Anthropic and Gemini through `core.TokenCounter`
 - Non-streaming and streaming response modes
 - Tool/function calling support
 - Tool middleware stack for logging, timeout, rate limiting, cache, validation, retry, and circuit breaking

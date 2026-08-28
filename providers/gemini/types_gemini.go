@@ -5,6 +5,7 @@ import "encoding/json"
 
 // geminiRequest represents a request to the Gemini generateContent API.
 type geminiRequest struct {
+	Model             string           `json:"model,omitempty"`
 	Contents          []geminiContent  `json:"contents"`
 	SystemInstruction *geminiContent   `json:"system_instruction,omitempty"`
 	GenerationConfig  *geminiGenConfig `json:"generationConfig,omitempty"`

@@ -55,6 +55,12 @@ func (*contentPartCapableProvider) SupportsContentPart(ModelID, Role, ContentPar
 	return true
 }
 
+type tokenCountingCapableProvider struct{ *capabilityBaseProvider }
+
+func (*tokenCountingCapableProvider) CountTokens(context.Context, *ChatRequest) (*TokenCountResponse, error) {
+	return &TokenCountResponse{InputTokens: 42}, nil
+}
+
 func TestAsEmbeddingProvider(t *testing.T) {
 	provider := &embeddingCapableProvider{capabilityBaseProvider: &capabilityBaseProvider{id: "embedding"}}
 	got, ok := AsEmbeddingProvider(provider)
@@ -117,5 +123,18 @@ func TestAsContentPartSupporter(t *testing.T) {
 	got, ok = AsContentPartSupporter(&capabilityBaseProvider{id: "base"})
 	if ok || got != nil {
 		t.Fatalf("AsContentPartSupporter(non-capable) = (%v, %v), want nil, false", got, ok)
+	}
+}
+
+func TestAsTokenCounter(t *testing.T) {
+	provider := &tokenCountingCapableProvider{capabilityBaseProvider: &capabilityBaseProvider{id: "token-counter"}}
+	got, ok := AsTokenCounter(provider)
+	if !ok || got != provider {
+		t.Fatalf("AsTokenCounter() = (%v, %v), want provider, true", got, ok)
+	}
+
+	got, ok = AsTokenCounter(&capabilityBaseProvider{id: "base"})
+	if ok || got != nil {
+		t.Fatalf("AsTokenCounter(non-capable) = (%v, %v), want nil, false", got, ok)
 	}
 }
