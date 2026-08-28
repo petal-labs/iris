@@ -65,6 +65,29 @@ module or VCS-derived pseudo-version when Go records one, falling back to `dev`
 when build information is unavailable; commit and build date remain unknown
 without release linker flags.
 
+### Verifying release binaries
+
+Every release binary, the SBOM, and `checksums.txt` are keyless-signed with
+[Sigstore](https://docs.sigstore.dev/) Cosign using GitHub Actions OIDC. Each
+artifact ships with a `.sig` (signature) and `.crt` (Fulcio certificate) file.
+Install Cosign from the [official guide](https://docs.sigstore.dev/cosign/installation/),
+then verify a downloaded binary:
+
+```bash
+cosign verify-blob \
+  --certificate iris-linux-amd64.crt \
+  --signature iris-linux-amd64.sig \
+  --certificate-identity "https://github.com/petal-labs/iris/.github/workflows/release.yml@refs/tags/v1.2.3" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  iris-linux-amd64
+```
+
+Replace `v1.2.3` with the tag you downloaded. The command exits `0` only when
+the signature is valid **and** the certificate was issued to the
+`petal-labs/iris` release workflow at that exact tag. Always verify both the
+`--certificate-identity` and `--certificate-oidc-issuer`; checking only the
+issuer would accept signatures from any GitHub Actions workflow.
+
 ## 🚀 Quick Start
 
 ### Using the SDK
