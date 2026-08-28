@@ -48,7 +48,7 @@ func (p *Gemini) GenerateImage(ctx context.Context, req *core.ImageGenerateReque
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, normalizeError(resp.StatusCode, respBody)
+		return nil, normalizeError(resp.StatusCode, respBody, resp.Header)
 	}
 
 	var gemResp geminiResponse
@@ -95,7 +95,7 @@ func (p *Gemini) EditImage(ctx context.Context, req *core.ImageEditRequest) (*co
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, normalizeError(resp.StatusCode, respBody)
+		return nil, normalizeError(resp.StatusCode, respBody, resp.Header)
 	}
 
 	var gemResp geminiResponse

@@ -51,7 +51,7 @@ func (p *Gemini) doChat(ctx context.Context, req *core.ChatRequest) (*core.ChatR
 
 	// Check for error status
 	if resp.StatusCode >= 400 {
-		return nil, normalizeError(resp.StatusCode, respBody)
+		return nil, normalizeError(resp.StatusCode, respBody, resp.Header)
 	}
 
 	// Parse response

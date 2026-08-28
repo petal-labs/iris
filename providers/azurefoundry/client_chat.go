@@ -67,7 +67,7 @@ func (p *AzureFoundry) doChat(ctx context.Context, req *core.ChatRequest) (*core
 
 	// Check for error status
 	if resp.StatusCode >= 400 {
-		return nil, normalizeError(resp.StatusCode, respBody, requestID)
+		return nil, normalizeError(resp.StatusCode, respBody, requestID, resp.Header)
 	}
 
 	// Parse response
@@ -143,7 +143,7 @@ func (p *AzureFoundry) doStreamChat(ctx context.Context, req *core.ChatRequest) 
 		if err != nil {
 			return nil, newNetworkError(err)
 		}
-		return nil, normalizeError(resp.StatusCode, respBody, requestID)
+		return nil, normalizeError(resp.StatusCode, respBody, requestID, resp.Header)
 	}
 
 	// Process SSE stream using the passed-in ctx; the reader goroutine

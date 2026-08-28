@@ -402,6 +402,100 @@ func TestStreamValidation(t *testing.T) {
 	}
 }
 
+func TestStreamRetriesSetupErrors(t *testing.T) {
+	callCount := 0
+	p := &mockProvider{
+		id: "test",
+		streamFunc: func(_ context.Context, req *ChatRequest) (*ChatStream, error) {
+			callCount++
+			if callCount == 1 {
+				return nil, ErrServer
+			}
+
+			ch := make(chan ChatChunk, 1)
+			errCh := make(chan error)
+			finalCh := make(chan *ChatResponse, 1)
+			ch <- ChatChunk{Delta: "ok"}
+			close(ch)
+			finalCh <- &ChatResponse{Output: "ok"}
+			close(finalCh)
+			close(errCh)
+			return &ChatStream{Ch: ch, Err: errCh, Final: finalCh}, nil
+		},
+	}
+
+	retry := NewRetryPolicy(RetryConfig{
+		MaxRetries: 1,
+		BaseDelay:  time.Millisecond,
+		MaxDelay:   time.Millisecond,
+		Jitter:     0,
+	})
+	client := NewClient(p, WithRetryPolicy(retry), WithTimeout(0))
+	stream, err := client.Chat("model").User("hello").Stream(context.Background())
+	if err != nil {
+		t.Fatalf("Stream() error = %v", err)
+	}
+	if callCount != 2 {
+		t.Fatalf("provider call count = %d, want 2", callCount)
+	}
+	response, err := DrainStream(context.Background(), stream)
+	if err != nil {
+		t.Fatalf("DrainStream() error = %v", err)
+	}
+	if response.Output != "ok" {
+		t.Fatalf("response output = %q, want ok", response.Output)
+	}
+}
+
+func TestClientRateLimiterRunsForEachAttempt(t *testing.T) {
+	rateLimitCalls := 0
+	providerCalls := 0
+	p := &mockProvider{
+		id: "test",
+		chatFunc: func(_ context.Context, _ *ChatRequest) (*ChatResponse, error) {
+			providerCalls++
+			if providerCalls == 1 {
+				return nil, ErrNetwork
+			}
+			return &ChatResponse{Output: "ok"}, nil
+		},
+	}
+	retry := NewRetryPolicy(RetryConfig{
+		MaxRetries: 1,
+		BaseDelay:  time.Millisecond,
+		MaxDelay:   time.Millisecond,
+		Jitter:     0,
+	})
+	client := NewClient(p,
+		WithTimeout(0),
+		WithRetryPolicy(retry),
+		WithRateLimiter(RateLimiterFunc(func(context.Context) error {
+			rateLimitCalls++
+			return nil
+		})),
+	)
+
+	if _, err := client.Chat("model").User("hello").GetResponse(context.Background()); err != nil {
+		t.Fatalf("GetResponse() error = %v", err)
+	}
+	if rateLimitCalls != 2 {
+		t.Fatalf("rate limiter calls = %d, want 2", rateLimitCalls)
+	}
+}
+
+func TestIntervalRateLimiterRespectsContext(t *testing.T) {
+	limiter := NewIntervalRateLimiter(100 * time.Millisecond)
+	if err := limiter.Wait(context.Background()); err != nil {
+		t.Fatalf("first Wait() error = %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
+	defer cancel()
+	if err := limiter.Wait(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("second Wait() error = %v, want context deadline", err)
+	}
+}
+
 func TestStreamSuccess(t *testing.T) {
 	p := &mockProvider{id: "test"}
 	c := NewClient(p)

@@ -2,6 +2,7 @@ package perplexity
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/petal-labs/iris/providers/internal/normalize"
 )
@@ -10,8 +11,10 @@ import (
 var ErrToolArgsInvalidJSON = errors.New("tool args invalid json")
 
 // normalizeError converts an HTTP error response to a ProviderError with the appropriate sentinel.
-func normalizeError(status int, body []byte, requestID string) error {
-	return normalize.OpenAIStyleProviderError("perplexity", status, body, requestID)
+func normalizeError(status int, body []byte, requestID string, headers ...http.Header) error {
+	return normalize.WithRetryAfter(
+		normalize.OpenAIStyleProviderError("perplexity", status, body, requestID), headers...,
+	)
 }
 
 // newNetworkError creates a ProviderError for network-related failures.

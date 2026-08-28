@@ -87,7 +87,7 @@ func (p *HuggingFace) doStreamChat(ctx context.Context, req *core.ChatRequest) (
 	if resp.StatusCode >= 400 {
 		defer resp.Body.Close()
 		respBody, _ := io.ReadAll(resp.Body)
-		return nil, normalizeError(resp.StatusCode, respBody, requestID)
+		return nil, normalizeError(resp.StatusCode, respBody, requestID, resp.Header)
 	}
 
 	// Create channels

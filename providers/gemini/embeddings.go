@@ -99,7 +99,7 @@ func decodeGeminiEmbeddingResponse(resp *http.Response) (*geminiBatchEmbeddingRe
 		return nil, newNetworkError(err)
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
-		return nil, normalizeError(resp.StatusCode, body)
+		return nil, normalizeError(resp.StatusCode, body, resp.Header)
 	}
 
 	var response geminiBatchEmbeddingResponse

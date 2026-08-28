@@ -48,7 +48,7 @@ func (p *Gemini) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core
 	if resp.StatusCode >= 400 {
 		defer resp.Body.Close()
 		respBody, _ := io.ReadAll(resp.Body)
-		return nil, normalizeError(resp.StatusCode, respBody)
+		return nil, normalizeError(resp.StatusCode, respBody, resp.Header)
 	}
 
 	// Create channels

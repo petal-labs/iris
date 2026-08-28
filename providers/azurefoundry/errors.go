@@ -88,11 +88,13 @@ type azureInnerError struct {
 }
 
 // normalizeError converts an HTTP error response to a ProviderError with the appropriate sentinel.
-func normalizeError(status int, body []byte, requestID string) error {
+func normalizeError(status int, body []byte, requestID string, headers ...http.Header) error {
 	var errResp azureErrorResponse
 	if err := json.Unmarshal(body, &errResp); err != nil {
 		// Could not parse error response, use generic handling
-		return normalize.OpenAIStyleProviderError("azurefoundry", status, body, requestID)
+		return normalize.WithRetryAfter(
+			normalize.OpenAIStyleProviderError("azurefoundry", status, body, requestID), headers...,
+		)
 	}
 
 	detail := errResp.Error
@@ -111,14 +113,14 @@ func normalizeError(status int, body []byte, requestID string) error {
 	// Classify error based on code
 	sentinel := classifyErrorCode(code, innerCode, status)
 
-	return &core.ProviderError{
+	return normalize.WithRetryAfter(&core.ProviderError{
 		Provider:  "azurefoundry",
 		Status:    status,
 		RequestID: requestID,
 		Code:      code,
 		Message:   message,
 		Err:       sentinel,
-	}
+	}, headers...)
 }
 
 // classifyErrorCode maps Azure error codes to sentinel errors.

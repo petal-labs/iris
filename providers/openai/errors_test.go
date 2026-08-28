@@ -2,7 +2,9 @@ package openai
 
 import (
 	"errors"
+	"net/http"
 	"testing"
+	"time"
 
 	"github.com/petal-labs/iris/core"
 )
@@ -66,6 +68,20 @@ func TestNormalizeError429(t *testing.T) {
 
 	if pErr.RequestID != "req-456" {
 		t.Errorf("RequestID = %q, want %q", pErr.RequestID, "req-456")
+	}
+}
+
+func TestNormalizeError429CapturesRetryAfter(t *testing.T) {
+	err := normalizeError(429, []byte(`{"error":{"message":"Rate limit exceeded"}}`), "req-456", http.Header{
+		"Retry-After": []string{"30"},
+	})
+
+	var providerErr *core.ProviderError
+	if !errors.As(err, &providerErr) {
+		t.Fatal("expected ProviderError")
+	}
+	if providerErr.RetryAfter != 30*time.Second {
+		t.Fatalf("RetryAfter = %v, want 30s", providerErr.RetryAfter)
 	}
 }
 
