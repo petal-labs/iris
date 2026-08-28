@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"runtime"
+	"runtime/debug"
 
 	"github.com/spf13/cobra"
 )
@@ -24,17 +25,39 @@ func (a *App) newVersionCommand() *cobra.Command {
 		Short: "Print version information",
 		Long:  `Print detailed version information including version, commit, build date, and Go runtime.`,
 		Run: func(cmd *cobra.Command, args []string) {
+			version := resolvedVersion()
 			if a.jsonOutput {
 				fmt.Fprintf(a.stdout, `{"version":"%s","commit":"%s","buildDate":"%s","goVersion":"%s","platform":"%s/%s"}`+"\n",
-					Version, Commit, BuildDate, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+					version, Commit, BuildDate, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 				return
 			}
 
-			fmt.Fprintf(a.stdout, "iris %s\n", Version)
+			fmt.Fprintf(a.stdout, "iris %s\n", version)
 			fmt.Fprintf(a.stdout, "  commit:     %s\n", Commit)
 			fmt.Fprintf(a.stdout, "  built:      %s\n", BuildDate)
 			fmt.Fprintf(a.stdout, "  go version: %s\n", runtime.Version())
 			fmt.Fprintf(a.stdout, "  platform:   %s/%s\n", runtime.GOOS, runtime.GOARCH)
 		},
 	}
+}
+
+func resolvedVersion() string {
+	moduleVersion := ""
+	if info, ok := debug.ReadBuildInfo(); ok {
+		moduleVersion = info.Main.Version
+	}
+	return resolveVersion(Version, moduleVersion)
+}
+
+func resolveVersion(linkedVersion, moduleVersion string) string {
+	if linkedVersion != "" && linkedVersion != "dev" {
+		return linkedVersion
+	}
+	if moduleVersion != "" && moduleVersion != "(devel)" {
+		return moduleVersion
+	}
+	if linkedVersion == "" {
+		return "dev"
+	}
+	return linkedVersion
 }

@@ -84,6 +84,23 @@ func TestCodecovEnforcesProjectAndPatchThresholds(t *testing.T) {
 	}
 }
 
+func TestReleaseWorkflowEnforcesReleaseHygiene(t *testing.T) {
+	release := readRepositoryFile(t, ".github/workflows/release.yml")
+	for _, required := range []string{
+		"go run ./cmd/releasecheck",
+		"./dist/iris-linux-amd64 version",
+		"go version -m",
+		"anchore/sbom-action@",
+		"syft-version: v1.51.1",
+		"output-file: dist/iris-${{ github.ref_name }}.spdx.json",
+		"dist/iris-${{ github.ref_name }}.spdx.json",
+	} {
+		if !strings.Contains(release, required) {
+			t.Errorf("release workflow must contain %q", required)
+		}
+	}
+}
+
 func TestGitHubYAMLConfigurationParses(t *testing.T) {
 	configs := readWorkflowFiles(t)
 	for _, path := range []string{".github/dependabot.yml", "codecov.yml"} {

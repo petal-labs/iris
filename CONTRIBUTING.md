@@ -153,12 +153,14 @@ Releases are cut from `main` using semantic-version tags. Maintainers should:
    git push origin vX.Y.Z
    ```
 
-4. The tag triggers `.github/workflows/release.yml`, which builds Linux, macOS,
-   and Windows CLI binaries, generates SHA-256 checksums, and creates the GitHub
-   Release with generated notes.
-5. Verify the workflow succeeded and the release contains all four binaries
-   plus `checksums.txt`. If it fails, fix the cause on `main` and cut a new
-   patch version; do not replace the published tag.
+4. The tag triggers `.github/workflows/release.yml`, which verifies the tag
+   matches the latest dated `CHANGELOG.md` entry, builds Linux, macOS, and
+   Windows CLI binaries, smoke-tests the Linux binary, inspects every binary's
+   Go build metadata, and creates the GitHub Release with generated notes.
+5. Verify the workflow succeeded and the release contains all four binaries,
+   `checksums.txt`, and `iris-vX.Y.Z.spdx.json`. The checksums cover both the
+   binaries and SBOM. If the workflow fails, fix the cause on `main` and cut a
+   new patch version; do not replace the published tag.
 
 ## Pull Request Checklist
 
