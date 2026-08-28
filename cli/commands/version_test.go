@@ -1,7 +1,11 @@
 package commands
 
 import (
+	"bytes"
+	"strings"
 	"testing"
+
+	"github.com/petal-labs/iris/cli/config"
 )
 
 func TestVersionVariables(t *testing.T) {
@@ -57,6 +61,50 @@ func TestResolveVersion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := resolveVersion(tt.linkedVersion, tt.moduleVersion); got != tt.want {
 				t.Errorf("resolveVersion(%q, %q) = %q, want %q", tt.linkedVersion, tt.moduleVersion, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestVersionCommandOutput(t *testing.T) {
+	originalVersion, originalCommit, originalBuildDate := Version, Commit, BuildDate
+	Version, Commit, BuildDate = "v1.2.3", "abc1234", "2026-08-28T12:00:00Z"
+	t.Cleanup(func() {
+		Version, Commit, BuildDate = originalVersion, originalCommit, originalBuildDate
+	})
+
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "text",
+			args: []string{"version"},
+			want: []string{"iris v1.2.3", "commit:     abc1234", "built:      2026-08-28T12:00:00Z"},
+		},
+		{
+			name: "json",
+			args: []string{"--json", "version"},
+			want: []string{`"version":"v1.2.3"`, `"commit":"abc1234"`, `"buildDate":"2026-08-28T12:00:00Z"`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			app := NewApp(
+				WithConfigLoader(func(string) (*config.Config, error) { return &config.Config{}, nil }),
+				WithIO(strings.NewReader(""), &stdout, &bytes.Buffer{}),
+			)
+			app.root.SetArgs(tt.args)
+			if err := app.Execute(); err != nil {
+				t.Fatalf("Execute() error = %v", err)
+			}
+			for _, want := range tt.want {
+				if !strings.Contains(stdout.String(), want) {
+					t.Errorf("version output missing %q:\n%s", want, stdout.String())
+				}
 			}
 		})
 	}

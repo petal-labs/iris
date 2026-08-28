@@ -136,7 +136,10 @@ Releases are cut from `main` using semantic-version tags. Maintainers should:
 
 1. Open and merge a release-preparation pull request that moves the relevant
    `CHANGELOG.md` entries from `Unreleased` into a `X.Y.Z` section dated in UTC,
+   updates `scaffoldSDKVersionFallback` in `cli/commands/init.go` to `vX.Y.Z`,
    confirms all required `docs/changes/` records are present, and passes CI.
+   CI requires the fallback to match the latest dated changelog release; tagged
+   CLI builds derive the scaffold dependency from their own build version.
 2. Update local `main` and confirm the release commit:
 
    ```bash
