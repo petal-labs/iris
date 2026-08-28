@@ -2,6 +2,8 @@
 
 Thanks for contributing to Iris.
 
+By participating, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Prerequisites
 
 - Go 1.25+

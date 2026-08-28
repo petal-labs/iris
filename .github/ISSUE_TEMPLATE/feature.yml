@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose an improvement or new capability for Iris
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to suggest an improvement.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Describe the user need or limitation this request would address.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Explain the behavior or API you would like Iris to provide.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe current workarounds or alternative designs you considered.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add examples, links, or other context. Do not include secrets or personal data.
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Submission checklist
+      options:
+        - label: I searched existing issues for related requests.
+          required: true
+        - label: I agree to follow the project's Code of Conduct.
+          required: true
