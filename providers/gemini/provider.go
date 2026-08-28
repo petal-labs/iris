@@ -15,6 +15,8 @@ import (
 const (
 	GeminiAPIKeyEnvVar = "GEMINI_API_KEY"
 	GoogleAPIKeyEnvVar = "GOOGLE_API_KEY"
+	// DefaultAPIKeyEnvVar is the preferred Gemini API-key environment variable.
+	DefaultAPIKeyEnvVar = GeminiAPIKeyEnvVar
 )
 
 // ErrAPIKeyNotFound is returned when no API key environment variable is set.

@@ -63,6 +63,16 @@ func WithHeaders(headers http.Header) Option {
 	}
 }
 
+// WithHeader adds an extra header to include in requests.
+func WithHeader(key, value string) Option {
+	return func(c *Config) {
+		if c.Headers == nil {
+			c.Headers = make(http.Header)
+		}
+		c.Headers.Set(key, value)
+	}
+}
+
 // WithTimeout sets the timeout for this provider's direct (non-chat)
 // operations — embeddings, files, images, batch, and vector stores. Chat and
 // streaming honor core.WithTimeout and context deadlines.

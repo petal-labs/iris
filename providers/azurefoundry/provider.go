@@ -20,6 +20,8 @@ const (
 	EnvAPIKey = "AZURE_AI_API_KEY"
 	// EnvDeploymentID is the optional environment variable for deployment ID.
 	EnvDeploymentID = "AZURE_AI_DEPLOYMENT_ID"
+	// DefaultAPIKeyEnvVar is the canonical API-key environment variable alias.
+	DefaultAPIKeyEnvVar = EnvAPIKey
 )
 
 // Sentinel errors.

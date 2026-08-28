@@ -36,12 +36,20 @@
 //	if p.Supports(core.FeatureToolCalling) {
 //	    // Safe to use tools
 //	}
+//
+// # Core Re-exports
+//
+// The historical core type, feature, role, and error aliases in this package
+// are deprecated and frozen. Import github.com/petal-labs/iris/core directly
+// for those APIs. Registry functions in this package remain supported.
 package providers
 
 import "github.com/petal-labs/iris/core"
 
-// Re-export core types for convenience.
-// Provider implementations can import just the providers package.
+// Deprecated: The partial core re-export layer is frozen for backward
+// compatibility and will not receive new core APIs. Import
+// github.com/petal-labs/iris/core directly. Registry APIs in this package are
+// not deprecated.
 type (
 	// Provider is the interface that LLM providers must implement.
 	Provider = core.Provider
@@ -83,21 +91,21 @@ type (
 	ProviderError = core.ProviderError
 )
 
-// Re-export feature constants.
+// Deprecated: Import feature constants from github.com/petal-labs/iris/core.
 const (
 	FeatureChat          = core.FeatureChat
 	FeatureChatStreaming = core.FeatureChatStreaming
 	FeatureToolCalling   = core.FeatureToolCalling
 )
 
-// Re-export role constants.
+// Deprecated: Import role constants from github.com/petal-labs/iris/core.
 const (
 	RoleSystem    = core.RoleSystem
 	RoleUser      = core.RoleUser
 	RoleAssistant = core.RoleAssistant
 )
 
-// Re-export sentinel errors.
+// Deprecated: Import sentinel errors from github.com/petal-labs/iris/core.
 var (
 	ErrUnauthorized  = core.ErrUnauthorized
 	ErrRateLimited   = core.ErrRateLimited

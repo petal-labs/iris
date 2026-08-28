@@ -50,6 +50,13 @@ func TestWithHeaders(t *testing.T) {
 	}
 }
 
+func TestWithHeader(t *testing.T) {
+	p := New("test-key", WithHeader("X-Custom", "value"), WithHeader("X-Second", "two"))
+	if p.config.Headers.Get("X-Custom") != "value" || p.config.Headers.Get("X-Second") != "two" {
+		t.Errorf("headers = %v, want both custom headers", p.config.Headers)
+	}
+}
+
 func TestWithTimeout(t *testing.T) {
 	timeout := 60 * time.Second
 	p := New("test-key", WithTimeout(timeout))

@@ -15,6 +15,8 @@ import (
 const (
 	HFTokenEnvVar          = "HF_TOKEN"
 	HuggingFaceTokenEnvVar = "HUGGINGFACE_TOKEN"
+	// DefaultAPIKeyEnvVar is the preferred Hugging Face token environment variable.
+	DefaultAPIKeyEnvVar = HFTokenEnvVar
 )
 
 // ErrAPIKeyNotFound is returned when no API token environment variable is set.
