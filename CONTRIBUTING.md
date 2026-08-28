@@ -76,8 +76,14 @@ In CI, integration tests fail on missing required keys unless `IRIS_SKIP_INTEGRA
 
 ## Code Style and Quality
 
-- Format with `gofmt` (`make fmt`).
-- Keep `go vet` clean (`make vet`).
+- Run `make lint` before opening a pull request. It runs the same format, vet,
+  and golangci-lint checks enforced by CI.
+- Install the pinned golangci-lint `v2.5.0` release with
+  `make install-golangci-lint`. `make lint` fails with an installation hint if
+  the binary is missing or its version differs from CI.
+- To use a binary outside `PATH`, run
+  `make lint GOLANGCI_LINT=/path/to/golangci-lint`.
+- Format with `gofmt` (`make fmt`) and keep `go vet` clean (`make vet`).
 - Prefer small, composable functions over large control blocks.
 - Add tests for behavior changes and regressions.
 
