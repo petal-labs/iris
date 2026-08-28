@@ -26,7 +26,7 @@ jobs:
 
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version: "1.24.x"
+          go-version: "1.25.x"
           cache: true
 
       - name: Build
@@ -80,13 +80,13 @@ jobs:
 
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version: "1.24.x"
+          go-version: "1.25.x"
           cache: true
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7
         with:
-          version: v2.1.6
+          version: v2.5.0
 
   security:
     name: Security Scan
@@ -96,7 +96,7 @@ jobs:
 
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version: "1.24.x"
+          go-version: "1.25.x"
           cache: true
 
       - name: Run gosec
