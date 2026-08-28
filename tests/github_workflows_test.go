@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -98,7 +99,7 @@ func TestGitHubYAMLConfigurationParses(t *testing.T) {
 
 func readWorkflowFiles(t *testing.T) map[string]string {
 	t.Helper()
-	paths, err := filepath.Glob("../.github/workflows/*.yml")
+	paths, err := filepath.Glob(filepath.Join("..", ".github", "workflows", "*.yml"))
 	if err != nil {
 		t.Fatalf("list workflow files: %v", err)
 	}
@@ -107,8 +108,15 @@ func readWorkflowFiles(t *testing.T) map[string]string {
 	}
 	workflows := make(map[string]string, len(paths))
 	for _, path := range paths {
-		repositoryPath := strings.TrimPrefix(path, "../")
-		workflows[repositoryPath] = readRepositoryFile(t, repositoryPath)
+		repositoryPath, err := filepath.Rel("..", path)
+		if err != nil {
+			t.Fatalf("resolve repository path for %s: %v", path, err)
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", repositoryPath, err)
+		}
+		workflows[filepath.ToSlash(repositoryPath)] = string(content)
 	}
 	return workflows
 }

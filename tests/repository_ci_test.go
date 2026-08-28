@@ -2,6 +2,7 @@ package tests
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -22,7 +23,7 @@ func TestContribOtelIsCoveredByWorkspaceAndCI(t *testing.T) {
 
 func readRepositoryFile(t *testing.T, path string) string {
 	t.Helper()
-	content, err := os.ReadFile("../" + path)
+	content, err := os.ReadFile(filepath.Join("..", filepath.FromSlash(path)))
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
