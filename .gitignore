@@ -22,9 +22,6 @@ profile.cov
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# Go workspace sum file (generated)
-go.work.sum
-
 # env file
 .env
 
@@ -38,4 +35,4 @@ go.work.sum
 CLAUDE.md
 
 # misc
-.DS_STORE
+.DS_Store

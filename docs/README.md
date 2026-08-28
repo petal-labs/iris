@@ -39,7 +39,7 @@ history. Listed here so they are discoverable rather than hidden.
 
 | Directory | Purpose |
 |---|---|
-| [`changes/`](changes/) | Per-feature change records consumed by the automated documentation pipeline. One file per logical feature, named `YYYY-MM-DD_v{version}_{slug}.md`. See the repository `CLAUDE.md` for the required structure. |
+| [`changes/`](changes/) | Per-feature change records consumed by the automated documentation pipeline. One file per logical feature, named `YYYY-MM-DD_v{version}_{slug}.md`. See [`CONTRIBUTING.md`](../CONTRIBUTING.md#change-documentation) for the required structure. |
 | [`superpowers/`](superpowers/) | Design specs (`specs/`) and implementation plans (`plans/`) produced while building features. Kept in-tree because they feed the documentation pipeline. |
 
 ## 🔗 Elsewhere in the repository
