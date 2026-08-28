@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 
 	// Build the CLI binary once
 	cliBinary = filepath.Join(tmpDir, "iris-test")
-	cmd := exec.Command("go", "build", "-o", cliBinary, "./cli/cmd/iris")
+	cmd := exec.Command("go", "build", "-o", cliBinary, "./cmd/iris")
 	cmd.Dir = projectRoot
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Fatalf("Failed to build CLI: %v\n%s", err, output)

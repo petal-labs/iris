@@ -30,10 +30,10 @@ jobs:
           BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           PKG="github.com/petal-labs/iris/cli/commands"
           LDFLAGS="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}"
-          GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/iris-linux-amd64 ./cli/cmd/iris
-          GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/iris-darwin-amd64 ./cli/cmd/iris
-          GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/iris-darwin-arm64 ./cli/cmd/iris
-          GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/iris-windows-amd64.exe ./cli/cmd/iris
+          GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/iris-linux-amd64 ./cmd/iris
+          GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/iris-darwin-amd64 ./cmd/iris
+          GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/iris-darwin-arm64 ./cmd/iris
+          GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/iris-windows-amd64.exe ./cmd/iris
 
       - name: Generate checksums
         run: |

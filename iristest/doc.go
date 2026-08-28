@@ -1,4 +1,4 @@
-// Package testing provides test utilities for the Iris SDK.
+// Package iristest provides test utilities for the Iris SDK.
 //
 // This package contains mock implementations and test helpers that enable
 // unit testing of code that uses the Iris SDK without making real API calls.
@@ -7,7 +7,7 @@
 //
 // MockProvider implements core.Provider and allows you to define canned responses:
 //
-//	provider := testing.NewMockProvider(
+//	provider := iristest.NewMockProvider(
 //		core.ChatResponse{Output: "Hello!"},
 //		core.ChatResponse{Output: "How can I help?"},
 //	)
@@ -28,7 +28,7 @@
 //
 // Queue errors to test error handling:
 //
-//	provider := testing.NewMockProvider().
+//	provider := iristest.NewMockProvider().
 //		WithError(core.ErrRateLimited).
 //		WithResponse(core.ChatResponse{Output: "Success after retry"})
 //
@@ -36,7 +36,7 @@
 //
 // Verify that expected calls were made:
 //
-//	provider := testing.NewMockProvider(core.ChatResponse{Output: "test"})
+//	provider := iristest.NewMockProvider(core.ChatResponse{Output: "test"})
 //	client := core.NewClient(provider)
 //
 //	client.Chat("gpt-4o").User("Hello").GetResponse(ctx)
@@ -53,7 +53,7 @@
 //
 // Mock streaming responses:
 //
-//	provider := testing.NewMockProvider().
+//	provider := iristest.NewMockProvider().
 //		WithStreamingResponse([]string{"Hello", " ", "world", "!"}, nil)
 //
 // # Recording Provider
@@ -61,7 +61,7 @@
 // Wrap a real provider to record calls for replay testing:
 //
 //	realProvider := openai.New(apiKey)
-//	recorder := testing.NewRecordingProvider(realProvider)
+//	recorder := iristest.NewRecordingProvider(realProvider)
 //	client := core.NewClient(recorder)
 //
 //	// Make calls...
@@ -71,4 +71,4 @@
 //
 // RecordingProvider implements core.ProviderUnwrapper, so optional operations
 // remain discoverable through helpers such as core.AsEmbeddingProvider.
-package testing
+package iristest
