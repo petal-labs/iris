@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var makefileLintVersionPattern = regexp.MustCompile(`(?m)^GOLANGCI_LINT_VERSION := (v\d+\.\d+\.\d+)$`)
+var makefileLintVersionPattern = regexp.MustCompile(`(?m)^GOLANGCI_LINT_VERSION := (v\d+\.\d+\.\d+)[ \t]*\r?$`)
 var workflowLintVersionPattern = regexp.MustCompile(`(?m)^\s+version:\s+["']?(v\d+\.\d+\.\d+)["']?\s*$`)
 
 func TestLocalLintMatchesPinnedCIVersion(t *testing.T) {
@@ -45,6 +45,14 @@ func TestContributorDocsExplainPinnedLintSetup(t *testing.T) {
 		if !strings.Contains(contributing, required) {
 			t.Errorf("CONTRIBUTING.md must document %q", required)
 		}
+	}
+}
+
+func TestMakefileLintVersionPatternSupportsCRLF(t *testing.T) {
+	content := "GOLANGCI_LINT_VERSION := v2.5.0\r\n"
+	version := requiredPatternMatch(t, makefileLintVersionPattern, content, "CRLF Makefile golangci-lint version")
+	if version != "v2.5.0" {
+		t.Errorf("parsed version = %q, want v2.5.0", version)
 	}
 }
 
