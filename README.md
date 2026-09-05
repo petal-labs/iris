@@ -112,7 +112,7 @@ func main() {
     client := core.NewClient(provider)
 
     // Send a chat request
-    resp, err := client.Chat("gpt-5.6").
+    resp, err := client.Chat("gpt-6-astra").
         System("You are a helpful assistant.").
         User("What is the capital of France?").
         Temperature(0.7).
@@ -207,19 +207,19 @@ iris keys set ollama  # Only needed for Ollama Cloud
 iris keys migrate  # Requires IRIS_KEYSTORE_KEY (see Security below)
 
 # Chat with OpenAI
-iris chat --provider openai --model gpt-5.6 --prompt "Hello, world!"
+iris chat --provider openai --model gpt-6-astra --prompt "Hello, world!"
 
 # Chat with Anthropic Claude
 iris chat --provider anthropic --model claude-sonnet-5 --prompt "Hello, world!"
 
 # Chat with Google Gemini
-iris chat --provider gemini --model gemini-3.6-flash --prompt "Hello, world!"
+iris chat --provider gemini --model gemini-3.8-flash --prompt "Hello, world!"
 
 # Chat with xAI Grok
-iris chat --provider xai --model grok-4.5 --prompt "Hello, world!"
+iris chat --provider xai --model grok-4.6 --prompt "Hello, world!"
 
 # Chat with Z.ai GLM
-iris chat --provider zai --model glm-5.2 --prompt "Hello, world!"
+iris chat --provider zai --model glm-5.3 --prompt "Hello, world!"
 
 # Chat with local Ollama (no API key needed)
 iris chat --provider ollama --model llama3.2 --prompt "Hello, world!"
@@ -228,11 +228,11 @@ iris chat --provider ollama --model llama3.2 --prompt "Hello, world!"
 iris chat --provider openai --model gpt-5 --prompt "Explain quantum entanglement"
 
 # Stream responses
-iris chat --provider openai --model gpt-5.6 --prompt "Tell me a story" --stream
+iris chat --provider openai --model gpt-6-astra --prompt "Tell me a story" --stream
 iris chat --provider anthropic --model claude-sonnet-5 --prompt "Tell me a story" --stream
 
 # Get JSON output
-iris chat --provider openai --model gpt-5.6 --prompt "Hello" --json
+iris chat --provider openai --model gpt-6-astra --prompt "Hello" --json
 
 # Initialize a standalone project (creates main.go, go.mod, and tools/)
 iris init myproject --provider perplexity
@@ -278,7 +278,7 @@ Iris looks for configuration at `~/.iris/config.yaml`. The schema is:
 
 ```yaml
 default_provider: openai
-default_model: gpt-5.6  # or gpt-4o for older models
+default_model: gpt-6-astra  # or gpt-4o for older models
 
 providers:
   ollama:
