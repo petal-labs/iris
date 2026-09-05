@@ -40,7 +40,7 @@ func main() {
 	defer cancel()
 
 	resp, err := imageGen.GenerateImage(ctx, &core.ImageGenerateRequest{
-		Model:  gemini.ModelGemini31FlashImagePreview,
+		Model:  gemini.ModelGemini31FlashImage,
 		Prompt: "A serene mountain landscape at sunset with a calm lake reflecting the colors of the sky",
 		Size:   core.ImageSize1024x1024,
 	})
