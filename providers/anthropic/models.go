@@ -11,6 +11,7 @@ const (
 	ModelClaudeSonnet5         core.ModelID = "claude-sonnet-5"
 	ModelClaudeSonnet5Thinking core.ModelID = "claude-sonnet-5-thinking"
 	ModelClaudeFable5          core.ModelID = "claude-fable-5"
+	ModelClaudeFable51         core.ModelID = "claude-fable-5-1"
 
 	// Claude 4.8 series
 	ModelClaudeOpus48         core.ModelID = "claude-opus-4-8"
@@ -82,6 +83,16 @@ var models = []core.ModelInfo{
 	{
 		ID:          ModelClaudeFable5,
 		DisplayName: "Claude Fable 5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeFable51,
+		DisplayName: "Claude Fable 5.1",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,

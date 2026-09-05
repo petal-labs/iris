@@ -5,13 +5,21 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for xAI Grok models.
 const (
-	// Grok 4.5 series (latest)
+	// Grok 4.6 series (latest)
+	ModelGrok46 core.ModelID = "grok-4.6"
+
+	// Grok 4.5 series
 	ModelGrok45 core.ModelID = "grok-4.5"
 
 	// Grok 4.3 series
 	ModelGrok43 core.ModelID = "grok-4.3"
 
-	// Grok 4.20 series (multi-agent beta)
+	// Grok 4.20 series (general availability)
+	ModelGrok420MultiAgent   core.ModelID = "grok-4.20-multi-agent-0309"
+	ModelGrok420Reasoning    core.ModelID = "grok-4.20-0309-reasoning"
+	ModelGrok420NonReasoning core.ModelID = "grok-4.20-0309-non-reasoning"
+
+	// Grok 4.20 series (multi-agent beta, superseded by the GA IDs above)
 	ModelGrok420MultiAgentBeta   core.ModelID = "grok-4.20-multi-agent-beta-0309"
 	ModelGrok420BetaReasoning    core.ModelID = "grok-4.20-beta-0309-reasoning"
 	ModelGrok420BetaNonReasoning core.ModelID = "grok-4.20-beta-0309-non-reasoning"
@@ -39,7 +47,19 @@ const (
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
-	// Grok 4.5 series (latest)
+	// Grok 4.6 series (latest)
+	{
+		ID:          ModelGrok46,
+		DisplayName: "Grok 4.6",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	// Grok 4.5 series
 	{
 		ID:          ModelGrok45,
 		DisplayName: "Grok 4.5",
@@ -63,7 +83,39 @@ var models = []core.ModelInfo{
 			core.FeatureReasoning,
 		},
 	},
-	// Grok 4.20 series (multi-agent beta)
+	// Grok 4.20 series (general availability)
+	{
+		ID:          ModelGrok420MultiAgent,
+		DisplayName: "Grok 4.20 Multi-Agent",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGrok420Reasoning,
+		DisplayName: "Grok 4.20 (Reasoning)",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGrok420NonReasoning,
+		DisplayName: "Grok 4.20 (Non-Reasoning)",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+		},
+	},
+	// Grok 4.20 series (multi-agent beta, superseded by the GA IDs above)
 	{
 		ID:          ModelGrok420MultiAgentBeta,
 		DisplayName: "Grok 4.20 Multi-Agent Beta",

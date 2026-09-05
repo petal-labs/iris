@@ -5,6 +5,8 @@ import "github.com/petal-labs/iris/core"
 // Model constants for Z.ai GLM models.
 const (
 	// GLM-5 series (latest)
+	ModelGLM53      core.ModelID = "glm-5.3"
+	ModelGLM53Flash core.ModelID = "glm-5.3-flash"
 	ModelGLM52      core.ModelID = "glm-5.2"
 	ModelGLM51      core.ModelID = "glm-5.1"
 	ModelGLM5       core.ModelID = "glm-5"
@@ -40,6 +42,28 @@ const (
 // models is the static list of supported models.
 var models = []core.ModelInfo{
 	// GLM-5 series (latest)
+	{
+		ID:          ModelGLM53,
+		DisplayName: "GLM-5.3",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGLM53Flash,
+		DisplayName: "GLM-5.3-Flash",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
 	{
 		ID:          ModelGLM52,
 		DisplayName: "GLM-5.2",

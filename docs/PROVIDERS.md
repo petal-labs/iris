@@ -60,7 +60,8 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 
 | Model | Display Name | Route | Reasoning | Built-in Tools | Notes |
 |-------|--------------|-------|-----------|----------------|-------|
-| gpt-5.6 | GPT-5.6 | Responses | Yes | Yes | Latest flagship |
+| gpt-6-astra | GPT-6 Astra | Responses | Yes | Yes | Latest flagship |
+| gpt-5.6 | GPT-5.6 | Responses | Yes | Yes | GPT-5.6 flagship |
 | gpt-5.6-luna | GPT-5.6 Luna | Responses | Yes | Yes | GPT-5.6 variant |
 | gpt-5.6-sol | GPT-5.6 Sol | Responses | Yes | Yes | GPT-5.6 variant |
 | gpt-5.6-terra | GPT-5.6 Terra | Responses | Yes | Yes | GPT-5.6 variant |
@@ -135,6 +136,7 @@ resp, err := client.Chat(openai.ModelGPT4o).
 | claude-opus-5-thinking | Claude Opus 5 (Thinking) | Yes | Extended reasoning |
 | claude-sonnet-5 | Claude Sonnet 5 | Yes | Balanced performance |
 | claude-sonnet-5-thinking | Claude Sonnet 5 (Thinking) | Yes | Extended reasoning |
+| claude-fable-5-1 | Claude Fable 5.1 | Yes | Latest Fable release |
 | claude-fable-5 | Claude Fable 5 | Yes |  |
 | claude-opus-4-8 | Claude Opus 4.8 | Yes | High capability |
 | claude-opus-4-8-thinking | Claude Opus 4.8 (Thinking) | Yes | Extended reasoning |
@@ -188,27 +190,32 @@ fmt.Println(count.InputTokens)
 
 | Model | Display Name | Reasoning | Tool Calling | Notes |
 |-------|--------------|-----------|--------------|-------|
-| gemini-3.6-flash | Gemini 3.6 Flash | Yes | Yes | Latest (`thinkingLevel`) |
+| gemini-3.8-flash | Gemini 3.8 Flash | Yes | Yes | Latest (`thinkingLevel`) |
+| gemini-3.7-flash | Gemini 3.7 Flash | Yes | Yes | `thinkingLevel` |
+| gemini-3.6-flash | Gemini 3.6 Flash | Yes | Yes | `thinkingLevel` |
 | gemini-3.5-flash | Gemini 3.5 Flash | Yes | Yes | `thinkingLevel` |
 | gemini-3.5-flash-lite | Gemini 3.5 Flash Lite | Yes | Yes | `thinkingLevel`, lightweight |
 | gemini-3.1-pro-preview | Gemini 3.1 Pro Preview | Yes | Yes | `thinkingLevel` |
 | gemini-3.1-flash-lite | Gemini 3.1 Flash Lite | Yes | Yes | `thinkingLevel`, lightweight |
+| gemini-3.1-flash-image | Gemini 3.1 Flash Image | No | No | Chat, streaming, image generation (Nano Banana 2) |
 | gemini-3.1-flash-image-preview | Gemini 3.1 Flash Image Preview | No | No | Chat, streaming, image generation |
 | gemini-3-pro-preview | Gemini 3 Pro Preview | Yes | Yes | `thinkingLevel` |
 | gemini-3-flash-preview | Gemini 3 Flash Preview | Yes | Yes | `thinkingLevel` |
-| gemini-3-pro-image-preview | Gemini 3 Pro Image Preview | No | No | Image generation only (Nano Banana Pro) |
+| gemini-3-pro-image | Gemini 3 Pro Image | No | No | Image generation only (Nano Banana Pro, GA) |
+| gemini-3-pro-image-preview | Gemini 3 Pro Image Preview | No | No | Image generation only (Nano Banana Pro, preview) |
 | gemini-2.5-pro | Gemini 2.5 Pro | Yes | Yes | `thinkingBudget`, production ready |
 | gemini-2.5-flash | Gemini 2.5 Flash | Yes | Yes | `thinkingBudget`, fast |
 | gemini-2.5-flash-lite | Gemini 2.5 Flash Lite | Yes | Yes | `thinkingBudget`, lightweight |
 | gemini-2.5-flash-image | Gemini 2.5 Flash Image | No | No | Image generation only (Nano Banana) |
 | gemini-2.0-flash-lite | Gemini 2.0 Flash Lite | No | No | Legacy lightweight |
 
-**Image Generation Models**: gemini-3.1-flash-image-preview, gemini-3-pro-image-preview, gemini-2.5-flash-image (Nano Banana)
+**Image Generation Models**: gemini-3.1-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image, gemini-3-pro-image-preview, gemini-2.5-flash-image (Nano Banana)
 
 **Embedding Models**:
 
 | Model | Display Name | Input Types | Notes |
 |-------|--------------|-------------|-------|
+| gemini-embedding-2 | Gemini Embedding 2 | Query, Document | Latest; multimodal input |
 | gemini-embedding-001 | Gemini Embedding 001 | Query, Document | Configurable output dimensions |
 
 **Special Features**:
@@ -247,11 +254,15 @@ embeddingResp, err := embeddingProvider.CreateEmbeddings(ctx, &core.EmbeddingReq
 
 | Model | Display Name | Reasoning | Notes |
 |-------|--------------|-----------|-------|
-| grok-4.5 | Grok 4.5 | Yes | Latest |
+| grok-4.6 | Grok 4.6 | Yes | Latest |
+| grok-4.5 | Grok 4.5 | Yes | |
 | grok-4.3 | Grok 4.3 | Yes | |
-| grok-4.20-multi-agent-beta-0309 | Grok 4.20 Multi-Agent Beta | Yes | Multi-agent beta |
-| grok-4.20-beta-0309-reasoning | Grok 4.20 Beta (Reasoning) | Yes | Beta with reasoning |
-| grok-4.20-beta-0309-non-reasoning | Grok 4.20 Beta (Non-Reasoning) | No | Beta without reasoning |
+| grok-4.20-multi-agent-0309 | Grok 4.20 Multi-Agent | Yes | Multi-agent; no tool calling |
+| grok-4.20-0309-reasoning | Grok 4.20 (Reasoning) | Yes | GA reasoning variant |
+| grok-4.20-0309-non-reasoning | Grok 4.20 (Non-Reasoning) | No | GA non-reasoning variant |
+| grok-4.20-multi-agent-beta-0309 | Grok 4.20 Multi-Agent Beta | Yes | Multi-agent beta; superseded |
+| grok-4.20-beta-0309-reasoning | Grok 4.20 Beta (Reasoning) | Yes | Beta with reasoning; superseded |
+| grok-4.20-beta-0309-non-reasoning | Grok 4.20 Beta (Non-Reasoning) | No | Beta without reasoning; superseded |
 | grok-4.1 | Grok 4.1 | No | |
 | grok-4-1-fast-non-reasoning | Grok 4.1 Fast (Non-Reasoning) | No | Fast; default model in `iris init` scaffolds |
 | grok-4-1-fast-reasoning | Grok 4.1 Fast (Reasoning) | Yes | Fast with reasoning |
@@ -335,7 +346,9 @@ for _, url := range resp.Citations {
 
 | Model | Display Name | Reasoning | Vision | Notes |
 |-------|--------------|-----------|--------|-------|
-| glm-5.2 | GLM-5.2 | Yes | No | Latest flagship |
+| glm-5.3 | GLM-5.3 | Yes | No | Latest flagship |
+| glm-5.3-flash | GLM-5.3 Flash | Yes | No | Fast |
+| glm-5.2 | GLM-5.2 | Yes | No | |
 | glm-5.1 | GLM-5.1 | Yes | No | |
 | glm-5 | GLM-5 | Yes | No | |
 | glm-5-turbo | GLM-5 Turbo | Yes | No | Fast |
