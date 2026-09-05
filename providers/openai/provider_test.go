@@ -337,3 +337,26 @@ func TestSupportsContentPart(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldUseResponsesAPI(t *testing.T) {
+	p := New("test-key")
+
+	tests := []struct {
+		name  string
+		model core.ModelID
+		want  bool
+	}{
+		{name: "gpt-6 astra routes to responses", model: ModelGPT6Astra, want: true},
+		{name: "gpt-5.6 routes to responses", model: ModelGPT56, want: true},
+		{name: "gpt-4o routes to completions", model: ModelGPT4o, want: false},
+		{name: "unknown model falls back to completions", model: core.ModelID("gpt-99-imaginary"), want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := p.shouldUseResponsesAPI(tt.model); got != tt.want {
+				t.Errorf("shouldUseResponsesAPI(%q) = %v, want %v", tt.model, got, tt.want)
+			}
+		})
+	}
+}

@@ -9,7 +9,13 @@ import (
 
 // Model constants for Google Gemini models.
 const (
-	// Gemini 3.6 series (preview, latest)
+	// Gemini 3.8 series (latest)
+	ModelGemini38Flash core.ModelID = "gemini-3.8-flash"
+
+	// Gemini 3.7 series
+	ModelGemini37Flash core.ModelID = "gemini-3.7-flash"
+
+	// Gemini 3.6 series
 	ModelGemini36Flash core.ModelID = "gemini-3.6-flash"
 
 	// Gemini 3.5 series (preview)
@@ -20,11 +26,16 @@ const (
 	ModelGemini31Pro               core.ModelID = "gemini-3.1-pro-preview"
 	ModelGemini31FlashLite         core.ModelID = "gemini-3.1-flash-lite"
 	ModelGemini31FlashImagePreview core.ModelID = "gemini-3.1-flash-image-preview"
+	ModelGemini31FlashImage        core.ModelID = "gemini-3.1-flash-image"
 
 	// Gemini 3 series (preview)
-	ModelGemini3Pro      core.ModelID = "gemini-3-pro-preview"
-	ModelGemini3Flash    core.ModelID = "gemini-3-flash-preview"
-	ModelGemini3ProImage core.ModelID = "gemini-3-pro-image-preview"
+	ModelGemini3Pro   core.ModelID = "gemini-3-pro-preview"
+	ModelGemini3Flash core.ModelID = "gemini-3-flash-preview"
+	// ModelGemini3ProImage retains the preview ID it shipped with so the
+	// exported constant's value stays stable; use ModelGemini3ProImageStable
+	// for the generally available release.
+	ModelGemini3ProImage       core.ModelID = "gemini-3-pro-image-preview"
+	ModelGemini3ProImageStable core.ModelID = "gemini-3-pro-image"
 
 	// Gemini 2.5 series
 	ModelGemini25Flash     core.ModelID = "gemini-2.5-flash"
@@ -38,12 +49,35 @@ const (
 	ModelGemini25FlashImage core.ModelID = "gemini-2.5-flash-image"
 
 	// Embedding models
+	ModelGeminiEmbedding2   core.ModelID = "gemini-embedding-2"
 	ModelGeminiEmbedding001 core.ModelID = "gemini-embedding-001"
 )
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
-	// Gemini 3.6 series (preview, latest)
+	// Gemini 3.8 series (latest)
+	{
+		ID:          ModelGemini38Flash,
+		DisplayName: "Gemini 3.8 Flash",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	// Gemini 3.7 series
+	{
+		ID:          ModelGemini37Flash,
+		DisplayName: "Gemini 3.7 Flash",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	// Gemini 3.6 series
 	{
 		ID:          ModelGemini36Flash,
 		DisplayName: "Gemini 3.6 Flash",
@@ -105,6 +139,15 @@ var models = []core.ModelInfo{
 			core.FeatureImageGeneration,
 		},
 	},
+	{
+		ID:          ModelGemini31FlashImage,
+		DisplayName: "Gemini 3.1 Flash Image (Nano Banana 2)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureImageGeneration,
+		},
+	},
 	// Gemini 3 series (preview)
 	{
 		ID:          ModelGemini3Pro,
@@ -129,6 +172,13 @@ var models = []core.ModelInfo{
 	{
 		ID:          ModelGemini3ProImage,
 		DisplayName: "Gemini 3 Pro Image Preview (Nano Banana Pro)",
+		Capabilities: []core.Feature{
+			core.FeatureImageGeneration,
+		},
+	},
+	{
+		ID:          ModelGemini3ProImageStable,
+		DisplayName: "Gemini 3 Pro Image (Nano Banana Pro)",
 		Capabilities: []core.Feature{
 			core.FeatureImageGeneration,
 		},
@@ -182,6 +232,13 @@ var models = []core.ModelInfo{
 		},
 	},
 	{
+		ID:          ModelGeminiEmbedding2,
+		DisplayName: "Gemini Embedding 2",
+		Capabilities: []core.Feature{
+			core.FeatureEmbeddings,
+		},
+	},
+	{
 		ID:          ModelGeminiEmbedding001,
 		DisplayName: "Gemini Embedding 001",
 		Capabilities: []core.Feature{
@@ -220,7 +277,7 @@ func GetModelInfo(id core.ModelID) *core.ModelInfo {
 }
 
 // isGemini3Model returns true if the model is a Gemini 3 series model.
-// This covers the 3, 3.1, 3.5, and 3.6 preview families, all of which use
+// This covers the 3, 3.1, 3.5, 3.6, 3.7, and 3.8 families, all of which use
 // the thinkingLevel reasoning control rather than Gemini 2.5's thinkingBudget.
 func isGemini3Model(model string) bool {
 	return strings.HasPrefix(model, "gemini-3")

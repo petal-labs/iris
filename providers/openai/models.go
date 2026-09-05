@@ -5,7 +5,10 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for OpenAI models.
 const (
-	// GPT-5.6 series (latest)
+	// GPT-6 series (latest)
+	ModelGPT6Astra core.ModelID = "gpt-6-astra"
+
+	// GPT-5.6 series
 	ModelGPT56      core.ModelID = "gpt-5.6"
 	ModelGPT56Luna  core.ModelID = "gpt-5.6-luna"
 	ModelGPT56Sol   core.ModelID = "gpt-5.6-sol"
@@ -83,7 +86,22 @@ const (
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
-	// GPT-5.6 series (latest - Responses API with reasoning and built-in tools)
+	// GPT-6 series (latest - Responses API with reasoning and built-in tools)
+	{
+		ID:          ModelGPT6Astra,
+		DisplayName: "GPT-6 Astra",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	// GPT-5.6 series (Responses API with reasoning and built-in tools)
 	{
 		ID:          ModelGPT56,
 		DisplayName: "GPT-5.6",
