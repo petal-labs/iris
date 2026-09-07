@@ -100,7 +100,7 @@ jobs:
           cache: true
 
       - name: Run gosec
-        uses: securego/gosec@424fc4cd9c82ea0fd6bee9cd49c2db2c3cc0c93f # v2.22.11
+        uses: securego/gosec@deb54465fea23d19a77f037e11e6589021f8501d # v2.29.0
         with:
           # G101: env var names (not actual secrets)
           # G104: unhandled errors on non-critical JSON encoding
