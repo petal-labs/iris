@@ -474,6 +474,7 @@ func (f *FileKeystore) MigrateToV2() (MigrateResult, error) {
 
 	// Backup old file before replacing it.
 	backupPath := f.path + ".bak"
+	// #nosec G703 -- the CLI caller intentionally chooses the local keystore path.
 	if err := os.WriteFile(backupPath, ciphertext, 0600); err != nil {
 		return MigrateNone, err
 	}
