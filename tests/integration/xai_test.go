@@ -40,7 +40,7 @@ func TestXai_ChatCompletion_MultipleMessages(t *testing.T) {
 	runConformanceMultipleMessages(t, xaiChatConformanceConfig())
 }
 
-func TestXai_ChatCompletion_Grok3(t *testing.T) {
+func TestXai_ChatCompletion_Grok47(t *testing.T) {
 	skipIfNoXaiKey(t)
 
 	apiKey := getXaiKey(t)
@@ -50,8 +50,8 @@ func TestXai_ChatCompletion_Grok3(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	// Test with Grok 3 flagship model.
-	resp, err := client.Chat(xai.ModelGrok3).
+	// Test with Grok 4.7 flagship model.
+	resp, err := client.Chat(xai.ModelGrok47).
 		User("What is the capital of France? Answer in one word.").
 		GetResponse(ctx)
 	if err != nil {
@@ -68,10 +68,10 @@ func TestXai_ChatCompletion_Grok3(t *testing.T) {
 	}
 
 	t.Logf("Response: %s", resp.Output)
-	t.Logf("Model: %s", xai.ModelGrok3)
+	t.Logf("Model: %s", xai.ModelGrok47)
 }
 
-func TestXai_ChatCompletion_GrokCodeFast(t *testing.T) {
+func TestXai_ChatCompletion_GrokBuild01(t *testing.T) {
 	skipIfNoXaiKey(t)
 
 	apiKey := getXaiKey(t)
@@ -81,8 +81,8 @@ func TestXai_ChatCompletion_GrokCodeFast(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Test with Grok Code Fast model.
-	resp, err := client.Chat(xai.ModelGrokCodeFast).
+	// Test with Grok Build model.
+	resp, err := client.Chat(xai.ModelGrokBuild01).
 		User("Write a Python function that adds two numbers. Just the function, no explanation.").
 		GetResponse(ctx)
 	if err != nil {
@@ -100,7 +100,7 @@ func TestXai_ChatCompletion_GrokCodeFast(t *testing.T) {
 	}
 
 	t.Logf("Response: %s", resp.Output)
-	t.Logf("Model: %s", xai.ModelGrokCodeFast)
+	t.Logf("Model: %s", xai.ModelGrokBuild01)
 }
 
 func xaiChatConformanceConfig() chatConformanceConfig {
@@ -112,8 +112,8 @@ func xaiChatConformanceConfig() chatConformanceConfig {
 		newProvider: func(apiKey string) core.Provider {
 			return xai.New(apiKey)
 		},
-		defaultModel:     xai.ModelGrok3Mini,
-		toolModel:        xai.ModelGrok3Mini,
+		defaultModel:     xai.ModelGrok47,
+		toolModel:        xai.ModelGrok47,
 		timeout:          30 * time.Second,
 		responseIDPolicy: conformanceNote,
 		responseIDNote:   "Response ID is empty",

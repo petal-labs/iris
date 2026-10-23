@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** provider model catalogs synced against models.dev (2026-10-23) (#138). Removed deprecated model ids: OpenAI (`dall-e-2`, `dall-e-3`, `gpt-3.5-turbo-16k`, `gpt-3.5-turbo-instruct`, `gpt-5-codex`, `gpt-5-thinking`, `gpt-5.1-codex`, `gpt-5.1-codex-mini`, `gpt-5.1-codex-max`, `gpt-5.2-codex`, `o4-mini-deep-research`), Anthropic (`claude-3-5-haiku-latest`), Gemini (`gemini-2.0-flash-lite`, `gemini-3-pro-preview`), xAI (Grok 3, Grok 4/4.1, Grok 4.20 beta ids, `grok-code-fast`), and Z.ai (`glm-4-32b-0414-128k`, `glm-4.5-x`, `glm-4.5-airx`, `glm-4.6v-flashx`, `glm-for-coding`). Added new flagships: `gpt-6-luna`, `gpt-6-sol`, `gpt-6.1-sol`, `gpt-daybreak-blue-latest`, `gpt-daybreak-red-latest`, `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `gemini-4-argon`, `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-pro-latest`, `gemini-3.1-flash-lite-image`, `grok-4.7`, and `glm-5.3-flashx`. The Azure AI Foundry representative catalog was rebuilt from the current models.dev `azure` entry. Gemini's thinking-level mapping now covers Gemini 4, and `iris init` defaults were bumped to current models.
+
 ## [1.0.0] - 2026-08-28
 
 Iris 1.0.0 is the first stable release. The API surface is now locked, and release

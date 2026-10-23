@@ -33,7 +33,7 @@ func TestGetModelInfoMutationIsolation(t *testing.T) {
 		{"zai", "zai", zai.GetModelInfo, zai.ModelGLM52},
 		{"perplexity", "perplexity", perplexity.GetModelInfo, perplexity.ModelSonar},
 		{"voyageai", "voyageai", voyageai.GetModelInfo, voyageai.ModelVoyage4Large},
-		{"azurefoundry", "azurefoundry", azurefoundry.GetModelInfo, "gpt-4o"},
+		{"azurefoundry", "azurefoundry", azurefoundry.GetModelInfo, "gpt-5.6-terra"},
 	}
 
 	for _, tt := range tests {
@@ -114,7 +114,7 @@ func TestGetModelInfoReturnedPointersAreDistinct(t *testing.T) {
 		{"zai", zai.GetModelInfo, zai.ModelGLM52},
 		{"perplexity", perplexity.GetModelInfo, perplexity.ModelSonar},
 		{"voyageai", voyageai.GetModelInfo, voyageai.ModelVoyage4Large},
-		{"azurefoundry", azurefoundry.GetModelInfo, "gpt-4o"},
+		{"azurefoundry", azurefoundry.GetModelInfo, "gpt-5.6-terra"},
 	}
 
 	for _, tt := range tests {

@@ -5,13 +5,14 @@ import "github.com/petal-labs/iris/core"
 // Model constants for Z.ai GLM models.
 const (
 	// GLM-5 series (latest)
-	ModelGLM53      core.ModelID = "glm-5.3"
-	ModelGLM53Flash core.ModelID = "glm-5.3-flash"
-	ModelGLM52      core.ModelID = "glm-5.2"
-	ModelGLM51      core.ModelID = "glm-5.1"
-	ModelGLM5       core.ModelID = "glm-5"
-	ModelGLM5Turbo  core.ModelID = "glm-5-turbo"
-	ModelGLM5VTurbo core.ModelID = "glm-5v-turbo"
+	ModelGLM53       core.ModelID = "glm-5.3"
+	ModelGLM53Flash  core.ModelID = "glm-5.3-flash"
+	ModelGLM53FlashX core.ModelID = "glm-5.3-flashx"
+	ModelGLM52       core.ModelID = "glm-5.2"
+	ModelGLM51       core.ModelID = "glm-5.1"
+	ModelGLM5        core.ModelID = "glm-5"
+	ModelGLM5Turbo   core.ModelID = "glm-5-turbo"
+	ModelGLM5VTurbo  core.ModelID = "glm-5v-turbo"
 
 	// GLM-4.7 series
 	ModelGLM47       core.ModelID = "glm-4.7"
@@ -19,24 +20,15 @@ const (
 	ModelGLM47FlashX core.ModelID = "glm-4.7-flashx"
 
 	// GLM-4.6 series
-	ModelGLM46        core.ModelID = "glm-4.6"
-	ModelGLM46V       core.ModelID = "glm-4.6v"
-	ModelGLM46VFlash  core.ModelID = "glm-4.6v-flash"
-	ModelGLM46VFlashX core.ModelID = "glm-4.6v-flashx"
+	ModelGLM46       core.ModelID = "glm-4.6"
+	ModelGLM46V      core.ModelID = "glm-4.6v"
+	ModelGLM46VFlash core.ModelID = "glm-4.6v-flash"
 
 	// GLM-4.5 series
 	ModelGLM45      core.ModelID = "glm-4.5"
 	ModelGLM45V     core.ModelID = "glm-4.5v"
-	ModelGLM45X     core.ModelID = "glm-4.5-x"
 	ModelGLM45Air   core.ModelID = "glm-4.5-air"
-	ModelGLM45AirX  core.ModelID = "glm-4.5-airx"
 	ModelGLM45Flash core.ModelID = "glm-4.5-flash"
-
-	// GLM Specialized
-	ModelGLMForCoding core.ModelID = "glm-for-coding"
-
-	// GLM-4 32B
-	ModelGLM4_32B core.ModelID = "glm-4-32b-0414-128k"
 )
 
 // models is the static list of supported models.
@@ -56,6 +48,17 @@ var models = []core.ModelInfo{
 	{
 		ID:          ModelGLM53Flash,
 		DisplayName: "GLM-5.3-Flash",
+		APIEndpoint: core.APIEndpointCompletions,
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGLM53FlashX,
+		DisplayName: "GLM-5.3-FlashX",
 		APIEndpoint: core.APIEndpointCompletions,
 		Capabilities: []core.Feature{
 			core.FeatureChat,
@@ -184,16 +187,6 @@ var models = []core.ModelInfo{
 			core.FeatureToolCalling,
 		},
 	},
-	{
-		ID:          ModelGLM46VFlashX,
-		DisplayName: "GLM-4.6V FlashX",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
 	// GLM-4.5 series
 	{
 		ID:          ModelGLM45,
@@ -218,16 +211,6 @@ var models = []core.ModelInfo{
 		},
 	},
 	{
-		ID:          ModelGLM45X,
-		DisplayName: "GLM-4.5-X",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
-	{
 		ID:          ModelGLM45Air,
 		DisplayName: "GLM-4.5 Air",
 		APIEndpoint: core.APIEndpointCompletions,
@@ -238,41 +221,8 @@ var models = []core.ModelInfo{
 		},
 	},
 	{
-		ID:          ModelGLM45AirX,
-		DisplayName: "GLM-4.5 AirX",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
-	{
 		ID:          ModelGLM45Flash,
 		DisplayName: "GLM-4.5 Flash",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
-	// GLM Specialized
-	{
-		ID:          ModelGLMForCoding,
-		DisplayName: "GLM for Coding",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
-		},
-	},
-	// GLM-4 32B
-	{
-		ID:          ModelGLM4_32B,
-		DisplayName: "GLM-4 32B",
 		APIEndpoint: core.APIEndpointCompletions,
 		Capabilities: []core.Feature{
 			core.FeatureChat,

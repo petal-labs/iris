@@ -71,8 +71,8 @@ func TestBuildThinkingConfigGemini3(t *testing.T) {
 		{string(ModelGemini3Flash), core.ReasoningEffortLow, "low"},
 		{string(ModelGemini3Flash), core.ReasoningEffortMedium, "medium"},
 		{string(ModelGemini3Flash), core.ReasoningEffortHigh, "high"},
-		{string(ModelGemini3Pro), core.ReasoningEffortNone, "low"}, // Pro can't disable
-		{string(ModelGemini3Pro), core.ReasoningEffortHigh, "high"},
+		{string(ModelGemini4Argon), core.ReasoningEffortNone, "minimal"},
+		{string(ModelGemini4Argon), core.ReasoningEffortHigh, "high"},
 	}
 
 	for _, tt := range tests {

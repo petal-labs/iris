@@ -7,15 +7,15 @@ import (
 )
 
 func TestGetModelInfo(t *testing.T) {
-	info := GetModelInfo("gpt-4o")
+	info := GetModelInfo("gpt-5.6-terra")
 	if info == nil {
-		t.Fatal("GetModelInfo(gpt-4o) returned nil")
+		t.Fatal("GetModelInfo(gpt-5.6-terra) returned nil")
 	}
-	if info.ID != "gpt-4o" {
-		t.Errorf("ID = %q, want gpt-4o", info.ID)
+	if info.ID != "gpt-5.6-terra" {
+		t.Errorf("ID = %q, want gpt-5.6-terra", info.ID)
 	}
-	if info.DisplayName != "GPT-4o" {
-		t.Errorf("DisplayName = %q, want GPT-4o", info.DisplayName)
+	if info.DisplayName != "GPT-5.6 Terra" {
+		t.Errorf("DisplayName = %q, want GPT-5.6 Terra", info.DisplayName)
 	}
 }
 
@@ -94,8 +94,8 @@ func TestListEmbeddingModels(t *testing.T) {
 	if !found["text-embedding-3-small"] {
 		t.Error("ListEmbeddingModels() missing text-embedding-3-small")
 	}
-	if !found["Cohere-embed-v3-english"] {
-		t.Error("ListEmbeddingModels() missing Cohere-embed-v3-english")
+	if !found["cohere-embed-v3-english"] {
+		t.Error("ListEmbeddingModels() missing cohere-embed-v3-english")
 	}
 }
 
@@ -132,14 +132,11 @@ func TestListReasoningModels(t *testing.T) {
 		found[m.ID] = true
 	}
 
-	if !found["o1"] {
-		t.Error("ListReasoningModels() missing o1")
+	if !found["o3"] {
+		t.Error("ListReasoningModels() missing o3")
 	}
-	if !found["o1-mini"] {
-		t.Error("ListReasoningModels() missing o1-mini")
-	}
-	if !found["DeepSeek-R1"] {
-		t.Error("ListReasoningModels() missing DeepSeek-R1")
+	if !found["deepseek-v4-pro"] {
+		t.Error("ListReasoningModels() missing deepseek-v4-pro")
 	}
 }
 
@@ -163,14 +160,14 @@ func TestSupportsCapability(t *testing.T) {
 		capability core.Feature
 		want       bool
 	}{
-		{"gpt-4o", core.FeatureChat, true},
-		{"gpt-4o", core.FeatureToolCalling, true},
-		{"gpt-4o", core.FeatureStructuredOutput, true},
-		{"gpt-4o", core.FeatureEmbeddings, false},
+		{"gpt-5.6-terra", core.FeatureChat, true},
+		{"gpt-5.6-terra", core.FeatureToolCalling, true},
+		{"gpt-5.6-terra", core.FeatureStructuredOutput, true},
+		{"gpt-5.6-terra", core.FeatureEmbeddings, false},
 		{"text-embedding-3-large", core.FeatureEmbeddings, true},
 		{"text-embedding-3-large", core.FeatureChat, false},
-		{"o1", core.FeatureReasoning, true},
-		{"o1", core.FeatureToolCalling, false},
+		{"o3", core.FeatureReasoning, true},
+		{"phi-4", core.FeatureToolCalling, false},
 		{"unknown-model", core.FeatureChat, false},
 	}
 
@@ -192,9 +189,9 @@ func TestIsEmbeddingModel(t *testing.T) {
 		{"text-embedding-3-large", true},
 		{"text-embedding-3-small", true},
 		{"text-embedding-ada-002", true},
-		{"Cohere-embed-v3-english", true},
-		{"gpt-4o", false},
-		{"o1", false},
+		{"cohere-embed-v3-english", true},
+		{"gpt-5.6-terra", false},
+		{"o3", false},
 		{"unknown", false},
 	}
 
@@ -213,10 +210,10 @@ func TestIsChatModel(t *testing.T) {
 		model core.ModelID
 		want  bool
 	}{
-		{"gpt-4o", true},
-		{"gpt-4o-mini", true},
-		{"Meta-Llama-3.1-70B-Instruct", true},
-		{"Mistral-Large-2411", true},
+		{"gpt-5.6-terra", true},
+		{"gpt-5.5", true},
+		{"llama-3.3-70b-instruct", true},
+		{"mistral-medium-2505", true},
 		{"text-embedding-3-large", false},
 		{"unknown", false},
 	}
@@ -236,13 +233,10 @@ func TestIsReasoningModel(t *testing.T) {
 		model core.ModelID
 		want  bool
 	}{
-		{"o1", true},
-		{"o1-mini", true},
-		{"o1-preview", true},
-		{"o3-mini", true},
-		{"DeepSeek-V3", true},
-		{"DeepSeek-R1", true},
-		{"gpt-4o", false},
+		{"o3", true},
+		{"deepseek-v4-pro", true},
+		{"phi-4-reasoning", true},
+		{"gpt-5.6-terra", true},
 		{"text-embedding-3-large", false},
 		{"unknown", false},
 	}
@@ -262,14 +256,14 @@ func TestSupportsToolCalling(t *testing.T) {
 		model core.ModelID
 		want  bool
 	}{
-		{"gpt-4o", true},
-		{"gpt-4o-mini", true},
-		{"gpt-4-turbo", true},
-		{"Meta-Llama-3.1-405B-Instruct", true},
-		{"Cohere-command-r-plus", true},
-		{"o1", false}, // Reasoning models typically don't support tool calling
+		{"gpt-5.6-terra", true},
+		{"gpt-5.5", true},
+		{"llama-3.3-70b-instruct", true},
+		{"cohere-command-a", true},
+		{"kimi-k2.6", true},
+		{"deepseek-v4-pro", false},
 		{"text-embedding-3-large", false},
-		{"Phi-4", false},
+		{"phi-4", false},
 		{"unknown", false},
 	}
 
@@ -288,11 +282,11 @@ func TestSupportsStructuredOutput(t *testing.T) {
 		model core.ModelID
 		want  bool
 	}{
-		{"gpt-4o", true},
-		{"gpt-4o-mini", true},
-		{"gpt-4-turbo", true},
-		{"gpt-4", false}, // Older GPT-4 doesn't have structured output
-		{"gpt-35-turbo", false},
+		{"gpt-5.6-terra", true},
+		{"gpt-5.5", true},
+		{"kimi-k2.6", true},
+		{"o3", false}, // o3 doesn't have structured output
+		{"mistral-medium-2505", false},
 		{"text-embedding-3-large", false},
 		{"unknown", false},
 	}
@@ -342,34 +336,30 @@ func TestNoDuplicateModelIDs(t *testing.T) {
 func TestKnownModelsExist(t *testing.T) {
 	knownModels := []core.ModelID{
 		// OpenAI
-		"gpt-4o",
-		"gpt-4o-mini",
-		"gpt-4-turbo",
-		"gpt-4",
-		"gpt-35-turbo",
-		"o1",
-		"o1-mini",
-		"o3-mini",
+		"gpt-5.6-terra",
+		"gpt-5.5",
+		"gpt-5",
+		"o3",
 		// Embeddings
 		"text-embedding-3-large",
 		"text-embedding-3-small",
 		"text-embedding-ada-002",
 		// Llama
-		"Meta-Llama-3.1-405B-Instruct",
-		"Meta-Llama-3.1-70B-Instruct",
-		"Llama-3.3-70B-Instruct",
+		"llama-3.3-70b-instruct",
+		"llama-4-scout-17b-16e-instruct",
+		"llama-4-maverick-17b-128e-instruct-fp8",
 		// Mistral
-		"Mistral-Large-2411",
-		"Mistral-Small-2409",
+		"mistral-medium-2505",
+		"mistral-small-2503",
 		// Cohere
-		"Cohere-command-r-plus",
-		"Cohere-embed-v3-english",
+		"cohere-command-a",
+		"cohere-embed-v3-english",
 		// DeepSeek
-		"DeepSeek-V3",
-		"DeepSeek-R1",
+		"deepseek-v3.2",
+		"deepseek-v4-pro",
 		// Phi
-		"Phi-4",
-		"Phi-3.5-mini-instruct",
+		"phi-4",
+		"phi-4-mini",
 	}
 
 	for _, id := range knownModels {

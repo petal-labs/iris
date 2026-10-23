@@ -79,8 +79,7 @@ resp, _ := provider.EditImage(ctx, &core.ImageEditRequest{
 | `gpt-image-1.5` | GPT Image 1.5 |
 | `gpt-image-1` | Standard GPT Image |
 | `gpt-image-1-mini` | Fast, cost-effective |
-| `dall-e-3` | High quality (deprecated May 2026) |
-| `dall-e-2` | Lower cost, inpainting (deprecated May 2026) |
+| `chatgpt-image-latest` | ChatGPT Image model |
 
 ---
 

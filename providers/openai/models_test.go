@@ -9,11 +9,10 @@ import (
 
 func TestImageModels(t *testing.T) {
 	imageModels := []core.ModelID{
+		ModelGPTImage2,
 		ModelGPTImage15,
 		ModelGPTImage1,
 		ModelGPTImage1Mini,
-		ModelDALLE3,
-		ModelDALLE2,
 	}
 
 	for _, id := range imageModels {

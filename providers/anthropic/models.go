@@ -5,7 +5,14 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for Anthropic Claude models.
 const (
-	// Claude 5 series (latest)
+	// Claude 5.5 series (latest)
+	ModelClaudeOpus55           core.ModelID = "claude-opus-5-5"
+	ModelClaudeOpus55Thinking   core.ModelID = "claude-opus-5-5-thinking"
+	ModelClaudeSonnet55         core.ModelID = "claude-sonnet-5-5"
+	ModelClaudeSonnet55Thinking core.ModelID = "claude-sonnet-5-5-thinking"
+	ModelClaudeHaiku55          core.ModelID = "claude-haiku-5-5"
+
+	// Claude 5 series
 	ModelClaudeOpus5           core.ModelID = "claude-opus-5"
 	ModelClaudeOpus5Thinking   core.ModelID = "claude-opus-5-thinking"
 	ModelClaudeSonnet5         core.ModelID = "claude-sonnet-5"
@@ -32,14 +39,62 @@ const (
 	ModelClaudeHaiku45          core.ModelID = "claude-haiku-4-5"
 	ModelClaudeOpus45           core.ModelID = "claude-opus-4-5"
 	ModelClaudeOpus45Thinking   core.ModelID = "claude-opus-4-5-thinking"
-
-	// Claude 3.5 series (legacy)
-	ModelClaude35HaikuLatest core.ModelID = "claude-3-5-haiku-latest"
 )
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
-	// Claude 5 series (latest)
+	// Claude 5.5 series (latest)
+	{
+		ID:          ModelClaudeOpus55,
+		DisplayName: "Claude Opus 5.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeOpus55Thinking,
+		DisplayName: "Claude Opus 5.5 (Thinking)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeSonnet55,
+		DisplayName: "Claude Sonnet 5.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeSonnet55Thinking,
+		DisplayName: "Claude Sonnet 5.5 (Thinking)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelClaudeHaiku55,
+		DisplayName: "Claude Haiku 5.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	// Claude 5 series
 	{
 		ID:          ModelClaudeOpus5,
 		DisplayName: "Claude Opus 5",
@@ -222,16 +277,6 @@ var models = []core.ModelInfo{
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
 			core.FeatureReasoning,
-		},
-	},
-	// Claude 3.5 series (legacy)
-	{
-		ID:          ModelClaude35HaikuLatest,
-		DisplayName: "Claude 3.5 Haiku",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
 		},
 	},
 }

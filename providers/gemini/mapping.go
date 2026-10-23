@@ -254,8 +254,8 @@ func buildThinkingConfig(model string, effort core.ReasoningEffort) *geminiThink
 		IncludeThoughts: true,
 	}
 
-	if isGemini3Model(model) {
-		// Gemini 3 uses thinkingLevel
+	if usesThinkingLevel(model) {
+		// Gemini 3+ uses thinkingLevel
 		cfg.ThinkingLevel = mapThinkingLevel(model, effort)
 	} else {
 		// Gemini 2.5 uses thinkingBudget
@@ -268,11 +268,6 @@ func buildThinkingConfig(model string, effort core.ReasoningEffort) *geminiThink
 
 // mapThinkingLevel maps ReasoningEffort to Gemini 3 thinkingLevel.
 func mapThinkingLevel(model string, effort core.ReasoningEffort) string {
-	// Gemini 3 Pro cannot disable thinking
-	if model == string(ModelGemini3Pro) && effort == core.ReasoningEffortNone {
-		return "low"
-	}
-
 	switch effort {
 	case core.ReasoningEffortNone:
 		return "minimal"

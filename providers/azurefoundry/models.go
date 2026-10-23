@@ -8,152 +8,708 @@ import "github.com/petal-labs/iris/core"
 // Azure OpenAI Service and the Model Inference API.
 var models = []core.ModelInfo{
 	// -------------------------------------------------------------------------
+	// Anthropic Claude Models (via Model Inference API)
+	// -------------------------------------------------------------------------
+	{
+		ID:          "claude-fable-5",
+		DisplayName: "Claude Fable 5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-fable-5-1",
+		DisplayName: "Claude Fable 5.1",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-haiku-4-5",
+		DisplayName: "Claude Haiku 4.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-haiku-5-5",
+		DisplayName: "Claude Haiku 5.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-mythos-5",
+		DisplayName: "Claude Mythos 5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-opus-4-5",
+		DisplayName: "Claude Opus 4.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-opus-4-6",
+		DisplayName: "Claude Opus 4.6",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-opus-4-7",
+		DisplayName: "Claude Opus 4.7",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-opus-4-8",
+		DisplayName: "Claude Opus 4.8",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-opus-5",
+		DisplayName: "Claude Opus 5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-opus-5-5",
+		DisplayName: "Claude Opus 5.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-sonnet-4-5",
+		DisplayName: "Claude Sonnet 4.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-sonnet-4-6",
+		DisplayName: "Claude Sonnet 4.6",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-sonnet-5",
+		DisplayName: "Claude Sonnet 5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "claude-sonnet-5-5",
+		DisplayName: "Claude Sonnet 5.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	// -------------------------------------------------------------------------
+	// Mistral Models (via Model Inference API)
+	// -------------------------------------------------------------------------
+	{
+		ID:          "codestral-2501",
+		DisplayName: "Codestral 25.01",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+		},
+	},
+	{
+		ID:          "ministral-3b",
+		DisplayName: "Ministral 3B",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+		},
+	},
+	{
+		ID:          "mistral-medium-2505",
+		DisplayName: "Mistral Medium 3",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+		},
+	},
+	{
+		ID:          "mistral-small-2503",
+		DisplayName: "Mistral Small 3.1",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+		},
+	},
+	// -------------------------------------------------------------------------
+	// Cohere Models (via Model Inference API)
+	// -------------------------------------------------------------------------
+	{
+		ID:          "cohere-command-a",
+		DisplayName: "Command A",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "cohere-embed-v-4-0",
+		DisplayName: "Embed v4",
+		Capabilities: []core.Feature{
+			core.FeatureEmbeddings,
+		},
+	},
+	{
+		ID:          "cohere-embed-v3-english",
+		DisplayName: "Embed v3 English",
+		Capabilities: []core.Feature{
+			core.FeatureEmbeddings,
+		},
+	},
+	{
+		ID:          "cohere-embed-v3-multilingual",
+		DisplayName: "Embed v3 Multilingual",
+		Capabilities: []core.Feature{
+			core.FeatureEmbeddings,
+		},
+	},
+	// -------------------------------------------------------------------------
+	// DeepSeek Models (via Model Inference API)
+	// -------------------------------------------------------------------------
+	{
+		ID:          "deepseek-v3.2",
+		DisplayName: "DeepSeek-V3.2",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "deepseek-v3.2-speciale",
+		DisplayName: "DeepSeek-V3.2-Speciale",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "deepseek-v4-flash",
+		DisplayName: "DeepSeek-V4-Flash",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "deepseek-v4-pro",
+		DisplayName: "DeepSeek-V4-Pro",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "deepseek-v4.1-flash",
+		DisplayName: "DeepSeek-V4.1-Flash",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	// -------------------------------------------------------------------------
 	// OpenAI Models (via Azure OpenAI Service)
 	// -------------------------------------------------------------------------
-
-	// GPT-4o family
 	{
-		ID:          "gpt-4o",
-		DisplayName: "GPT-4o",
+		ID:          "gpt-5",
+		DisplayName: "GPT-5",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "gpt-5-codex",
+		DisplayName: "GPT-5-Codex",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "gpt-5-mini",
+		DisplayName: "GPT-5 Mini",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "gpt-5-nano",
+		DisplayName: "GPT-5 Nano",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "gpt-5-pro",
+		DisplayName: "GPT-5 Pro",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
 			core.FeatureStructuredOutput,
 		},
 	},
 	{
-		ID:          "gpt-4o-mini",
-		DisplayName: "GPT-4o Mini",
+		ID:          "gpt-5.1",
+		DisplayName: "GPT-5.1",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
-			core.FeatureStructuredOutput,
-		},
-	},
-
-	// GPT-4 family
-	{
-		ID:          "gpt-4-turbo",
-		DisplayName: "GPT-4 Turbo",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
+			core.FeatureReasoning,
 			core.FeatureStructuredOutput,
 		},
 	},
 	{
-		ID:          "gpt-4",
-		DisplayName: "GPT-4",
+		ID:          "gpt-5.1-codex",
+		DisplayName: "GPT-5.1 Codex",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
 		},
 	},
 	{
-		ID:          "gpt-4-32k",
-		DisplayName: "GPT-4 32K",
+		ID:          "gpt-5.1-codex-max",
+		DisplayName: "GPT-5.1 Codex Max",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
 		},
 	},
-
-	// GPT-3.5 family
 	{
-		ID:          "gpt-35-turbo",
-		DisplayName: "GPT-3.5 Turbo",
+		ID:          "gpt-5.1-codex-mini",
+		DisplayName: "GPT-5.1 Codex Mini",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
 		},
 	},
 	{
-		ID:          "gpt-35-turbo-16k",
-		DisplayName: "GPT-3.5 Turbo 16K",
+		ID:          "gpt-5.2",
+		DisplayName: "GPT-5.2",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
 		},
 	},
-
-	// Reasoning models (o1/o3 series)
 	{
-		ID:          "o1",
-		DisplayName: "o1",
+		ID:          "gpt-5.2-codex",
+		DisplayName: "GPT-5.2 Codex",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-5.3-codex",
+		DisplayName: "GPT-5.3 Codex",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-5.4",
+		DisplayName: "GPT-5.4",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-5.4-mini",
+		DisplayName: "GPT-5.4 Mini",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-5.4-nano",
+		DisplayName: "GPT-5.4 Nano",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-5.4-pro",
+		DisplayName: "GPT-5.4 Pro",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
 			core.FeatureReasoning,
 		},
 	},
 	{
-		ID:          "o1-mini",
-		DisplayName: "o1 Mini",
+		ID:          "gpt-5.5",
+		DisplayName: "GPT-5.5",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
 			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
 		},
 	},
 	{
-		ID:          "o1-preview",
-		DisplayName: "o1 Preview",
+		ID:          "gpt-5.6-luna",
+		DisplayName: "GPT-5.6 Luna",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
 			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
 		},
 	},
 	{
-		ID:          "o3-mini",
-		DisplayName: "o3 Mini",
+		ID:          "gpt-5.6-sol",
+		DisplayName: "GPT-5.6 Sol",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-5.6-terra",
+		DisplayName: "GPT-5.6 Terra",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-6-astra",
+		DisplayName: "GPT-6 Astra",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-6-luna",
+		DisplayName: "GPT-6 Luna",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-6-sol",
+		DisplayName: "GPT-6 Sol",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-6.1-sol",
+		DisplayName: "GPT-6.1 Sol",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-chat-latest",
+		DisplayName: "GPT Chat Latest",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "o3",
+		DisplayName: "o3",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
 			core.FeatureReasoning,
 		},
 	},
-
-	// -------------------------------------------------------------------------
-	// OpenAI Embedding Models
-	// -------------------------------------------------------------------------
 	{
 		ID:          "text-embedding-3-large",
-		DisplayName: "Text Embedding 3 Large",
+		DisplayName: "text-embedding-3-large",
 		Capabilities: []core.Feature{
 			core.FeatureEmbeddings,
 		},
 	},
 	{
 		ID:          "text-embedding-3-small",
-		DisplayName: "Text Embedding 3 Small",
+		DisplayName: "text-embedding-3-small",
 		Capabilities: []core.Feature{
 			core.FeatureEmbeddings,
 		},
 	},
 	{
 		ID:          "text-embedding-ada-002",
-		DisplayName: "Text Embedding Ada 002",
+		DisplayName: "text-embedding-ada-002",
 		Capabilities: []core.Feature{
 			core.FeatureEmbeddings,
 		},
 	},
-
+	// -------------------------------------------------------------------------
+	// xAI Grok Models (via Model Inference API)
+	// -------------------------------------------------------------------------
+	{
+		ID:          "grok-4-1-fast-non-reasoning",
+		DisplayName: "Grok 4.1 Fast (Non-Reasoning)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+		},
+	},
+	{
+		ID:          "grok-4-1-fast-reasoning",
+		DisplayName: "Grok 4.1 Fast (Reasoning)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "grok-4-20-non-reasoning",
+		DisplayName: "Grok 4.20 (Non-Reasoning)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+		},
+	},
+	{
+		ID:          "grok-4-20-reasoning",
+		DisplayName: "Grok 4.20 (Reasoning)",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "grok-4.6",
+		DisplayName: "Grok 4.6",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "grok-4.7",
+		DisplayName: "Grok 4.7",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	// -------------------------------------------------------------------------
+	// Moonshot AI Kimi Models (via Model Inference API)
+	// -------------------------------------------------------------------------
+	{
+		ID:          "kimi-k2.5",
+		DisplayName: "Kimi K2.5",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "kimi-k2.6",
+		DisplayName: "Kimi K2.6",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "kimi-k2.7-code",
+		DisplayName: "Kimi K2.7 Code",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
 	// -------------------------------------------------------------------------
 	// Meta Llama Models (via Model Inference API)
 	// -------------------------------------------------------------------------
-
-	// Llama 3.1 family
 	{
-		ID:          "Meta-Llama-3.1-405B-Instruct",
-		DisplayName: "Llama 3.1 405B Instruct",
+		ID:          "llama-3.3-70b-instruct",
+		DisplayName: "Llama-3.3-70B-Instruct",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
@@ -161,8 +717,8 @@ var models = []core.ModelInfo{
 		},
 	},
 	{
-		ID:          "Meta-Llama-3.1-70B-Instruct",
-		DisplayName: "Llama 3.1 70B Instruct",
+		ID:          "llama-4-maverick-17b-128e-instruct-fp8",
+		DisplayName: "Llama 4 Maverick 17B 128E Instruct FP8",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
@@ -170,186 +726,31 @@ var models = []core.ModelInfo{
 		},
 	},
 	{
-		ID:          "Meta-Llama-3.1-8B-Instruct",
-		DisplayName: "Llama 3.1 8B Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-
-	// Llama 3.2 family
-	{
-		ID:          "Llama-3.2-90B-Vision-Instruct",
-		DisplayName: "Llama 3.2 90B Vision Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Llama-3.2-11B-Vision-Instruct",
-		DisplayName: "Llama 3.2 11B Vision Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Llama-3.2-3B-Instruct",
-		DisplayName: "Llama 3.2 3B Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Llama-3.2-1B-Instruct",
-		DisplayName: "Llama 3.2 1B Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-
-	// Llama 3.3 family
-	{
-		ID:          "Llama-3.3-70B-Instruct",
-		DisplayName: "Llama 3.3 70B Instruct",
+		ID:          "llama-4-scout-17b-16e-instruct",
+		DisplayName: "Llama 4 Scout 17B 16E Instruct",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
 		},
 	},
-
 	// -------------------------------------------------------------------------
-	// Mistral Models (via Model Inference API)
+	// Model Router
 	// -------------------------------------------------------------------------
 	{
-		ID:          "Mistral-Large-2411",
-		DisplayName: "Mistral Large (Nov 2024)",
+		ID:          "model-router",
+		DisplayName: "Model Router",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
 		},
 	},
-	{
-		ID:          "Mistral-Large-2407",
-		DisplayName: "Mistral Large (Jul 2024)",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
-	{
-		ID:          "Mistral-Small-2409",
-		DisplayName: "Mistral Small (Sep 2024)",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Mistral-Nemo-2407",
-		DisplayName: "Mistral Nemo (Jul 2024)",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Ministral-3B-2410",
-		DisplayName: "Ministral 3B (Oct 2024)",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-
-	// -------------------------------------------------------------------------
-	// Cohere Models (via Model Inference API)
-	// -------------------------------------------------------------------------
-	{
-		ID:          "Cohere-command-r-plus",
-		DisplayName: "Cohere Command R+",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
-	{
-		ID:          "Cohere-command-r",
-		DisplayName: "Cohere Command R",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Cohere-command-r-08-2024",
-		DisplayName: "Cohere Command R (Aug 2024)",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Cohere-command-r-plus-08-2024",
-		DisplayName: "Cohere Command R+ (Aug 2024)",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
-
-	// Cohere embedding models
-	{
-		ID:          "Cohere-embed-v3-english",
-		DisplayName: "Cohere Embed v3 English",
-		Capabilities: []core.Feature{
-			core.FeatureEmbeddings,
-		},
-	},
-	{
-		ID:          "Cohere-embed-v3-multilingual",
-		DisplayName: "Cohere Embed v3 Multilingual",
-		Capabilities: []core.Feature{
-			core.FeatureEmbeddings,
-		},
-	},
-
-	// -------------------------------------------------------------------------
-	// DeepSeek Models (via Model Inference API)
-	// -------------------------------------------------------------------------
-	{
-		ID:          "DeepSeek-V3",
-		DisplayName: "DeepSeek V3",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureReasoning,
-		},
-	},
-	{
-		ID:          "DeepSeek-R1",
-		DisplayName: "DeepSeek R1",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureReasoning,
-		},
-	},
-
 	// -------------------------------------------------------------------------
 	// Microsoft Phi Models (via Model Inference API)
 	// -------------------------------------------------------------------------
 	{
-		ID:          "Phi-4",
+		ID:          "phi-4",
 		DisplayName: "Phi-4",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
@@ -357,127 +758,48 @@ var models = []core.ModelInfo{
 		},
 	},
 	{
-		ID:          "Phi-3.5-mini-instruct",
-		DisplayName: "Phi-3.5 Mini Instruct",
+		ID:          "phi-4-mini",
+		DisplayName: "Phi-4-mini",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+		},
+	},
+	{
+		ID:          "phi-4-mini-reasoning",
+		DisplayName: "Phi-4-mini-reasoning",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          "phi-4-multimodal",
+		DisplayName: "Phi-4-multimodal",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 		},
 	},
 	{
-		ID:          "Phi-3.5-MoE-instruct",
-		DisplayName: "Phi-3.5 MoE Instruct",
+		ID:          "phi-4-reasoning",
+		DisplayName: "Phi-4-reasoning",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
+			core.FeatureReasoning,
 		},
 	},
 	{
-		ID:          "Phi-3.5-vision-instruct",
-		DisplayName: "Phi-3.5 Vision Instruct",
+		ID:          "phi-4-reasoning-plus",
+		DisplayName: "Phi-4-reasoning-plus",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Phi-3-mini-4k-instruct",
-		DisplayName: "Phi-3 Mini 4K Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Phi-3-mini-128k-instruct",
-		DisplayName: "Phi-3 Mini 128K Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Phi-3-small-8k-instruct",
-		DisplayName: "Phi-3 Small 8K Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Phi-3-small-128k-instruct",
-		DisplayName: "Phi-3 Small 128K Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Phi-3-medium-4k-instruct",
-		DisplayName: "Phi-3 Medium 4K Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "Phi-3-medium-128k-instruct",
-		DisplayName: "Phi-3 Medium 128K Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-
-	// -------------------------------------------------------------------------
-	// AI21 Labs Models (via Model Inference API)
-	// -------------------------------------------------------------------------
-	{
-		ID:          "AI21-Jamba-1.5-Large",
-		DisplayName: "AI21 Jamba 1.5 Large",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "AI21-Jamba-1.5-Mini",
-		DisplayName: "AI21 Jamba 1.5 Mini",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-	{
-		ID:          "jamba-instruct",
-		DisplayName: "AI21 Jamba Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-
-	// -------------------------------------------------------------------------
-	// JAIS Models (via Model Inference API) - Arabic/English bilingual
-	// -------------------------------------------------------------------------
-	{
-		ID:          "jais-30b-chat",
-		DisplayName: "JAIS 30B Chat",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-		},
-	},
-
-	// -------------------------------------------------------------------------
-	// NVIDIA Models (via Model Inference API)
-	// -------------------------------------------------------------------------
-	{
-		ID:          "Nemotron-4-340B-Instruct",
-		DisplayName: "Nemotron 4 340B Instruct",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
+			core.FeatureReasoning,
 		},
 	},
 }
