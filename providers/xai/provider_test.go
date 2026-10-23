@@ -33,12 +33,12 @@ func TestModels(t *testing.T) {
 		modelIDs[m.ID] = true
 	}
 
-	if !modelIDs[ModelGrok4] {
-		t.Error("Models() missing grok-4")
+	if !modelIDs[ModelGrok47] {
+		t.Error("Models() missing grok-4.7")
 	}
 
-	if !modelIDs[ModelGrok41FastNonReasoning] {
-		t.Error("Models() missing grok-4-1-fast-non-reasoning")
+	if !modelIDs[ModelGrok46] {
+		t.Error("Models() missing grok-4.6")
 	}
 }
 
@@ -151,12 +151,12 @@ func TestBuildHeadersWithCustomHeaders(t *testing.T) {
 }
 
 func TestGetModelInfo(t *testing.T) {
-	info := GetModelInfo(ModelGrok4)
+	info := GetModelInfo(ModelGrok47)
 	if info == nil {
-		t.Fatal("GetModelInfo(ModelGrok4) returned nil")
+		t.Fatal("GetModelInfo(ModelGrok47) returned nil")
 	}
-	if info.ID != ModelGrok4 {
-		t.Errorf("ID = %q, want %q", info.ID, ModelGrok4)
+	if info.ID != ModelGrok47 {
+		t.Errorf("ID = %q, want %q", info.ID, ModelGrok47)
 	}
 }
 

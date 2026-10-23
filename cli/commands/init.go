@@ -211,21 +211,21 @@ func envVarForProvider(provider string) string {
 func defaultModel(provider string) string {
 	switch provider {
 	case "openai":
-		return "gpt-4o"
+		return "gpt-5.6"
 	case "anthropic":
-		return "claude-sonnet-4-5"
+		return "claude-sonnet-5-5"
 	case "gemini":
-		return "gemini-2.5-flash"
+		return "gemini-3.8-flash"
 	case "xai":
-		return "grok-4-1-fast-non-reasoning"
+		return "grok-4.7"
 	case "zai":
-		return "glm-4.7-flash"
+		return "glm-5.3-flash"
 	case "ollama":
 		return "llama3.2"
 	case "perplexity":
 		return "sonar"
 	case "huggingface":
-		return "meta-llama/Llama-3-8B-Instruct"
+		return "meta-llama/Llama-3.1-8B-Instruct"
 	case "azurefoundry":
 		return "gpt-4o"
 	case "voyageai":

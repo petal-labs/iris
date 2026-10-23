@@ -14,12 +14,6 @@ func mapImageGenerateRequest(req *core.ImageGenerateRequest) *openAIImageRequest
 		N:      req.N,
 	}
 
-	// response_format is only for DALL-E models, not gpt-image models
-	model := string(req.Model)
-	if model == "dall-e-2" || model == "dall-e-3" {
-		r.ResponseFormat = "b64_json"
-	}
-
 	if req.Size != "" {
 		r.Size = string(req.Size)
 	}

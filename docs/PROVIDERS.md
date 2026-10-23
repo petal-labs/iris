@@ -60,7 +60,12 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 
 | Model | Display Name | Route | Reasoning | Built-in Tools | Notes |
 |-------|--------------|-------|-----------|----------------|-------|
-| gpt-6-astra | GPT-6 Astra | Responses | Yes | Yes | Latest flagship |
+| gpt-6-astra | GPT-6 Astra | Responses | Yes | Yes | GPT-6 flagship |
+| gpt-6-luna | GPT-6 Luna | Responses | Yes | Yes | GPT-6 variant |
+| gpt-6-sol | GPT-6 Sol | Responses | Yes | Yes | GPT-6 variant |
+| gpt-6.1-sol | GPT-6.1 Sol | Responses | Yes | Yes | Latest flagship |
+| gpt-daybreak-blue-latest | Daybreak Blue | Responses | Yes | Yes | Defensive cybersecurity alias |
+| gpt-daybreak-red-latest | Daybreak Red | Responses | Yes | Yes | Offensive cybersecurity alias |
 | gpt-5.6 | GPT-5.6 | Responses | Yes | Yes | GPT-5.6 flagship |
 | gpt-5.6-luna | GPT-5.6 Luna | Responses | Yes | Yes | GPT-5.6 variant |
 | gpt-5.6-sol | GPT-5.6 Sol | Responses | Yes | Yes | GPT-5.6 variant |
@@ -75,17 +80,11 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 | gpt-5.4-nano | GPT-5.4 Nano | Responses | Yes | Yes | Lightweight |
 | gpt-5.2 | GPT-5.2 | Responses | Yes | Yes |  |
 | gpt-5.2-pro | GPT-5.2 Pro | Responses | Yes | Yes | Enhanced capabilities |
-| gpt-5.2-codex | GPT-5.2 Codex | Responses | Yes | Yes | Code specialized |
 | gpt-5.1 | GPT-5.1 | Responses | Yes | Yes |  |
-| gpt-5.1-codex | GPT-5.1 Codex | Responses | Yes | Yes | Code specialized |
-| gpt-5.1-codex-mini | GPT-5.1 Codex Mini | Responses | Yes | Yes | Smaller codex |
-| gpt-5.1-codex-max | GPT-5.1 Codex Max | Responses | Yes | Yes | Largest codex |
 | gpt-5 | GPT-5 | Responses | Yes | Yes |  |
 | gpt-5-mini | GPT-5 Mini | Responses | Yes | Yes | Smaller, faster |
 | gpt-5-nano | GPT-5 Nano | Responses | No | Yes | Lightweight |
 | gpt-5-pro | GPT-5 Pro | Responses | Yes | Yes | Enhanced capabilities |
-| gpt-5-codex | GPT-5 Codex | Responses | Yes | Yes | Code specialized |
-| gpt-5-thinking | GPT-5 Thinking | Responses | Yes | Yes | Extended reasoning |
 | gpt-4.1 | GPT-4.1 | Responses | No | Yes |  |
 | gpt-4.1-mini | GPT-4.1 Mini | Responses | No | Yes |  |
 | gpt-4.1-nano | GPT-4.1 Nano | Responses | No | Yes |  |
@@ -94,17 +93,14 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 | gpt-4-turbo | GPT-4 Turbo | Chat Completions | No | No | Legacy |
 | gpt-4 | GPT-4 | Chat Completions | No | No | Legacy |
 | gpt-3.5-turbo | GPT-3.5 Turbo | Chat Completions | No | No | Legacy; no structured output |
-| gpt-3.5-turbo-16k | GPT-3.5 Turbo 16k | Chat Completions | No | No | Legacy, 16K context |
-| gpt-3.5-turbo-instruct | GPT-3.5 Turbo Instruct | Chat Completions | No | No | Legacy; no tool calling |
 | o4-mini | o4-mini | Responses | Yes | Yes | Reasoning focused |
-| o4-mini-deep-research | o4-mini Deep Research | Responses | Yes | Yes | Research focused |
 | o3 | o3 | Responses | Yes | Yes | Reasoning focused |
 | o3-pro | o3-pro | Responses | Yes | Yes | Enhanced reasoning |
 | o3-mini | o3-mini | Responses | Yes | Yes | Smaller reasoning |
 | o1 | o1 | Responses | Yes | No | Reasoning focused |
 | o1-pro | o1 Pro | Responses | Yes | No | Enhanced reasoning |
 
-**Image Generation Models**: gpt-image-2, gpt-image-1.5, gpt-image-1, gpt-image-1-mini, dall-e-3, dall-e-2, chatgpt-image-latest
+**Image Generation Models**: gpt-image-2, gpt-image-1.5, gpt-image-1, gpt-image-1-mini, chatgpt-image-latest
 
 **Structured Output**: `ResponseJSONSchema` works on both the Chat Completions API and the Responses API (GPT-5.x), mapped to each API's native `response_format`/`text.format` shape respectively. Requesting it against a Chat Completions-only model that lacks `core.FeatureStructuredOutput` (e.g. gpt-3.5-turbo) fails with `core.ErrStructuredOutputUnsupported`.
 
@@ -132,7 +128,12 @@ resp, err := client.Chat(openai.ModelGPT4o).
 
 | Model | Display Name | Reasoning | Notes |
 |-------|--------------|-----------|-------|
-| claude-opus-5 | Claude Opus 5 | Yes | Latest flagship |
+| claude-opus-5-5 | Claude Opus 5.5 | Yes | Latest flagship |
+| claude-opus-5-5-thinking | Claude Opus 5.5 (Thinking) | Yes | Extended reasoning |
+| claude-sonnet-5-5 | Claude Sonnet 5.5 | Yes | Balanced performance |
+| claude-sonnet-5-5-thinking | Claude Sonnet 5.5 (Thinking) | Yes | Extended reasoning |
+| claude-haiku-5-5 | Claude Haiku 5.5 | Yes | Fast, cost-effective |
+| claude-opus-5 | Claude Opus 5 | Yes | High capability |
 | claude-opus-5-thinking | Claude Opus 5 (Thinking) | Yes | Extended reasoning |
 | claude-sonnet-5 | Claude Sonnet 5 | Yes | Balanced performance |
 | claude-sonnet-5-thinking | Claude Sonnet 5 (Thinking) | Yes | Extended reasoning |
@@ -150,7 +151,6 @@ resp, err := client.Chat(openai.ModelGPT4o).
 | claude-haiku-4-5 | Claude Haiku 4.5 | Yes | Fast, cost-effective |
 | claude-opus-4-5 | Claude Opus 4.5 | Yes | High capability |
 | claude-opus-4-5-thinking | Claude Opus 4.5 (Thinking) | Yes | Extended reasoning |
-| claude-3-5-haiku-latest | Claude 3.5 Haiku | No | Legacy fast model |
 
 **Special Features**:
 - Extended context windows
@@ -190,26 +190,29 @@ fmt.Println(count.InputTokens)
 
 | Model | Display Name | Reasoning | Tool Calling | Notes |
 |-------|--------------|-----------|--------------|-------|
-| gemini-3.8-flash | Gemini 3.8 Flash | Yes | Yes | Latest (`thinkingLevel`) |
+| gemini-4-argon | Gemini 4 Argon | Yes | Yes | Latest flagship (`thinkingLevel`) |
+| gemini-3.8-flash | Gemini 3.8 Flash | Yes | Yes | `thinkingLevel` |
 | gemini-3.7-flash | Gemini 3.7 Flash | Yes | Yes | `thinkingLevel` |
 | gemini-3.6-flash | Gemini 3.6 Flash | Yes | Yes | `thinkingLevel` |
 | gemini-3.5-flash | Gemini 3.5 Flash | Yes | Yes | `thinkingLevel` |
 | gemini-3.5-flash-lite | Gemini 3.5 Flash Lite | Yes | Yes | `thinkingLevel`, lightweight |
 | gemini-3.1-pro-preview | Gemini 3.1 Pro Preview | Yes | Yes | `thinkingLevel` |
 | gemini-3.1-flash-lite | Gemini 3.1 Flash Lite | Yes | Yes | `thinkingLevel`, lightweight |
+| gemini-3.1-flash-lite-image | Gemini 3.1 Flash Lite Image | No | No | Chat, streaming, image generation (Nano Banana 2 Lite) |
 | gemini-3.1-flash-image | Gemini 3.1 Flash Image | No | No | Chat, streaming, image generation (Nano Banana 2) |
 | gemini-3.1-flash-image-preview | Gemini 3.1 Flash Image Preview | No | No | Chat, streaming, image generation |
-| gemini-3-pro-preview | Gemini 3 Pro Preview | Yes | Yes | `thinkingLevel` |
 | gemini-3-flash-preview | Gemini 3 Flash Preview | Yes | Yes | `thinkingLevel` |
+| gemini-flash-latest | Gemini Flash Latest | Yes | Yes | Latest alias (`thinkingLevel`) |
+| gemini-flash-lite-latest | Gemini Flash-Lite Latest | Yes | Yes | Latest alias (`thinkingLevel`) |
+| gemini-pro-latest | Gemini Pro Latest | Yes | Yes | Latest alias (`thinkingLevel`) |
 | gemini-3-pro-image | Gemini 3 Pro Image | No | No | Image generation only (Nano Banana Pro, GA) |
 | gemini-3-pro-image-preview | Gemini 3 Pro Image Preview | No | No | Image generation only (Nano Banana Pro, preview) |
 | gemini-2.5-pro | Gemini 2.5 Pro | Yes | Yes | `thinkingBudget`, production ready |
 | gemini-2.5-flash | Gemini 2.5 Flash | Yes | Yes | `thinkingBudget`, fast |
 | gemini-2.5-flash-lite | Gemini 2.5 Flash Lite | Yes | Yes | `thinkingBudget`, lightweight |
 | gemini-2.5-flash-image | Gemini 2.5 Flash Image | No | No | Image generation only (Nano Banana) |
-| gemini-2.0-flash-lite | Gemini 2.0 Flash Lite | No | No | Legacy lightweight |
 
-**Image Generation Models**: gemini-3.1-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image, gemini-3-pro-image-preview, gemini-2.5-flash-image (Nano Banana)
+**Image Generation Models**: gemini-3.1-flash-lite-image, gemini-3.1-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image, gemini-3-pro-image-preview, gemini-2.5-flash-image (Nano Banana)
 
 **Embedding Models**:
 
@@ -254,24 +257,13 @@ embeddingResp, err := embeddingProvider.CreateEmbeddings(ctx, &core.EmbeddingReq
 
 | Model | Display Name | Reasoning | Notes |
 |-------|--------------|-----------|-------|
-| grok-4.6 | Grok 4.6 | Yes | Latest |
+| grok-4.7 | Grok 4.7 | Yes | Latest |
+| grok-4.6 | Grok 4.6 | Yes | |
 | grok-4.5 | Grok 4.5 | Yes | |
 | grok-4.3 | Grok 4.3 | Yes | |
 | grok-4.20-multi-agent-0309 | Grok 4.20 Multi-Agent | Yes | Multi-agent; no tool calling |
 | grok-4.20-0309-reasoning | Grok 4.20 (Reasoning) | Yes | GA reasoning variant |
 | grok-4.20-0309-non-reasoning | Grok 4.20 (Non-Reasoning) | No | GA non-reasoning variant |
-| grok-4.20-multi-agent-beta-0309 | Grok 4.20 Multi-Agent Beta | Yes | Multi-agent beta; superseded |
-| grok-4.20-beta-0309-reasoning | Grok 4.20 Beta (Reasoning) | Yes | Beta with reasoning; superseded |
-| grok-4.20-beta-0309-non-reasoning | Grok 4.20 Beta (Non-Reasoning) | No | Beta without reasoning; superseded |
-| grok-4.1 | Grok 4.1 | No | |
-| grok-4-1-fast-non-reasoning | Grok 4.1 Fast (Non-Reasoning) | No | Fast; default model in `iris init` scaffolds |
-| grok-4-1-fast-reasoning | Grok 4.1 Fast (Reasoning) | Yes | Fast with reasoning |
-| grok-4 | Grok 4 | Yes | Flagship |
-| grok-4-fast-reasoning | Grok 4 Fast (Reasoning) | Yes | Fast with reasoning |
-| grok-4-fast-non-reasoning | Grok 4 Fast (Non-Reasoning) | No | Fast without reasoning |
-| grok-3 | Grok 3 | Yes | Previous generation |
-| grok-3-mini | Grok 3 Mini | Yes | Smaller model; exposes `reasoning_content` |
-| grok-code-fast | Grok Code Fast | No | Code specialized |
 | grok-build-0.1 | Grok Build 0.1 | Yes | Build / agentic workloads |
 
 **Special Features**:
@@ -284,7 +276,7 @@ embeddingResp, err := embeddingProvider.CreateEmbeddings(ctx, &core.EmbeddingReq
 provider := xai.New(os.Getenv("XAI_API_KEY"))
 client := core.NewClient(provider)
 
-resp, err := client.Chat(xai.ModelGrok4).
+resp, err := client.Chat(xai.ModelGrok47).
     User("What's happening in tech today?").
     GetResponse(ctx)
 ```
@@ -348,6 +340,7 @@ for _, url := range resp.Citations {
 |-------|--------------|-----------|--------|-------|
 | glm-5.3 | GLM-5.3 | Yes | No | Latest flagship |
 | glm-5.3-flash | GLM-5.3 Flash | Yes | No | Fast |
+| glm-5.3-flashx | GLM-5.3 FlashX | Yes | No | Extra fast |
 | glm-5.2 | GLM-5.2 | Yes | No | |
 | glm-5.1 | GLM-5.1 | Yes | No | |
 | glm-5 | GLM-5 | Yes | No | |
@@ -359,21 +352,15 @@ for _, url := range resp.Citations {
 | glm-4.6 | GLM-4.6 | Yes | No | |
 | glm-4.6v | GLM-4.6V | Yes | Yes | Vision capable |
 | glm-4.6v-flash | GLM-4.6V Flash | No | Yes | Fast vision |
-| glm-4.6v-flashx | GLM-4.6V FlashX | No | Yes | Extra fast vision |
 | glm-4.5 | GLM-4.5 | Yes | No | |
 | glm-4.5v | GLM-4.5V | Yes | Yes | Vision capable |
-| glm-4.5-x | GLM-4.5-X | No | No | Extended |
 | glm-4.5-air | GLM-4.5 Air | No | No | Lightweight |
-| glm-4.5-airx | GLM-4.5 AirX | No | No | Extra lightweight |
 | glm-4.5-flash | GLM-4.5 Flash | No | No | Fast |
-| glm-for-coding | GLM for Coding | Yes | No | Code specialized |
-| glm-4-32b-0414-128k | GLM-4 32B | No | No | 128K context |
 
 **Special Features**:
 - Vision models for image understanding
 - Chinese language optimization
 - Large context windows
-- Code-specialized model
 
 **Usage Example**:
 ```go
@@ -532,7 +519,7 @@ results, err := provider.Rerank(ctx, &core.RerankRequest{
 
 **Authentication**: API key or Microsoft Entra ID (Azure AD) credential. Via environment: `AZURE_AI_ENDPOINT`, `AZURE_AI_API_KEY`, and optional `AZURE_AI_DEPLOYMENT_ID` (required with `WithOpenAIEndpoint()`).
 
-**Models**: Multi-family catalog — OpenAI (GPT), Meta Llama, Mistral, Cohere, and more — including embeddings models. Use `provider.Models()` or `azurefoundry.GetModelInfo(id)` to inspect the static catalog.
+**Models**: Multi-family catalog — OpenAI (GPT), Anthropic (Claude), xAI (Grok), Moonshot AI (Kimi), DeepSeek, Meta Llama, Mistral, Cohere, Microsoft Phi, and more — including embeddings models. Use `provider.Models()` or `azurefoundry.GetModelInfo(id)` to inspect the static catalog.
 
 **Notes**:
 - Unlike other Iris providers, `azurefoundry.New` takes `(endpoint, apiKey, ...)` — the resource endpoint is mandatory.
@@ -558,15 +545,15 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 
 | Use Case | Recommended Provider(s) |
 |----------|------------------------|
-| General chat and coding | OpenAI (GPT-4o, GPT-5), Anthropic (Claude) |
-| Complex reasoning | OpenAI (o-series), Gemini 3, xAI Grok 4 |
+| General chat and coding | OpenAI (GPT-5.6, GPT-6), Anthropic (Claude) |
+| Complex reasoning | OpenAI (o-series), Gemini 3/4, xAI Grok 4 |
 | Web search integration | Perplexity |
 | Local/private deployment | Ollama |
 | Cost-sensitive applications | HuggingFace (routing), Ollama (local) |
 | Embeddings and RAG | Gemini, VoyageAI |
 | Code generation | OpenAI (Codex models), Anthropic |
 | Multimodal (vision) | OpenAI (GPT-4o), Anthropic (Claude), Gemini, Azure AI Foundry vision deployments |
-| Image generation | OpenAI (DALL-E, GPT-Image), Gemini (Nano Banana) |
+| Image generation | OpenAI (GPT-Image), Gemini (Nano Banana) |
 
 Iris currently maps `Message.Parts` for OpenAI, Anthropic, Gemini, and Azure AI Foundry. Other providers invoke `core.WithWarningHandler` before omitting undeclared content parts, even when an upstream model advertises vision support.
 

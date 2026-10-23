@@ -41,12 +41,12 @@ func TestModels(t *testing.T) {
 		modelIDs[m.ID] = true
 	}
 
-	if !modelIDs["gpt-4o"] {
-		t.Error("Models() missing gpt-4o")
+	if !modelIDs["gpt-5.6-terra"] {
+		t.Error("Models() missing gpt-5.6-terra")
 	}
 
-	if !modelIDs["gpt-4o-mini"] {
-		t.Error("Models() missing gpt-4o-mini")
+	if !modelIDs["gpt-5.5"] {
+		t.Error("Models() missing gpt-5.5")
 	}
 
 	if !modelIDs["text-embedding-3-large"] {

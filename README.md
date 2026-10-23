@@ -210,13 +210,13 @@ iris keys migrate  # Requires IRIS_KEYSTORE_KEY (see Security below)
 iris chat --provider openai --model gpt-6-astra --prompt "Hello, world!"
 
 # Chat with Anthropic Claude
-iris chat --provider anthropic --model claude-sonnet-5 --prompt "Hello, world!"
+iris chat --provider anthropic --model claude-sonnet-5-5 --prompt "Hello, world!"
 
 # Chat with Google Gemini
-iris chat --provider gemini --model gemini-3.8-flash --prompt "Hello, world!"
+iris chat --provider gemini --model gemini-4-argon --prompt "Hello, world!"
 
 # Chat with xAI Grok
-iris chat --provider xai --model grok-4.6 --prompt "Hello, world!"
+iris chat --provider xai --model grok-4.7 --prompt "Hello, world!"
 
 # Chat with Z.ai GLM
 iris chat --provider zai --model glm-5.3 --prompt "Hello, world!"
@@ -229,7 +229,7 @@ iris chat --provider openai --model gpt-5 --prompt "Explain quantum entanglement
 
 # Stream responses
 iris chat --provider openai --model gpt-6-astra --prompt "Tell me a story" --stream
-iris chat --provider anthropic --model claude-sonnet-5 --prompt "Tell me a story" --stream
+iris chat --provider anthropic --model claude-sonnet-5-5 --prompt "Tell me a story" --stream
 
 # Get JSON output
 iris chat --provider openai --model gpt-6-astra --prompt "Hello" --json

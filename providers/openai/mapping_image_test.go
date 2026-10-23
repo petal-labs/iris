@@ -39,20 +39,6 @@ func TestMapImageGenerateRequest(t *testing.T) {
 	}
 }
 
-func TestMapImageGenerateRequestDALLE(t *testing.T) {
-	req := &core.ImageGenerateRequest{
-		Model:  "dall-e-3",
-		Prompt: "A sunset",
-	}
-
-	mapped := mapImageGenerateRequest(req)
-
-	// DALL-E models should have response_format set
-	if mapped.ResponseFormat != "b64_json" {
-		t.Errorf("ResponseFormat = %s, want b64_json for DALL-E", mapped.ResponseFormat)
-	}
-}
-
 func TestMapImageGenerateRequestDefaults(t *testing.T) {
 	req := &core.ImageGenerateRequest{
 		Model:  "gpt-image-1",

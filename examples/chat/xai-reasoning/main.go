@@ -1,11 +1,10 @@
 // Example: xAI Grok Reasoning Model
 //
 // This example demonstrates using xAI Grok's reasoning capabilities
-// with grok-3-mini which exposes the model's thinking process.
+// with grok-4.7 which exposes the model's thinking process.
 //
-// Note: Only grok-3-mini returns reasoning_content in responses.
-// Other models like grok-4 support reasoning but don't expose the
-// internal thinking process directly.
+// Note: Reasoning models like grok-4.7 return reasoning_content in
+// responses.
 //
 // Run with:
 //
@@ -37,12 +36,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	fmt.Println("Sending reasoning query to grok-3-mini...")
+	fmt.Println("Sending reasoning query to grok-4.7...")
 	fmt.Println()
 
-	// Use grok-3-mini with high reasoning effort for complex problems
-	// grok-3-mini is the only model that returns reasoning_content
-	resp, err := client.Chat(xai.ModelGrok3Mini).
+	// Use grok-4.7 with high reasoning effort for complex problems
+	resp, err := client.Chat(xai.ModelGrok47).
 		ReasoningEffort(core.ReasoningEffortHigh).
 		User("If I have 3 apples and give away half, then receive 2 more, how many apples do I have? Show your reasoning.").
 		GetResponse(ctx)
@@ -52,7 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Print the reasoning if available (grok-3-mini only)
+	// Print the reasoning if available
 	if resp.Reasoning != nil && len(resp.Reasoning.Summary) > 0 {
 		fmt.Println("Model's Reasoning:")
 		fmt.Println("---")

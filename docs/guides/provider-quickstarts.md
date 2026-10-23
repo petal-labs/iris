@@ -116,8 +116,8 @@ func main() {
     // Create a client
     client := core.NewClient(provider)
 
-    // Send a chat request using Grok 4.5
-    resp, err := client.Chat(xai.ModelGrok45).
+    // Send a chat request using Grok 4.7
+    resp, err := client.Chat(xai.ModelGrok47).
         System("You are a helpful assistant.").
         User("What is the capital of France?").
         GetResponse(context.Background())
@@ -134,13 +134,13 @@ func main() {
 xAI Grok models with reasoning support:
 
 ```go
-// Use reasoning with grok-3-mini (only model that exposes reasoning_content)
-resp, err := client.Chat(xai.ModelGrok3Mini).
+// Use reasoning with grok-4.7
+resp, err := client.Chat(xai.ModelGrok47).
     User("Solve this step by step: If I have 5 apples and give away half...").
     ReasoningEffort(core.ReasoningEffortHigh).
     GetResponse(ctx)
 
-// Access reasoning if available (grok-3-mini only)
+// Access reasoning if available
 if resp.Reasoning != nil && len(resp.Reasoning.Summary) > 0 {
     fmt.Println("Thinking:", resp.Reasoning.Summary[0])
 }

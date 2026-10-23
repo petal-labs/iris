@@ -17,7 +17,7 @@ func TestGetModelInfo(t *testing.T) {
 		{ModelGLM46, "GLM-4.6", false},
 		{ModelGLM46V, "GLM-4.6V", false},
 		{ModelGLM45, "GLM-4.5", false},
-		{ModelGLM4_32B, "GLM-4 32B", false},
+		{ModelGLM53FlashX, "GLM-5.3-FlashX", false},
 		{"nonexistent", "", true},
 	}
 
@@ -79,8 +79,8 @@ func TestModelCapabilities(t *testing.T) {
 }
 
 func TestModelsCount(t *testing.T) {
-	if len(models) != 22 {
-		t.Errorf("len(models) = %d, want 22", len(models))
+	if len(models) != 18 {
+		t.Errorf("len(models) = %d, want 18", len(models))
 	}
 }
 

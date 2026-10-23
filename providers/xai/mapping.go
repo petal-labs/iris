@@ -109,7 +109,7 @@ func mapResponse(resp *xaiResponse) (*core.ChatResponse, error) {
 		choice := resp.Choices[0]
 		result.Output = choice.Message.Content
 
-		// Map reasoning content if present (grok-3-mini)
+		// Map reasoning content if present (reasoning models)
 		if choice.Message.ReasoningContent != "" {
 			result.Reasoning = &core.ReasoningOutput{
 				Summary: []string{choice.Message.ReasoningContent},

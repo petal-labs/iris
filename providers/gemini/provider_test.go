@@ -99,8 +99,8 @@ func TestModels(t *testing.T) {
 	p := New("test-key")
 	models := p.Models()
 
-	if len(models) != 20 {
-		t.Errorf("Models() count = %d, want 20", len(models))
+	if len(models) != 23 {
+		t.Errorf("Models() count = %d, want 23", len(models))
 	}
 
 	// Verify model IDs
@@ -110,6 +110,7 @@ func TestModels(t *testing.T) {
 	}
 
 	expected := []core.ModelID{
+		ModelGemini4Argon,
 		ModelGemini38Flash,
 		ModelGemini37Flash,
 		ModelGemini36Flash,
@@ -117,16 +118,18 @@ func TestModels(t *testing.T) {
 		ModelGemini35FlashLite,
 		ModelGemini31Pro,
 		ModelGemini31FlashLite,
+		ModelGemini31FlashLiteImage,
 		ModelGemini31FlashImagePreview,
 		ModelGemini31FlashImage,
-		ModelGemini3Pro,
 		ModelGemini3Flash,
 		ModelGemini3ProImage,
 		ModelGemini3ProImageStable,
+		ModelGeminiFlashLatest,
+		ModelGeminiFlashLiteLatest,
+		ModelGeminiProLatest,
 		ModelGemini25Flash,
 		ModelGemini25FlashLite,
 		ModelGemini25Pro,
-		ModelGemini20FlashLite,
 		ModelGemini25FlashImage,
 		ModelGeminiEmbedding001,
 		ModelGeminiEmbedding2,
@@ -233,8 +236,8 @@ func TestGetModelInfo(t *testing.T) {
 		wantNil bool
 		wantID  core.ModelID
 	}{
-		{ModelGemini3Pro, false, ModelGemini3Pro},
 		{ModelGemini3Flash, false, ModelGemini3Flash},
+		{ModelGemini4Argon, false, ModelGemini4Argon},
 		{ModelGemini25Flash, false, ModelGemini25Flash},
 		{ModelGemini25FlashLite, false, ModelGemini25FlashLite},
 		{ModelGemini25Pro, false, ModelGemini25Pro},
@@ -265,7 +268,7 @@ func TestGetModelInfo(t *testing.T) {
 
 func TestModelCapabilities(t *testing.T) {
 	allModelIDs := []core.ModelID{
-		ModelGemini3Pro,
+		ModelGemini4Argon,
 		ModelGemini3Flash,
 		ModelGemini25Flash,
 		ModelGemini25FlashLite,
@@ -339,15 +342,15 @@ func TestConfigImmutability(t *testing.T) {
 	}
 }
 
-func TestIsGemini3Model(t *testing.T) {
+func TestUsesThinkingLevel(t *testing.T) {
 	tests := []struct {
 		model string
 		want  bool
 	}{
-		{string(ModelGemini3Pro), true},
 		{string(ModelGemini3Flash), true},
 		{string(ModelGemini37Flash), true},
 		{string(ModelGemini38Flash), true},
+		{string(ModelGemini4Argon), true},
 		{string(ModelGemini25Flash), false},
 		{string(ModelGemini25FlashLite), false},
 		{string(ModelGemini25Pro), false},
@@ -356,9 +359,9 @@ func TestIsGemini3Model(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.model, func(t *testing.T) {
-			got := isGemini3Model(tt.model)
+			got := usesThinkingLevel(tt.model)
 			if got != tt.want {
-				t.Errorf("isGemini3Model(%q) = %v, want %v", tt.model, got, tt.want)
+				t.Errorf("usesThinkingLevel(%q) = %v, want %v", tt.model, got, tt.want)
 			}
 		})
 	}
