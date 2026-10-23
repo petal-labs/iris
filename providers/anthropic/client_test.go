@@ -328,38 +328,78 @@ func TestDoChatServerError(t *testing.T) {
 func TestDoChatWithTemperature(t *testing.T) {
 	temp := float32(0.5)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ := io.ReadAll(r.Body)
+	t.Run("legacy version sends temperature", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
 
-		var req anthropicRequest
-		json.Unmarshal(body, &req)
+			var req anthropicRequest
+			json.Unmarshal(body, &req)
 
-		if req.Temperature == nil || *req.Temperature != 0.5 {
-			t.Errorf("Temperature = %v, want 0.5", req.Temperature)
+			if req.Temperature == nil || *req.Temperature != 0.5 {
+				t.Errorf("Temperature = %v, want 0.5", req.Temperature)
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(anthropicResponse{
+				ID:      "msg_temp",
+				Model:   "claude-sonnet-4-5",
+				Content: []anthropicResponseContent{{Type: "text", Text: "Response"}},
+			})
+		}))
+		defer server.Close()
+
+		p := New("test-key", WithBaseURL(server.URL), WithVersion("2023-06-01"))
+
+		req := &core.ChatRequest{
+			Model:       "claude-sonnet-4-5",
+			Messages:    []core.Message{{Role: core.RoleUser, Content: "Hi"}},
+			Temperature: &temp,
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(anthropicResponse{
-			ID:      "msg_temp",
-			Model:   "claude-sonnet-4-5",
-			Content: []anthropicResponseContent{{Type: "text", Text: "Response"}},
-		})
-	}))
-	defer server.Close()
+		if _, err := p.Chat(context.Background(), req); err != nil {
+			t.Fatalf("Chat() error = %v", err)
+		}
+	})
 
-	p := New("test-key", WithBaseURL(server.URL))
+	t.Run("current version omits temperature", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
 
-	req := &core.ChatRequest{
-		Model:       "claude-sonnet-4-5",
-		Messages:    []core.Message{{Role: core.RoleUser, Content: "Hi"}},
-		Temperature: &temp,
-	}
+			var req anthropicRequest
+			json.Unmarshal(body, &req)
 
-	_, err := p.Chat(context.Background(), req)
-	if err != nil {
-		t.Fatalf("Chat() error = %v", err)
-	}
+			// API version 2026-10-21 rejects requests that send
+			// temperature, even at the default value.
+			if req.Temperature != nil {
+				t.Errorf("Temperature = %v, want nil on API version %q", req.Temperature, DefaultVersion)
+			}
+			if r.Header.Get("anthropic-version") != DefaultVersion {
+				t.Errorf("anthropic-version = %q, want %q", r.Header.Get("anthropic-version"), DefaultVersion)
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(anthropicResponse{
+				ID:      "msg_temp",
+				Model:   "claude-sonnet-4-5",
+				Content: []anthropicResponseContent{{Type: "text", Text: "Response"}},
+			})
+		}))
+		defer server.Close()
+
+		p := New("test-key", WithBaseURL(server.URL))
+
+		req := &core.ChatRequest{
+			Model:       "claude-sonnet-4-5",
+			Messages:    []core.Message{{Role: core.RoleUser, Content: "Hi"}},
+			Temperature: &temp,
+		}
+
+		if _, err := p.Chat(context.Background(), req); err != nil {
+			t.Fatalf("Chat() error = %v", err)
+		}
+	})
 }
 
 func TestDoChatWithMaxTokens(t *testing.T) {

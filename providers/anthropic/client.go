@@ -16,7 +16,7 @@ const messagesPath = "/v1/messages"
 // doChat performs a non-streaming chat request.
 func (p *Anthropic) doChat(ctx context.Context, req *core.ChatRequest) (*core.ChatResponse, error) {
 	// Build Anthropic request
-	antReq := buildRequest(req, false)
+	antReq := buildRequest(req, false, p.config.Version)
 
 	// Marshal request body
 	body, err := json.Marshal(antReq)

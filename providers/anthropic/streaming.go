@@ -54,7 +54,7 @@ func (a *toolCallAssembler) finalize() ([]core.ToolCall, error) {
 // doStreamChat performs a streaming chat request.
 func (p *Anthropic) doStreamChat(ctx context.Context, req *core.ChatRequest) (*core.ChatStream, error) {
 	// Build Anthropic request with stream=true
-	antReq := buildRequest(req, true)
+	antReq := buildRequest(req, true, p.config.Version)
 
 	// Marshal request body
 	body, err := json.Marshal(antReq)

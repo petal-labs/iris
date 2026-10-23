@@ -124,6 +124,8 @@ resp, err := client.Chat(openai.ModelGPT4o).
 
 **Authentication**: API key via `ANTHROPIC_API_KEY` environment variable
 
+**API Version**: requests send `anthropic-version: 2026-10-21` by default. Override it with `anthropic.WithVersion`. API version `2026-10-21` removed the sampling parameters (`temperature`, `top_p`, `top_k`): the API rejects any request that sends them, even at the default value. Iris therefore omits `ChatBuilder.Temperature` from requests on that version and only sends it when the provider is pinned to an older version (for example `anthropic.WithVersion("2023-06-01")`).
+
 **Models**:
 
 | Model | Display Name | Reasoning | Notes |

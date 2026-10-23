@@ -62,8 +62,8 @@ func TestDefaultConstants(t *testing.T) {
 		t.Errorf("DefaultBaseURL = %q, want 'https://api.anthropic.com'", DefaultBaseURL)
 	}
 
-	if DefaultVersion != "2023-06-01" {
-		t.Errorf("DefaultVersion = %q, want '2023-06-01'", DefaultVersion)
+	if DefaultVersion != "2026-10-21" {
+		t.Errorf("DefaultVersion = %q, want '2026-10-21'", DefaultVersion)
 	}
 }
 
