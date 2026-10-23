@@ -19,7 +19,7 @@ type Config struct {
 	// HTTPClient is the HTTP client to use. Defaults to http.DefaultClient.
 	HTTPClient *http.Client
 
-	// Version is the Anthropic API version. Defaults to 2023-06-01.
+	// Version is the Anthropic API version. Defaults to 2026-10-21.
 	Version string
 
 	// Headers contains optional extra headers to include in requests.
@@ -38,7 +38,12 @@ type Config struct {
 const DefaultBaseURL = "https://api.anthropic.com"
 
 // DefaultVersion is the default Anthropic API version.
-const DefaultVersion = "2023-06-01"
+const DefaultVersion = "2026-10-21"
+
+// samplingParamsMinVersion is the API version that removed the sampling
+// parameters (temperature, top_p, top_k). Requests pinned to an older
+// version may still send them; requests on this version or newer must not.
+const samplingParamsMinVersion = "2026-10-21"
 
 // DefaultFilesAPIBeta is the default beta version for the Files API.
 const DefaultFilesAPIBeta = "files-api-2025-04-14"

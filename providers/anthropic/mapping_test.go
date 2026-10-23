@@ -170,7 +170,7 @@ func TestBuildRequest(t *testing.T) {
 		MaxTokens:   &maxTokens,
 	}
 
-	antReq := buildRequest(req, false)
+	antReq := buildRequest(req, false, DefaultVersion)
 
 	if antReq.Model != "claude-sonnet-4-5" {
 		t.Errorf("Model = %q, want 'claude-sonnet-4-5'", antReq.Model)
@@ -184,8 +184,10 @@ func TestBuildRequest(t *testing.T) {
 		t.Errorf("MaxTokens = %d, want 500", antReq.MaxTokens)
 	}
 
-	if antReq.Temperature == nil || *antReq.Temperature != 0.7 {
-		t.Errorf("Temperature = %v, want 0.7", antReq.Temperature)
+	// API version 2026-10-21 removed the sampling parameters; a request
+	// that sends temperature is rejected with a 400 error.
+	if antReq.Temperature != nil {
+		t.Errorf("Temperature = %v, want nil on API version %q", antReq.Temperature, DefaultVersion)
 	}
 
 	if antReq.Stream {
@@ -197,6 +199,42 @@ func TestBuildRequest(t *testing.T) {
 	}
 }
 
+func TestBuildRequestSamplingParamsLegacyVersion(t *testing.T) {
+	// Requests pinned to the 2023-06-01 API version may still send
+	// temperature, which that version accepts.
+	temp := float32(0.7)
+	req := &core.ChatRequest{
+		Model:       "claude-sonnet-4-5",
+		Messages:    []core.Message{{Role: core.RoleUser, Content: "Hello"}},
+		Temperature: &temp,
+	}
+
+	antReq := buildRequest(req, false, "2023-06-01")
+
+	if antReq.Temperature == nil || *antReq.Temperature != 0.7 {
+		t.Errorf("Temperature = %v, want 0.7 on API version 2023-06-01", antReq.Temperature)
+	}
+}
+
+func TestSupportsSamplingParams(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{"2023-06-01", true},
+		{"2025-01-01", true},
+		{"2026-10-20", true},
+		{"2026-10-21", false},
+		{"2027-01-01", false},
+	}
+
+	for _, tt := range tests {
+		if got := supportsSamplingParams(tt.version); got != tt.want {
+			t.Errorf("supportsSamplingParams(%q) = %v, want %v", tt.version, got, tt.want)
+		}
+	}
+}
+
 func TestBuildRequestDefaultMaxTokens(t *testing.T) {
 	req := &core.ChatRequest{
 		Model: "claude-sonnet-4-5",
@@ -205,7 +243,7 @@ func TestBuildRequestDefaultMaxTokens(t *testing.T) {
 		},
 	}
 
-	antReq := buildRequest(req, false)
+	antReq := buildRequest(req, false, DefaultVersion)
 
 	if antReq.MaxTokens != defaultMaxTokens {
 		t.Errorf("MaxTokens = %d, want %d", antReq.MaxTokens, defaultMaxTokens)
@@ -220,7 +258,7 @@ func TestBuildRequestStream(t *testing.T) {
 		},
 	}
 
-	antReq := buildRequest(req, true)
+	antReq := buildRequest(req, true, DefaultVersion)
 
 	if !antReq.Stream {
 		t.Error("Stream should be true")

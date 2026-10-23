@@ -12,7 +12,9 @@ import (
 const defaultMaxTokens = 1024
 
 // buildRequest creates an Anthropic API request from an Iris ChatRequest.
-func buildRequest(req *core.ChatRequest, stream bool) *anthropicRequest {
+// version is the configured anthropic-version; sampling parameters are only
+// sent for API versions that still accept them.
+func buildRequest(req *core.ChatRequest, stream bool, version string) *anthropicRequest {
 	system, messages := mapMessages(req.Messages)
 
 	maxTokens := defaultMaxTokens
@@ -29,7 +31,7 @@ func buildRequest(req *core.ChatRequest, stream bool) *anthropicRequest {
 	}
 
 	// Only set optional fields if provided
-	if req.Temperature != nil {
+	if req.Temperature != nil && supportsSamplingParams(version) {
 		antReq.Temperature = req.Temperature
 	}
 
@@ -40,6 +42,15 @@ func buildRequest(req *core.ChatRequest, stream bool) *anthropicRequest {
 	}
 
 	return antReq
+}
+
+// supportsSamplingParams reports whether the given API version still accepts
+// the sampling parameters (temperature, top_p, top_k). API version
+// 2026-10-21 removed them: a request that sends any of the three is rejected
+// with a 400 error, even at the default value. Version identifiers are
+// ISO-style dates, so a lexicographic comparison orders them correctly.
+func supportsSamplingParams(version string) bool {
+	return version < samplingParamsMinVersion
 }
 
 // mapMessages converts Iris messages to Anthropic format.
