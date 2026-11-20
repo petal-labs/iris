@@ -2,6 +2,7 @@ package elevenlabs
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -129,4 +130,20 @@ func newDecodeError(err error, body []byte) error {
 		return normalize.DecodeErrorWithBody(providerID, err, body)
 	}
 	return normalize.DecodeError(providerID, err)
+}
+
+// redactSecretError ensures an API key value never appears in ProviderError
+// messages or retained raw response bodies, even if an upstream proxy or server
+// reflects request headers in an error payload.
+func redactSecretError(err error, secret core.Secret) error {
+	raw := secret.Expose()
+	if err == nil || raw == "" {
+		return err
+	}
+	var pe *core.ProviderError
+	if errors.As(err, &pe) {
+		pe.Message = strings.ReplaceAll(pe.Message, raw, "[REDACTED]")
+		pe.Body = strings.ReplaceAll(pe.Body, raw, "[REDACTED]")
+	}
+	return err
 }

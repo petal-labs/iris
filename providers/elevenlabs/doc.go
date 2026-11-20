@@ -22,7 +22,8 @@
 // The API key is stored as a [core.Secret] and transmitted in the xi-api-key
 // HTTP header. Formatting [Config] or [ElevenLabs] with fmt (String/GoString)
 // or marshaling [Config] to JSON redacts the API key and omits custom header
-// values.
+// values. Normalized [core.ProviderError] messages and retained error bodies
+// also scrub the configured API key if reflected by an upstream server or proxy.
 //
 // # Concurrency and Timeouts
 //
