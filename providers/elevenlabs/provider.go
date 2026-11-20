@@ -75,7 +75,7 @@ func (p *ElevenLabs) Models() []core.ModelInfo {
 
 // Supports reports whether the provider currently supports the given feature.
 func (p *ElevenLabs) Supports(feature core.Feature) bool {
-	return false
+	return feature == core.FeatureSpeechSynthesis
 }
 
 // Chat is not supported by ElevenLabs. Returns [*core.ProviderError] wrapping

@@ -28,14 +28,23 @@ var models = []core.ModelInfo{
 	{
 		ID:          ModelElevenMultilingualV2,
 		DisplayName: "Eleven Multilingual v2",
+		Capabilities: []core.Feature{
+			core.FeatureSpeechSynthesis,
+		},
 	},
 	{
 		ID:          ModelElevenFlashV25,
 		DisplayName: "Eleven Flash v2.5",
+		Capabilities: []core.Feature{
+			core.FeatureSpeechSynthesis,
+		},
 	},
 	{
 		ID:          ModelElevenV3,
 		DisplayName: "Eleven v3",
+		Capabilities: []core.Feature{
+			core.FeatureSpeechSynthesis,
+		},
 	},
 	{
 		ID:          ModelScribeV1,
