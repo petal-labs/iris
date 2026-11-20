@@ -183,6 +183,25 @@ func getPerplexityKey(t *testing.T) string {
 	return key
 }
 
+// skipIfNoElevenLabsKey skips the test if ELEVENLABS_API_KEY is not set.
+// In CI, it fails unless IRIS_SKIP_INTEGRATION is set.
+func skipIfNoElevenLabsKey(t *testing.T) {
+	t.Helper()
+	if os.Getenv("ELEVENLABS_API_KEY") == "" {
+		skipOrFailOnMissingKey(t, "ELEVENLABS_API_KEY")
+	}
+}
+
+// getElevenLabsKey returns the ElevenLabs API key from environment.
+func getElevenLabsKey(t *testing.T) string {
+	t.Helper()
+	key := os.Getenv("ELEVENLABS_API_KEY")
+	if key == "" {
+		t.Fatal("ELEVENLABS_API_KEY not set")
+	}
+	return key
+}
+
 // cliResult holds the result of running a CLI command.
 type cliResult struct {
 	Stdout   string

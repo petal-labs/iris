@@ -106,7 +106,7 @@ func (p *ElevenLabs) doStreamRequest(ctx context.Context, method, path, contentT
 		if ctxErr != nil {
 			return nil, nil, ctxErr
 		}
-		return nil, nil, newNetworkError(err)
+		return nil, nil, redactSecretError(newNetworkError(err), p.config.APIKey)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -114,7 +114,7 @@ func (p *ElevenLabs) doStreamRequest(ctx context.Context, method, path, contentT
 		_ = resp.Body.Close()
 		cancel()
 		requestID := extractRequestID(resp.Header)
-		return nil, nil, normalizeError(resp.StatusCode, errBody, requestID, resp.Header)
+		return nil, nil, redactSecretError(normalizeError(resp.StatusCode, errBody, requestID, resp.Header), p.config.APIKey)
 	}
 
 	resp.Body = &cancelOnClose{ReadCloser: resp.Body, cancel: cancel}
