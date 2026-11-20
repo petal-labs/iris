@@ -86,7 +86,8 @@ func (p *ElevenLabs) Supports(feature core.Feature) bool {
 	switch feature {
 	case core.FeatureSpeechSynthesis,
 		core.FeatureSpeechSynthesisStreaming,
-		core.FeatureSpeechRecognition:
+		core.FeatureSpeechRecognition,
+		core.FeatureSpeechRecognitionRealtime:
 		return true
 	default:
 		return false

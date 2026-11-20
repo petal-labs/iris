@@ -203,3 +203,95 @@ func TestElevenLabs_VoiceDiscovery_And_Settings(t *testing.T) {
 	t.Logf("VoiceDiscovery ok: page_count=%d has_more=%t total=%d first_voice=%q category=%q",
 		len(page.Voices), page.HasMore, page.TotalCount, voice.Name, voice.Category)
 }
+
+func TestElevenLabs_RealtimeScribeSTT(t *testing.T) {
+	skipIfNoElevenLabsKey(t)
+
+	provider := elevenlabs.New(getElevenLabsKey(t), elevenlabs.WithTimeout(30*time.Second))
+	client := core.NewClient(provider)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+
+	// Synthesize short 16kHz PCM audio to stream into real-time Scribe STT.
+	ttsResp, err := client.Synthesize(ctx, &core.SpeechRequest{
+		Model:   elevenlabs.ModelElevenFlashV25,
+		VoiceID: elevenLabsTestVoiceID(),
+		Text:    "Hello Iris realtime.",
+		Format:  core.AudioFormatPCM16000,
+	})
+	if err != nil {
+		t.Fatalf("Synthesize(PCM16000) error = %v", err)
+	}
+
+	sess, err := client.StartRealtimeTranscription(ctx, core.RealtimeTranscriptionConfig{
+		Model:             elevenlabs.ModelScribeV2Realtime,
+		Format:            core.AudioFormatPCM16000,
+		CommitStrategy:    core.CommitStrategyManual,
+		IncludeTimestamps: true,
+	})
+	if err != nil {
+		t.Fatalf("StartRealtimeTranscription() error = %v", err)
+	}
+	defer sess.Close()
+
+	// Stream audio in 8 KiB chunks (even byte boundaries for 16-bit PCM).
+	const chunkSize = 8192
+	pcm := ttsResp.Audio.Data
+	for offset, seq := 0, int64(0); offset < len(pcm); offset, seq = offset+chunkSize, seq+1 {
+		end := offset + chunkSize
+		if end > len(pcm) {
+			end = len(pcm)
+		}
+		if err := sess.SendAudio(ctx, core.AudioChunk{
+			Data:     pcm[offset:end],
+			Format:   core.AudioFormatPCM16000,
+			Sequence: seq,
+		}); err != nil {
+			t.Fatalf("SendAudio(seq=%d) error = %v", seq, err)
+		}
+	}
+	// Send 0.5s of trailing silence then commit so Scribe flushes the utterance cleanly.
+	silence := make([]byte, 16000)
+	if err := sess.SendAudio(ctx, core.AudioChunk{
+		Data:   silence,
+		Format: core.AudioFormatPCM16000,
+	}); err != nil {
+		t.Fatalf("SendAudio(silence) error = %v", err)
+	}
+	if err := sess.Commit(ctx); err != nil {
+		t.Fatalf("Commit() error = %v", err)
+	}
+
+	var sawStarted, sawCommitted bool
+	waitDeadline := time.After(15 * time.Second)
+	for !sawCommitted {
+		select {
+		case evt, ok := <-sess.Events():
+			if !ok {
+				if err := <-sess.Err(); err != nil {
+					t.Fatalf("realtime STT session error: %v", err)
+				}
+				t.Fatal("realtime STT events channel closed before committed transcript")
+			}
+			switch evt.Type {
+			case core.RealtimeTranscriptEventSessionStarted:
+				sawStarted = true
+			case core.RealtimeTranscriptEventCommitted:
+				if evt.Transcript != nil && strings.TrimSpace(evt.Transcript.Text) != "" {
+					sawCommitted = true
+					t.Logf("RealtimeSTT committed: %s", evt.String())
+				}
+			}
+		case err := <-sess.Err():
+			if err != nil {
+				t.Fatalf("realtime STT error: %v", err)
+			}
+		case <-waitDeadline:
+			t.Fatalf("timed out waiting for committed transcript (sawStarted=%t)", sawStarted)
+		}
+	}
+	if !sawStarted {
+		t.Error("expected session_started event before committed transcript")
+	}
+}

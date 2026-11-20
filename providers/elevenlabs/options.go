@@ -56,6 +56,9 @@ type Config struct {
 	// StreamBufferSize sets the bounded channel capacity for AudioChunk values
 	// during HTTP streaming TTS. Defaults to DefaultStreamBufferSize (16 chunks).
 	StreamBufferSize int `json:"stream_buffer_size,omitempty"`
+
+	// wsDialer overrides the default WebSocket dialer in tests.
+	wsDialer wsDialer
 }
 
 // String returns a log-safe summary with the API key and custom header values redacted.

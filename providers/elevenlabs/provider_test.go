@@ -152,10 +152,11 @@ func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 
 	if !p.Supports(core.FeatureSpeechSynthesis) ||
 		!p.Supports(core.FeatureSpeechSynthesisStreaming) ||
-		!p.Supports(core.FeatureSpeechRecognition) {
-		t.Error("expected sync TTS, streaming TTS, and STT features to be supported")
+		!p.Supports(core.FeatureSpeechRecognition) ||
+		!p.Supports(core.FeatureSpeechRecognitionRealtime) {
+		t.Error("expected sync TTS, streaming TTS, STT, and realtime STT features to be supported")
 	}
-	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureSpeechRecognitionRealtime) || p.Supports(core.FeatureVoiceSession) {
+	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureVoiceSession) {
 		t.Error("Supports() must not advertise unimplemented capabilities")
 	}
 	if synth, ok := core.AsSpeechSynthesizer(p); !ok || synth != p {
@@ -163,6 +164,9 @@ func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 	}
 	if rec, ok := core.AsSpeechRecognizer(p); !ok || rec != p {
 		t.Fatalf("AsSpeechRecognizer() = (%v, %v), want provider, true", rec, ok)
+	}
+	if rt, ok := core.AsRealtimeSpeechRecognizer(p); !ok || rt != p {
+		t.Fatalf("AsRealtimeSpeechRecognizer() = (%v, %v), want provider, true", rt, ok)
 	}
 
 	if _, err := p.Chat(context.Background(), &core.ChatRequest{}); !errors.Is(err, core.ErrNotSupported) {
@@ -176,8 +180,8 @@ func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 func TestModelsCatalogAndDefensiveCopy(t *testing.T) {
 	p := New("test-key")
 	got := p.Models()
-	if len(got) != 5 {
-		t.Fatalf("len(Models()) = %d, want 5", len(got))
+	if len(got) != 6 {
+		t.Fatalf("len(Models()) = %d, want 6", len(got))
 	}
 	if !core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesis) ||
 		!core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesisStreaming) {
@@ -189,6 +193,9 @@ func TestModelsCatalogAndDefensiveCopy(t *testing.T) {
 	if !core.ProviderSupportsModelFeature(p, ModelScribeV2, core.FeatureSpeechRecognition) ||
 		!core.ProviderSupportsModelFeature(p, ModelScribeV1, core.FeatureSpeechRecognition) {
 		t.Error("expected Scribe models to support FeatureSpeechRecognition")
+	}
+	if !core.ProviderSupportsModelFeature(p, ModelScribeV2Realtime, core.FeatureSpeechRecognitionRealtime) {
+		t.Error("expected ModelScribeV2Realtime to support FeatureSpeechRecognitionRealtime")
 	}
 	if core.ProviderSupportsModelFeature(p, ModelScribeV2, core.FeatureSpeechSynthesis) {
 		t.Error("expected ModelScribeV2 NOT to support FeatureSpeechSynthesis")
