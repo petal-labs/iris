@@ -295,3 +295,70 @@ func TestElevenLabs_RealtimeScribeSTT(t *testing.T) {
 		t.Error("expected session_started event before committed transcript")
 	}
 }
+
+func TestElevenLabs_RealtimeTTS(t *testing.T) {
+	skipIfNoElevenLabsKey(t)
+
+	provider := elevenlabs.New(getElevenLabsKey(t))
+	client := core.NewClient(provider)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+
+	// Verify incompatible model is rejected before opening a WebSocket.
+	if _, err := client.StartRealtimeSynthesis(ctx, core.RealtimeSynthesisConfig{
+		Model:   elevenlabs.ModelElevenV3,
+		VoiceID: elevenLabsTestVoiceID(),
+	}); !errors.Is(err, core.ErrNotSupported) {
+		t.Fatalf("StartRealtimeSynthesis(eleven_v3) err = %v, want core.ErrNotSupported", err)
+	}
+
+	sess, err := client.StartRealtimeSynthesis(ctx, core.RealtimeSynthesisConfig{
+		Model:   elevenlabs.ModelElevenFlashV25,
+		VoiceID: elevenLabsTestVoiceID(),
+		Format:  core.AudioFormatPCM16000,
+	})
+	if err != nil {
+		t.Fatalf("StartRealtimeSynthesis() err = %v", err)
+	}
+	defer sess.Close()
+
+	// Stream incremental text fragments and flush mid-session.
+	for _, frag := range []string{"Hello ", "from ", "Iris. "} {
+		if err := sess.SendText(ctx, frag); err != nil {
+			t.Fatalf("SendText() err = %v", err)
+		}
+	}
+	if err := sess.Flush(ctx); err != nil {
+		t.Fatalf("Flush() err = %v", err)
+	}
+
+	// Send a second turn and gracefully finish (EOS).
+	if err := sess.SendText(ctx, "Streaming complete."); err != nil {
+		t.Fatalf("SendText(turn2) err = %v", err)
+	}
+	if err := sess.Finish(ctx); err != nil {
+		t.Fatalf("Finish() err = %v", err)
+	}
+
+	var chunks int
+	var totalBytes int
+	var sawFinal bool
+	for chunk := range sess.Audio() {
+		chunks++
+		totalBytes += len(chunk.Data)
+		if chunk.IsFinal {
+			sawFinal = true
+		}
+	}
+	if err := <-sess.Err(); err != nil {
+		t.Fatalf("realtime TTS stream error: %v", err)
+	}
+	if totalBytes == 0 {
+		t.Fatal("expected non-empty synthesized audio bytes from realtime TTS WebSocket")
+	}
+	if !sawFinal {
+		t.Error("expected at least one IsFinal chunk before stream closed")
+	}
+	t.Logf("RealtimeTTS completed: chunks=%d bytes=%d saw_final=%t", chunks, totalBytes, sawFinal)
+}

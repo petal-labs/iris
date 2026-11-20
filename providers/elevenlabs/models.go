@@ -34,6 +34,7 @@ var models = []core.ModelInfo{
 		Capabilities: []core.Feature{
 			core.FeatureSpeechSynthesis,
 			core.FeatureSpeechSynthesisStreaming,
+			core.FeatureSpeechSynthesisRealtime,
 		},
 	},
 	{
@@ -42,9 +43,13 @@ var models = []core.ModelInfo{
 		Capabilities: []core.Feature{
 			core.FeatureSpeechSynthesis,
 			core.FeatureSpeechSynthesisStreaming,
+			core.FeatureSpeechSynthesisRealtime,
 		},
 	},
 	{
+		// Note: eleven_v3 supports HTTP sync and HTTP streaming TTS, but is NOT
+		// supported on ElevenLabs' /v1/text-to-speech/{voice_id}/stream-input
+		// WebSocket endpoint (it requires the separate Text-to-Dialogue API).
 		ID:          ModelElevenV3,
 		DisplayName: "Eleven v3",
 		Capabilities: []core.Feature{
