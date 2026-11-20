@@ -52,10 +52,16 @@ var models = []core.ModelInfo{
 	{
 		ID:          ModelScribeV1,
 		DisplayName: "Scribe v1",
+		Capabilities: []core.Feature{
+			core.FeatureSpeechRecognition,
+		},
 	},
 	{
 		ID:          ModelScribeV2,
 		DisplayName: "Scribe v2",
+		Capabilities: []core.Feature{
+			core.FeatureSpeechRecognition,
+		},
 	},
 }
 
