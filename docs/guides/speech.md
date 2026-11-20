@@ -46,7 +46,7 @@ Speech `Feature` constants:
 - `core.FeatureSpeechSynthesisRealtime` — incremental-input WebSocket text-to-speech (`StartRealtimeSynthesis`)
 - `core.FeatureSpeechRecognition` — file/reader speech-to-text (`Transcribe`)
 - `core.FeatureSpeechRecognitionRealtime` — real-time streaming STT (`StartRealtimeTranscription`)
-- `core.FeatureVoiceSession` — full-duplex voice sessions *(planned)*
+- `core.FeatureVoiceSession` — full-duplex real-time voice sessions (`StartVoiceSession`)
 
 ## Verified Models and Capabilities
 
@@ -196,6 +196,21 @@ defaults, err := provider.GetDefaultVoiceSettings(ctx)
 
 Voice discovery is strictly read-only: voice creation, editing, deletion, and voice cloning are not exposed.
 
+## Real-Time Voice Session and Event API
+
+Full-duplex conversational voice sessions share a provider-agnostic contract in `core` (`core/voice_session.go`) designed for both Iris-managed STT→LLM→TTS pipelines and hosted session providers (such as ElevenAgents or Speech Engine):
+
+- **Interfaces & Discovery**: `core.VoiceSession`, `core.VoiceSessionProvider`, `core.AsVoiceSessionProvider`, and `(*core.Client).StartVoiceSession`.
+- **Typed Events (`core.VoiceEvent`)**:
+  - Lifecycle: `session_started`, `session_state`, `session_ended`
+  - Turn & interruption: `turn_started`, `turn_completed`, `turn_interrupted` (with `VoiceInterruption{CancelledTurnID, NextTurnID, Reason}`)
+  - Transcripts: `user_transcript_partial` (`IsFinal: false`), `user_transcript_committed` (`IsFinal: true`), `agent_text_delta` (`IsFinal: false`), `agent_text_committed` (`IsFinal: true`)
+  - Audio: `audio_output` (tagged with `TurnID`), `audio_output_ended`
+  - Tools & errors: `tool_call`, `tool_result`, `error`
+- **Stale Audio & Interruption Guard (`core.VoiceTurnTracker`)**: Generates monotonic turn IDs, cancels superseded/interrupted turn contexts immediately, and exposes `ObserveEvent` / `ShouldPlayAudio` so playback consumers drop late audio chunks belonging to interrupted turns.
+- **Bounded Delivery (`core.VoiceEventEmitter`)**: Provides race-free, deadlock-free bounded event emission and idempotent `Close()` / `Fail(err)` channel closure.
+- **Privacy**: `VoiceSessionConfig.String()` and `VoiceEvent.String()` omit system prompts, raw transcripts, assistant text, audio bytes, and tool argument/result payloads.
+
 ## Unsupported Models, Formats, and Current Limitations
 
 - **Chat completions**: `ElevenLabs.Chat` and `ElevenLabs.StreamChat` return `*core.ProviderError` wrapping `core.ErrNotSupported`.
@@ -207,7 +222,7 @@ Voice discovery is strictly read-only: voice creation, editing, deletion, and vo
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented)**: Full-duplex voice session API, Iris-managed voice pipelines, hosted ElevenAgents sessions, and consent-gated voice management/cloning.
+- **Planned (not yet implemented)**: Iris-managed voice pipelines (`voice` package), Speech Engine adapter, hosted ElevenAgents sessions, voice metrics/tracing hooks, and consent-gated voice management/cloning.
 
 ## Privacy and Reliability Defaults
 
