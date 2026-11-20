@@ -20,8 +20,9 @@ Cells reflect each provider's `Supports()` implementation. For chat-based featur
 | HuggingFace | Yes | Yes | Yes | No | No | No | No | No† | No | No | No |
 | Azure AI Foundry | Yes | Yes | Yes | Yes | No | No | No | Yes | Yes | No | No |
 | VoyageAI | No | No | No | No | No | No | No | N/A | Yes | Yes | No |
+| ElevenLabs | No | No | No | No | No | No | No | N/A | No | No | No |
 
-Perplexity additionally supports web-search grounding (`core.SearchOptions`, response citations) via `core.FeatureWebSearch`.
+Perplexity additionally supports web-search grounding (`core.SearchOptions`, response citations) via `core.FeatureWebSearch`. ElevenLabs supports speech synthesis (`core.FeatureSpeechSynthesis`), HTTP streaming synthesis (`core.FeatureSpeechSynthesisStreaming`), and file/reader speech recognition (`core.FeatureSpeechRecognition`).
 
 *Feature availability varies by model. See model-specific tables below.
 
@@ -41,6 +42,7 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 | Hugging Face | Supported | Chat, Streaming, Tools (Inference Providers router, model discovery) |
 | Azure AI Foundry | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Embeddings (Entra ID auth) |
 | Voyage AI | Supported | Embeddings, Contextualized Embeddings, Reranking (no chat) |
+| ElevenLabs | Supported | Text-to-Speech (Sync & HTTP Streaming), Scribe Speech-to-Text (no chat) |
 
 ## Provider Details
 
@@ -543,6 +545,59 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
     GetResponse(ctx)
 ```
 
+### ElevenLabs
+
+**API Endpoint**: `https://api.elevenlabs.io`
+
+**Authentication**: API key via `ELEVENLABS_API_KEY` environment variable (sent in `xi-api-key` header, stored as `core.Secret`).
+
+**Note**: ElevenLabs is a speech synthesis and transcription provider. `Chat` and `StreamChat` return `core.ErrNotSupported`. See the [Speech and Audio Guide](guides/speech.md) for format matrices, preflight limits, and streaming cancellation semantics.
+
+**Text-to-Speech Models**:
+
+| Model | Display Name | Sync TTS | Streaming TTS | Notes |
+|-------|--------------|----------|---------------|-------|
+| eleven_multilingual_v2 | Eleven Multilingual v2 | Yes | Yes | Default TTS model; 29 languages |
+| eleven_flash_v2_5 | Eleven Flash v2.5 | Yes | Yes | Low-latency multilingual TTS |
+| eleven_v3 | Eleven v3 | Yes | Yes | Expressive multi-speaker TTS |
+
+**Speech-to-Text Models**:
+
+| Model | Display Name | File/Reader STT | Notes |
+|-------|--------------|-----------------|-------|
+| scribe_v2 | Scribe v2 | Yes | Default STT model; diarization, timestamps, `keyterms`, audio events |
+| scribe_v1 | Scribe v1 | Yes | Batch STT (`keyterms` unsupported) |
+
+**Unsupported Models / Limitations**:
+- Chat and image generation are not supported.
+- TTS supports mono MP3, PCM, G.711 (`ulaw`/`alaw`), and Opus only (`wav`, `flac`, `ogg`, `aac`, `webm`, and stereo fail fast with `core.ErrInvalidAudioFormat`).
+- Scribe rejects `keyterms` on `scribe_v1`, `core.TimestampGranularitySegment`, `num_speakers > 32`, `temperature > 2.0`, and non-16kHz/stereo raw PCM.
+- Voice discovery, real-time WebSocket STT/TTS, and voice sessions are planned in follow-up issues.
+
+**Usage Example**:
+```go
+provider, err := elevenlabs.NewFromEnv()
+if err != nil {
+    log.Fatal(err)
+}
+client := core.NewClient(provider)
+
+// Synthesize speech
+audioResp, err := client.Synthesize(ctx, &core.SpeechRequest{
+    Model:   elevenlabs.ModelElevenFlashV25,
+    VoiceID: "JBFqnCBsd6RMkjVDRZzb",
+    Text:    "Hello from Iris.",
+    Format:  core.AudioFormatMP3_44100_128,
+})
+
+// Transcribe audio
+transcript, err := client.Transcribe(ctx, &core.TranscriptionRequest{
+    Model:      elevenlabs.ModelScribeV2,
+    Audio:      &audioResp.Audio,
+    Timestamps: core.TimestampGranularityWord,
+})
+```
+
 ## Choosing a Provider
 
 | Use Case | Recommended Provider(s) |
@@ -556,6 +611,7 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 | Code generation | OpenAI (Codex models), Anthropic |
 | Multimodal (vision) | OpenAI (GPT-4o), Anthropic (Claude), Gemini, Azure AI Foundry vision deployments |
 | Image generation | OpenAI (GPT-Image), Gemini (Nano Banana) |
+| Speech synthesis & transcription | ElevenLabs (`eleven_flash_v2_5`, `eleven_multilingual_v2`, `scribe_v2`) |
 
 Iris currently maps `Message.Parts` for OpenAI, Anthropic, Gemini, and Azure AI Foundry. Other providers invoke `core.WithWarningHandler` before omitting undeclared content parts, even when an upstream model advertises vision support.
 
@@ -572,3 +628,4 @@ Rate limits and pricing vary by provider and subscription tier. Consult each pro
 - **Ollama**: No rate limits for local usage
 - **HuggingFace**: https://huggingface.co/docs/api-inference/rate-limits
 - **VoyageAI**: https://docs.voyageai.com/docs/rate-limits
+- **ElevenLabs**: https://elevenlabs.io/pricing/api
