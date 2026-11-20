@@ -42,7 +42,7 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 | Hugging Face | Supported | Chat, Streaming, Tools (Inference Providers router, model discovery) |
 | Azure AI Foundry | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Embeddings (Entra ID auth) |
 | Voyage AI | Supported | Embeddings, Contextualized Embeddings, Reranking (no chat) |
-| ElevenLabs | Supported | Text-to-Speech (Sync & HTTP Streaming), Scribe Speech-to-Text (no chat) |
+| ElevenLabs | Supported | Text-to-Speech (Sync & HTTP Streaming), Scribe Speech-to-Text, Read-Only Voice Discovery & Settings (no chat) |
 
 ## Provider Details
 
@@ -572,7 +572,7 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 - Chat and image generation are not supported.
 - TTS supports mono MP3, PCM, G.711 (`ulaw`/`alaw`), and Opus only (`wav`, `flac`, `ogg`, `aac`, `webm`, and stereo fail fast with `core.ErrInvalidAudioFormat`).
 - Scribe rejects `keyterms` on `scribe_v1`, `core.TimestampGranularitySegment`, `num_speakers > 32`, `temperature > 2.0`, and non-16kHz/stereo raw PCM.
-- Voice discovery, real-time WebSocket STT/TTS, and voice sessions are planned in follow-up issues.
+- Real-time WebSocket STT/TTS, voice sessions, and consent-gated voice cloning/management are planned in follow-up issues (voice discovery via `ListVoices`, `ListAllVoices`, `GetVoice`, `GetVoiceSettings`, and `GetDefaultVoiceSettings` is strictly read-only).
 
 **Usage Example**:
 ```go

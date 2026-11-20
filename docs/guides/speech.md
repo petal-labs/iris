@@ -130,6 +130,29 @@ if err != nil {
 // resp.IsFinal == true; resp.Text, resp.Language, resp.Words, resp.AudioEvents populated
 ```
 
+## Voice Discovery and Settings (Read-Only)
+
+Discover available voices and retrieve supported synthesis settings directly from `*elevenlabs.ElevenLabs`:
+
+```go
+// Single paginated page (GET /v2/voices)
+page, err := provider.ListVoices(ctx, &elevenlabs.VoiceListRequest{
+	PageSize: 25,
+	Search:   "George",
+	Category: "premade",
+})
+
+// Automatic cursor pagination across all matching voices
+voices, err := provider.ListAllVoices(ctx, &elevenlabs.VoiceListRequest{Category: "premade"})
+
+// Single voice metadata and settings
+voice, err := provider.GetVoice(ctx, "JBFqnCBsd6RMkjVDRZzb")
+settings, err := provider.GetVoiceSettings(ctx, "JBFqnCBsd6RMkjVDRZzb")
+defaults, err := provider.GetDefaultVoiceSettings(ctx)
+```
+
+Voice discovery is strictly read-only: voice creation, editing, deletion, and voice cloning are not exposed.
+
 ## Unsupported Models, Formats, and Current Limitations
 
 - **Chat completions**: `ElevenLabs.Chat` and `ElevenLabs.StreamChat` return `*core.ProviderError` wrapping `core.ErrNotSupported`.
@@ -141,7 +164,7 @@ if err != nil {
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented in MVP)**: Voice listing/discovery, real-time Scribe WebSocket STT, incremental text-input WebSocket TTS, Iris-managed voice pipelines, and hosted ElevenAgents sessions.
+- **Planned (not yet implemented)**: Real-time Scribe WebSocket STT, incremental text-input WebSocket TTS, Iris-managed voice pipelines, hosted ElevenAgents sessions, and consent-gated voice management/cloning.
 
 ## Privacy and Reliability Defaults
 
