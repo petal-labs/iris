@@ -152,15 +152,19 @@ func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 
 	if !p.Supports(core.FeatureSpeechSynthesis) ||
 		!p.Supports(core.FeatureSpeechSynthesisStreaming) ||
+		!p.Supports(core.FeatureSpeechSynthesisRealtime) ||
 		!p.Supports(core.FeatureSpeechRecognition) ||
 		!p.Supports(core.FeatureSpeechRecognitionRealtime) {
-		t.Error("expected sync TTS, streaming TTS, STT, and realtime STT features to be supported")
+		t.Error("expected sync TTS, streaming TTS, realtime TTS, STT, and realtime STT features to be supported")
 	}
 	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureVoiceSession) {
 		t.Error("Supports() must not advertise unimplemented capabilities")
 	}
 	if synth, ok := core.AsSpeechSynthesizer(p); !ok || synth != p {
 		t.Fatalf("AsSpeechSynthesizer() = (%v, %v), want provider, true", synth, ok)
+	}
+	if rtSynth, ok := core.AsRealtimeSpeechSynthesizer(p); !ok || rtSynth != p {
+		t.Fatalf("AsRealtimeSpeechSynthesizer() = (%v, %v), want provider, true", rtSynth, ok)
 	}
 	if rec, ok := core.AsSpeechRecognizer(p); !ok || rec != p {
 		t.Fatalf("AsSpeechRecognizer() = (%v, %v), want provider, true", rec, ok)
@@ -184,11 +188,16 @@ func TestModelsCatalogAndDefensiveCopy(t *testing.T) {
 		t.Fatalf("len(Models()) = %d, want 6", len(got))
 	}
 	if !core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesis) ||
-		!core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesisStreaming) {
-		t.Error("expected ModelElevenMultilingualV2 to support sync and streaming TTS")
+		!core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesisStreaming) ||
+		!core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesisRealtime) {
+		t.Error("expected ModelElevenMultilingualV2 to support sync, streaming, and realtime TTS")
 	}
-	if !core.ProviderSupportsModelFeature(p, ModelElevenFlashV25, core.FeatureSpeechSynthesisStreaming) {
-		t.Error("expected ModelElevenFlashV25 to support FeatureSpeechSynthesisStreaming")
+	if !core.ProviderSupportsModelFeature(p, ModelElevenFlashV25, core.FeatureSpeechSynthesisStreaming) ||
+		!core.ProviderSupportsModelFeature(p, ModelElevenFlashV25, core.FeatureSpeechSynthesisRealtime) {
+		t.Error("expected ModelElevenFlashV25 to support streaming and realtime TTS")
+	}
+	if core.ProviderSupportsModelFeature(p, ModelElevenV3, core.FeatureSpeechSynthesisRealtime) {
+		t.Error("expected ModelElevenV3 NOT to advertise FeatureSpeechSynthesisRealtime")
 	}
 	if !core.ProviderSupportsModelFeature(p, ModelScribeV2, core.FeatureSpeechRecognition) ||
 		!core.ProviderSupportsModelFeature(p, ModelScribeV1, core.FeatureSpeechRecognition) {
@@ -209,7 +218,10 @@ func TestModelsCatalogAndDefensiveCopy(t *testing.T) {
 	if again[0].ID != ModelElevenMultilingualV2 {
 		t.Errorf("catalog mutated: got %q, want %q", again[0].ID, ModelElevenMultilingualV2)
 	}
-	if len(again[0].Capabilities) != 2 || again[0].Capabilities[0] != core.FeatureSpeechSynthesis || again[0].Capabilities[1] != core.FeatureSpeechSynthesisStreaming {
+	if len(again[0].Capabilities) != 3 ||
+		again[0].Capabilities[0] != core.FeatureSpeechSynthesis ||
+		again[0].Capabilities[1] != core.FeatureSpeechSynthesisStreaming ||
+		again[0].Capabilities[2] != core.FeatureSpeechSynthesisRealtime {
 		t.Errorf("catalog capabilities mutated: got %v", again[0].Capabilities)
 	}
 

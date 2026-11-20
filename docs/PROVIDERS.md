@@ -555,11 +555,11 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 
 **Text-to-Speech Models**:
 
-| Model | Display Name | Sync TTS | Streaming TTS | Notes |
-|-------|--------------|----------|---------------|-------|
-| eleven_multilingual_v2 | Eleven Multilingual v2 | Yes | Yes | Default TTS model; 29 languages |
-| eleven_flash_v2_5 | Eleven Flash v2.5 | Yes | Yes | Low-latency multilingual TTS |
-| eleven_v3 | Eleven v3 | Yes | Yes | Expressive multi-speaker TTS |
+| Model | Display Name | Sync TTS | HTTP Streaming TTS | Realtime WS TTS | Notes |
+|-------|--------------|----------|--------------------|-----------------|-------|
+| eleven_multilingual_v2 | Eleven Multilingual v2 | Yes | Yes | Yes | Default sync/HTTP TTS model; 29 languages |
+| eleven_flash_v2_5 | Eleven Flash v2.5 | Yes | Yes | Yes | Default real-time WS TTS model; low-latency multilingual TTS |
+| eleven_v3 | Eleven v3 | Yes | Yes | No | Expressive multi-speaker TTS (unsupported on `/stream-input` WebSocket) |
 
 **Speech-to-Text Models**:
 
@@ -572,8 +572,9 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 **Unsupported Models / Limitations**:
 - Chat and image generation are not supported.
 - TTS supports mono MP3, PCM, G.711 (`ulaw`/`alaw`), and Opus only (`wav`, `flac`, `ogg`, `aac`, `webm`, and stereo fail fast with `core.ErrInvalidAudioFormat`).
+- Incremental-input WebSocket TTS (`StartRealtimeSynthesis`) rejects `eleven_v3`, `eleven_v4*`, and Scribe models with `core.ErrNotSupported` before dialing.
 - Scribe rejects `keyterms` on `scribe_v1`, `core.TimestampGranularitySegment`, `num_speakers > 32`, `temperature > 2.0`, and non-16kHz/stereo raw PCM.
-- Real-time WebSocket STT/TTS, voice sessions, and consent-gated voice cloning/management are planned in follow-up issues (voice discovery via `ListVoices`, `ListAllVoices`, `GetVoice`, `GetVoiceSettings`, and `GetDefaultVoiceSettings` is strictly read-only).
+- Full-duplex voice sessions, Iris-managed voice pipelines, hosted ElevenAgents sessions, and consent-gated voice cloning/management are planned in follow-up issues (voice discovery via `ListVoices`, `ListAllVoices`, `GetVoice`, `GetVoiceSettings`, and `GetDefaultVoiceSettings` is strictly read-only).
 
 **Usage Example**:
 ```go

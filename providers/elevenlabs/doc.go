@@ -102,6 +102,30 @@
 // (max chunk size, even byte length for 16-bit PCM, format matching) and
 // partial vs. committed events are delivered over a bounded Events channel.
 //
+// # Incremental-Input Text-to-Speech (WebSocket)
+//
+// [ElevenLabs] implements [core.RealtimeSpeechSynthesizer] via
+// [ElevenLabs.StartRealtimeSynthesis] (and
+// [core.Client.StartRealtimeSynthesis]) targeting
+// wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input:
+//
+//	sess, err := client.StartRealtimeSynthesis(ctx, core.RealtimeSynthesisConfig{
+//	    Model:   elevenlabs.ModelElevenFlashV25,
+//	    VoiceID: "JBFqnCBsd6RMkjVDRZzb",
+//	    Format:  core.AudioFormatPCM16000,
+//	})
+//	defer sess.Close()
+//
+//	_ = sess.SendText(ctx, "Hello from ")
+//	_ = sess.SendText(ctx, "Iris.")
+//	_ = sess.Flush(ctx)  // force audio generation without closing the socket
+//	_ = sess.Finish(ctx) // signal end-of-input so remaining audio drains cleanly
+//
+// Model compatibility is enforced before dialing: [ModelElevenFlashV25] and
+// [ModelElevenMultilingualV2] advertise [core.FeatureSpeechSynthesisRealtime],
+// whereas [ModelElevenV3] (which requires ElevenLabs' separate Text-to-Dialogue
+// API) and Scribe STT models are rejected with [core.ErrNotSupported].
+//
 // # Voice Discovery and Settings (Read-Only)
 //
 // Read-only voice listing, cursor pagination, metadata retrieval, and voice
@@ -118,8 +142,9 @@
 //
 // # Current Limitations
 //
-// Synchronous TTS, HTTP streaming TTS, file-based Scribe transcription,
-// real-time Scribe WebSocket STT, and read-only voice discovery/settings are
-// implemented. WebSocket incremental-input TTS, full-duplex voice sessions,
-// and consent-gated voice management are implemented in subsequent issues.
+// Synchronous TTS, HTTP streaming TTS, incremental-input WebSocket TTS,
+// file-based Scribe transcription, real-time Scribe WebSocket STT, and
+// read-only voice discovery/settings are implemented. Full-duplex voice
+// sessions, Iris-managed voice pipelines, and consent-gated voice management
+// are implemented in subsequent issues.
 package elevenlabs

@@ -208,12 +208,15 @@
 //   - [TranscriptionRequest], [TranscriptionResponse], [TranscriptionWord],
 //     [TranscriptionSegment], and [AudioEvent] for speech-to-text with optional
 //     timestamps, speaker diarization, and committed-utterance flags
-//   - Optional provider interfaces [SpeechSynthesizer], [SpeechRecognizer], and
+//   - Optional provider interfaces [SpeechSynthesizer],
+//     [RealtimeSpeechSynthesizer], [SpeechRecognizer], and
 //     [RealtimeSpeechRecognizer], discoverable through [AsSpeechSynthesizer],
-//     [AsSpeechRecognizer], and [AsRealtimeSpeechRecognizer] (following
-//     [ProviderUnwrapper] chains), plus model capability helpers
-//     [ModelsWithCapability] and [ProviderSupportsModelFeature]
-//   - [Client.Synthesize], [Client.StreamSynthesize], [Client.Transcribe], and
+//     [AsRealtimeSpeechSynthesizer], [AsSpeechRecognizer], and
+//     [AsRealtimeSpeechRecognizer] (following [ProviderUnwrapper] chains), plus
+//     model capability helpers [ModelsWithCapability] and
+//     [ProviderSupportsModelFeature]
+//   - [Client.Synthesize], [Client.StreamSynthesize],
+//     [Client.StartRealtimeSynthesis], [Client.Transcribe], and
 //     [Client.StartRealtimeTranscription] for client-managed validation, rate
 //     limiting, timeouts, retries, and privacy-safe telemetry
 //

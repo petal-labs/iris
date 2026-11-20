@@ -43,20 +43,21 @@ if !core.ProviderSupportsModelFeature(provider, elevenlabs.ModelElevenFlashV25, 
 Speech `Feature` constants:
 - `core.FeatureSpeechSynthesis` — synchronous text-to-speech (`Synthesize`)
 - `core.FeatureSpeechSynthesisStreaming` — streaming text-to-speech (`StreamSynthesize`)
+- `core.FeatureSpeechSynthesisRealtime` — incremental-input WebSocket text-to-speech (`StartRealtimeSynthesis`)
 - `core.FeatureSpeechRecognition` — file/reader speech-to-text (`Transcribe`)
 - `core.FeatureSpeechRecognitionRealtime` — real-time streaming STT (`StartRealtimeTranscription`)
 - `core.FeatureVoiceSession` — full-duplex voice sessions *(planned)*
 
 ## Verified Models and Capabilities
 
-| Model Constant | Model ID | Sync TTS | Streaming TTS | File/Reader STT | Realtime STT | Notes |
-|---|---|---|---|---|---|---|
-| `elevenlabs.ModelElevenMultilingualV2` | `eleven_multilingual_v2` | Yes | Yes | No | No | Default TTS model; 29 languages |
-| `elevenlabs.ModelElevenFlashV25` | `eleven_flash_v2_5` | Yes | Yes | No | No | Low-latency multilingual TTS |
-| `elevenlabs.ModelElevenV3` | `eleven_v3` | Yes | Yes | No | No | Expressive multi-speaker TTS |
-| `elevenlabs.ModelScribeV1` | `scribe_v1` | No | No | Yes | No | Batch STT (`keyterms` unsupported) |
-| `elevenlabs.ModelScribeV2` | `scribe_v2` | No | No | Yes | No | Default batch STT model; diarization, timestamps, `keyterms`, audio events |
-| `elevenlabs.ModelScribeV2Realtime` | `scribe_v2_realtime` | No | No | No | Yes | Default real-time WebSocket STT (partial + committed transcripts) |
+| Model Constant | Model ID | Sync TTS | Streaming TTS | Realtime WS TTS | File/Reader STT | Realtime STT | Notes |
+|---|---|---|---|---|---|---|---|
+| `elevenlabs.ModelElevenMultilingualV2` | `eleven_multilingual_v2` | Yes | Yes | Yes | No | No | Default sync/HTTP TTS model; 29 languages |
+| `elevenlabs.ModelElevenFlashV25` | `eleven_flash_v2_5` | Yes | Yes | Yes | No | No | Default real-time WS TTS model; low-latency multilingual TTS |
+| `elevenlabs.ModelElevenV3` | `eleven_v3` | Yes | Yes | No | No | No | Expressive multi-speaker TTS (incompatible with `/stream-input` WebSocket) |
+| `elevenlabs.ModelScribeV1` | `scribe_v1` | No | No | No | Yes | No | Batch STT (`keyterms` unsupported) |
+| `elevenlabs.ModelScribeV2` | `scribe_v2` | No | No | No | Yes | No | Default batch STT model; diarization, timestamps, `keyterms`, audio events |
+| `elevenlabs.ModelScribeV2Realtime` | `scribe_v2_realtime` | No | No | No | No | Yes | Default real-time WebSocket STT (partial + committed transcripts) |
 
 Unverified model/feature combinations are never optimistically advertised as supported (`core.ProviderSupportsModelFeature` returns `false` for unknown models).
 
@@ -106,6 +107,47 @@ meta := <-stream.Final // metadata + Usage.OutputBytes (Audio.Data omitted to ke
 ```
 
 If you prefer a single assembled `*core.SpeechResponse`, pass `stream` to `core.DrainSpeechStream(ctx, stream)`. Cancelling `ctx` promptly closes the HTTP response body, unblocks pending reads or channel sends, reports `ctx.Err()` on `stream.Err`, and closes all three channels (`Ch`, `Err`, `Final`).
+
+## Incremental-Input WebSocket Text-to-Speech
+
+For streaming LLM tokens directly into speech synthesis without waiting for the full text response, open a `core.RealtimeSynthesisSession` via `client.StartRealtimeSynthesis` (`wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input`):
+
+```go
+sess, err := client.StartRealtimeSynthesis(ctx, core.RealtimeSynthesisConfig{
+	Model:               elevenlabs.ModelElevenFlashV25, // default
+	VoiceID:             "JBFqnCBsd6RMkjVDRZzb",
+	Format:              core.AudioFormatPCM16000,
+	ChunkLengthSchedule: []int{120, 160, 250, 290},
+	InactivityTimeout:   30 * time.Second,
+})
+if err != nil {
+	return err
+}
+defer sess.Close()
+
+// Stream incremental text fragments as tokens arrive.
+_ = sess.SendText(ctx, "Hello from ")
+_ = sess.SendText(ctx, "Iris. ")
+// Flush forces audio generation while keeping the socket open for additional turns.
+_ = sess.Flush(ctx)
+// Finish signals end-of-input (EOS) so remaining buffered audio drains cleanly.
+_ = sess.Finish(ctx)
+
+for chunk := range sess.Audio() {
+	if len(chunk.Data) > 0 {
+		// Forward chunk.Data to playback immediately.
+	}
+}
+if err := <-sess.Err(); err != nil {
+	return err
+}
+```
+
+Key constraints enforced preflight:
+- **Model compatibility**: `eleven_flash_v2_5` and `eleven_multilingual_v2` advertise `core.FeatureSpeechSynthesisRealtime`. `eleven_v3` (and `eleven_v3*` / `eleven_v4*` / Scribe models) are rejected before dialing with `core.ErrNotSupported` because ElevenLabs' `/stream-input` TTS WebSocket does not support v3/v4 dialogue models.
+- **Bounds**: `ChunkLengthSchedule` entries must be in `[50, 500]`; `InactivityTimeout` (when set) must be in `[1s, 180s]`.
+- **Empty fragments**: `SendText(ctx, "")` is rejected with `core.ErrInvalidSpeechRequest` so callers cannot accidentally emit an EOS frame; use `Flush` or `Finish` explicitly.
+- **Cleanup**: Always `defer sess.Close()` (idempotent and concurrency-safe) to release the WebSocket and background read goroutine immediately on error or barge-in interruption.
 
 ## File and Reader Scribe Transcription
 
@@ -165,7 +207,7 @@ Voice discovery is strictly read-only: voice creation, editing, deletion, and vo
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented)**: Incremental text-input WebSocket TTS, Iris-managed voice pipelines, hosted ElevenAgents sessions, and consent-gated voice management/cloning.
+- **Planned (not yet implemented)**: Full-duplex voice session API, Iris-managed voice pipelines, hosted ElevenAgents sessions, and consent-gated voice management/cloning.
 
 ## Privacy and Reliability Defaults
 

@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
 // ErrRealtimeSessionClosed indicates an operation was attempted on a closed
-// [RealtimeTranscriptionSession].
+// [RealtimeTranscriptionSession] or [RealtimeSynthesisSession].
 var ErrRealtimeSessionClosed = errors.New("realtime transcription session closed")
 
 // CommitStrategy controls how a real-time speech recognizer finalizes utterances.
@@ -195,4 +196,166 @@ func (c *Client) StartRealtimeTranscription(ctx context.Context, cfg RealtimeTra
 		return nil, err
 	}
 	return recognizer.StartRealtimeTranscription(ctx, cfg)
+}
+
+// RealtimeSynthesisConfig configures a bidirectional incremental-input
+// text-to-speech session where text fragments (such as streaming LLM tokens)
+// are sent incrementally and synthesized audio chunks are streamed back.
+//
+// Privacy: String and GoString omit metadata values that could carry sensitive
+// caller data and never include credentials or synthesis text.
+type RealtimeSynthesisConfig struct {
+	// Model specifies the real-time TTS model ID. Empty uses the provider default.
+	Model ModelID `json:"model,omitempty"`
+
+	// VoiceID identifies the voice to synthesize with. Required.
+	VoiceID string `json:"voice_id"`
+
+	// Format specifies the desired output audio format. Zero uses the provider default.
+	Format AudioFormat `json:"format,omitempty"`
+
+	// Language is an optional ISO-639 / BCP-47 language code hint (e.g., "en").
+	Language string `json:"language,omitempty"`
+
+	// VoiceSettings specifies optional synthesis tuning knobs.
+	VoiceSettings *VoiceSettings `json:"voice_settings,omitempty"`
+
+	// ChunkLengthSchedule optionally specifies progressive character-count
+	// thresholds used by the synthesizer to trigger incremental audio generation
+	// (e.g., [120, 160, 250, 290]). All elements must be positive when provided.
+	ChunkLengthSchedule []int `json:"chunk_length_schedule,omitempty"`
+
+	// AutoMode enables provider-managed low-latency chunk scheduling when supported.
+	AutoMode bool `json:"auto_mode,omitempty"`
+
+	// InactivityTimeout optionally bounds how long the remote session stays open
+	// without client messages before the server closes it. Must be non-negative.
+	InactivityTimeout time.Duration `json:"inactivity_timeout_ns,omitempty"`
+
+	// SyncAlignment requests character timing alignment metadata when supported.
+	SyncAlignment bool `json:"sync_alignment,omitempty"`
+
+	// BufferSize optionally sets the bounded capacity of the session's Audio channel.
+	// Zero uses the provider's default bounded buffer size.
+	BufferSize int `json:"buffer_size,omitempty"`
+
+	// Metadata holds optional provider-agnostic key-value metadata.
+	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// Validate checks that RealtimeSynthesisConfig contains required fields and valid
+// parameter bounds. Returned errors wrap [ErrInvalidSpeechRequest].
+func (c RealtimeSynthesisConfig) Validate() error {
+	if strings.TrimSpace(c.VoiceID) == "" {
+		return fmt.Errorf("%w: voice_id is required", ErrInvalidSpeechRequest)
+	}
+	if !c.Format.IsZero() {
+		if err := c.Format.Validate(); err != nil {
+			return fmt.Errorf("%w: %w", ErrInvalidSpeechRequest, err)
+		}
+	}
+	if err := c.VoiceSettings.Validate(); err != nil {
+		return err
+	}
+	for i, threshold := range c.ChunkLengthSchedule {
+		if threshold <= 0 {
+			return fmt.Errorf("%w: chunk_length_schedule[%d] must be positive, got %d",
+				ErrInvalidSpeechRequest, i, threshold)
+		}
+	}
+	if c.InactivityTimeout < 0 {
+		return fmt.Errorf("%w: inactivity_timeout must be non-negative, got %s",
+			ErrInvalidSpeechRequest, c.InactivityTimeout)
+	}
+	if c.BufferSize < 0 {
+		return fmt.Errorf("%w: buffer_size must be non-negative, got %d",
+			ErrInvalidSpeechRequest, c.BufferSize)
+	}
+	return nil
+}
+
+// String returns a log-safe summary of the synthesis configuration.
+func (c RealtimeSynthesisConfig) String() string {
+	return fmt.Sprintf("RealtimeSynthesisConfig{model=%q, voice_id=%q, format=%s, language=%q, auto_mode=%t}",
+		c.Model, c.VoiceID, c.Format.String(), c.Language, c.AutoMode)
+}
+
+// GoString returns a log-safe representation for %#v formatting.
+func (c RealtimeSynthesisConfig) GoString() string {
+	return "core." + c.String()
+}
+
+// RealtimeSynthesisSession represents an active bidirectional incremental-input
+// text-to-speech session.
+//
+// Typical lifecycle:
+//   - Call SendText one or more times as text fragments arrive.
+//   - Call Flush to force generation of buffered text while keeping the session
+//     open for additional turns.
+//   - Call Finish to signal end-of-input so remaining buffered audio drains cleanly
+//     and Audio() closes naturally.
+//   - Call Close (always defer Close) to immediately abort or clean up all
+//     underlying connections and goroutines.
+//
+// Implementations MUST:
+//   - Maintain bounded Audio() channel capacity so slow consumers cannot cause
+//     unbounded memory growth
+//   - Close Audio() and Err() promptly when the session ends or the parent context cancels
+//   - Make Close() idempotent and safe for concurrent calls
+type RealtimeSynthesisSession interface {
+	// SendText transmits an incremental non-empty text fragment for synthesis.
+	SendText(ctx context.Context, text string) error
+
+	// Flush forces synthesis of all currently buffered text without closing the session.
+	Flush(ctx context.Context) error
+
+	// Finish signals end-of-input so the synthesizer flushes remaining audio and
+	// closes the stream cleanly. Subsequent SendText, Flush, or Finish calls return
+	// [ErrRealtimeSessionClosed].
+	Finish(ctx context.Context) error
+
+	// Audio returns a bounded receive-only channel of synthesized audio chunks.
+	// Closed when the session terminates.
+	Audio() <-chan AudioChunk
+
+	// Err returns a receive-only channel emitting at most one terminal error before closing.
+	Err() <-chan error
+
+	// Close terminates the session immediately and releases all underlying
+	// connections and goroutines.
+	Close() error
+}
+
+// RealtimeSpeechSynthesizer is an optional interface for providers that support
+// bidirectional incremental-input text-to-speech synthesis (e.g., over WebSocket).
+type RealtimeSpeechSynthesizer interface {
+	// StartRealtimeSynthesis opens a new incremental-input TTS session.
+	StartRealtimeSynthesis(ctx context.Context, cfg RealtimeSynthesisConfig) (RealtimeSynthesisSession, error)
+}
+
+// AsRealtimeSpeechSynthesizer discovers incremental-input real-time speech
+// synthesis on a Provider or its [ProviderUnwrapper] chain. It returns nil and
+// false when no provider implements [RealtimeSpeechSynthesizer].
+func AsRealtimeSpeechSynthesizer(p Provider) (RealtimeSpeechSynthesizer, bool) {
+	return asProviderCapability[RealtimeSpeechSynthesizer](p)
+}
+
+// StartRealtimeSynthesis opens a bidirectional incremental-input text-to-speech
+// session through the client's provider. It validates cfg, verifies
+// [RealtimeSpeechSynthesizer] support, and applies client rate limiting.
+func (c *Client) StartRealtimeSynthesis(ctx context.Context, cfg RealtimeSynthesisConfig) (RealtimeSynthesisSession, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("iris: realtime synthesis context cannot be nil")
+	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	synth, ok := AsRealtimeSpeechSynthesizer(c.provider)
+	if !ok {
+		return nil, fmt.Errorf("iris: provider %s does not support realtime speech synthesis: %w", c.speechProviderID(), ErrNotSupported)
+	}
+	if err := c.waitForRateLimit(ctx); err != nil {
+		return nil, err
+	}
+	return synth.StartRealtimeSynthesis(ctx, cfg)
 }

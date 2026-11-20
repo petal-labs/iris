@@ -15,6 +15,10 @@ const (
 	// FeatureSpeechSynthesisStreaming indicates support for streaming text-to-speech synthesis.
 	FeatureSpeechSynthesisStreaming Feature = "speech_synthesis_streaming"
 
+	// FeatureSpeechSynthesisRealtime indicates support for bidirectional incremental-input
+	// real-time text-to-speech synthesis (e.g., streaming LLM text tokens over WebSocket).
+	FeatureSpeechSynthesisRealtime Feature = "speech_synthesis_realtime"
+
 	// FeatureSpeechRecognition indicates support for file or buffered speech-to-text transcription.
 	FeatureSpeechRecognition Feature = "speech_recognition"
 
