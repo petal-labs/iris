@@ -44,18 +44,19 @@ Speech `Feature` constants:
 - `core.FeatureSpeechSynthesis` — synchronous text-to-speech (`Synthesize`)
 - `core.FeatureSpeechSynthesisStreaming` — streaming text-to-speech (`StreamSynthesize`)
 - `core.FeatureSpeechRecognition` — file/reader speech-to-text (`Transcribe`)
-- `core.FeatureSpeechRecognitionRealtime` — real-time streaming STT *(planned)*
+- `core.FeatureSpeechRecognitionRealtime` — real-time streaming STT (`StartRealtimeTranscription`)
 - `core.FeatureVoiceSession` — full-duplex voice sessions *(planned)*
 
 ## Verified Models and Capabilities
 
-| Model Constant | Model ID | Sync TTS | Streaming TTS | File/Reader STT | Notes |
-|---|---|---|---|---|---|
-| `elevenlabs.ModelElevenMultilingualV2` | `eleven_multilingual_v2` | Yes | Yes | No | Default TTS model; 29 languages |
-| `elevenlabs.ModelElevenFlashV25` | `eleven_flash_v2_5` | Yes | Yes | No | Low-latency multilingual TTS |
-| `elevenlabs.ModelElevenV3` | `eleven_v3` | Yes | Yes | No | Expressive multi-speaker TTS |
-| `elevenlabs.ModelScribeV1` | `scribe_v1` | No | No | Yes | Batch STT (`keyterms` unsupported) |
-| `elevenlabs.ModelScribeV2` | `scribe_v2` | No | No | Yes | Default STT model; diarization, timestamps, `keyterms`, audio events |
+| Model Constant | Model ID | Sync TTS | Streaming TTS | File/Reader STT | Realtime STT | Notes |
+|---|---|---|---|---|---|---|
+| `elevenlabs.ModelElevenMultilingualV2` | `eleven_multilingual_v2` | Yes | Yes | No | No | Default TTS model; 29 languages |
+| `elevenlabs.ModelElevenFlashV25` | `eleven_flash_v2_5` | Yes | Yes | No | No | Low-latency multilingual TTS |
+| `elevenlabs.ModelElevenV3` | `eleven_v3` | Yes | Yes | No | No | Expressive multi-speaker TTS |
+| `elevenlabs.ModelScribeV1` | `scribe_v1` | No | No | Yes | No | Batch STT (`keyterms` unsupported) |
+| `elevenlabs.ModelScribeV2` | `scribe_v2` | No | No | Yes | No | Default batch STT model; diarization, timestamps, `keyterms`, audio events |
+| `elevenlabs.ModelScribeV2Realtime` | `scribe_v2_realtime` | No | No | No | Yes | Default real-time WebSocket STT (partial + committed transcripts) |
 
 Unverified model/feature combinations are never optimistically advertised as supported (`core.ProviderSupportsModelFeature` returns `false` for unknown models).
 
@@ -164,7 +165,7 @@ Voice discovery is strictly read-only: voice creation, editing, deletion, and vo
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented)**: Real-time Scribe WebSocket STT, incremental text-input WebSocket TTS, Iris-managed voice pipelines, hosted ElevenAgents sessions, and consent-gated voice management/cloning.
+- **Planned (not yet implemented)**: Incremental text-input WebSocket TTS, Iris-managed voice pipelines, hosted ElevenAgents sessions, and consent-gated voice management/cloning.
 
 ## Privacy and Reliability Defaults
 

@@ -42,7 +42,7 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 | Hugging Face | Supported | Chat, Streaming, Tools (Inference Providers router, model discovery) |
 | Azure AI Foundry | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Embeddings (Entra ID auth) |
 | Voyage AI | Supported | Embeddings, Contextualized Embeddings, Reranking (no chat) |
-| ElevenLabs | Supported | Text-to-Speech (Sync & HTTP Streaming), Scribe Speech-to-Text, Read-Only Voice Discovery & Settings (no chat) |
+| ElevenLabs | Supported | Text-to-Speech (Sync & HTTP Streaming), Scribe Speech-to-Text (File & Real-Time WebSocket), Read-Only Voice Discovery & Settings (no chat) |
 
 ## Provider Details
 
@@ -563,10 +563,11 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 
 **Speech-to-Text Models**:
 
-| Model | Display Name | File/Reader STT | Notes |
-|-------|--------------|-----------------|-------|
-| scribe_v2 | Scribe v2 | Yes | Default STT model; diarization, timestamps, `keyterms`, audio events |
-| scribe_v1 | Scribe v1 | Yes | Batch STT (`keyterms` unsupported) |
+| Model | Display Name | File/Reader STT | Realtime WebSocket STT | Notes |
+|-------|--------------|-----------------|------------------------|-------|
+| scribe_v2 | Scribe v2 | Yes | No | Default batch STT model; diarization, timestamps, `keyterms`, audio events |
+| scribe_v1 | Scribe v1 | Yes | No | Batch STT (`keyterms` unsupported) |
+| scribe_v2_realtime | Scribe v2 Realtime | No | Yes | Real-time streaming STT (mono PCM / ulaw_8000) |
 
 **Unsupported Models / Limitations**:
 - Chat and image generation are not supported.

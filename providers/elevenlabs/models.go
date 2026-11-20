@@ -18,6 +18,9 @@ const (
 
 	// ModelScribeV2 is ElevenLabs' Scribe v2 speech-to-text model.
 	ModelScribeV2 core.ModelID = "scribe_v2"
+
+	// ModelScribeV2Realtime is ElevenLabs' Scribe v2 real-time WebSocket STT model.
+	ModelScribeV2Realtime core.ModelID = "scribe_v2_realtime"
 )
 
 // models is the static catalog of known ElevenLabs models.
@@ -61,6 +64,13 @@ var models = []core.ModelInfo{
 		DisplayName: "Scribe v2",
 		Capabilities: []core.Feature{
 			core.FeatureSpeechRecognition,
+		},
+	},
+	{
+		ID:          ModelScribeV2Realtime,
+		DisplayName: "Scribe v2 Realtime",
+		Capabilities: []core.Feature{
+			core.FeatureSpeechRecognitionRealtime,
 		},
 	},
 }

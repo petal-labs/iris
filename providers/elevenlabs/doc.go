@@ -83,6 +83,25 @@
 // granularity (none/word/character; segment is not supported), and raw PCM
 // (16000Hz mono pcm_s16le_16 only).
 //
+// # Real-Time Speech-to-Text (Scribe WebSocket)
+//
+// [ElevenLabs] implements [core.RealtimeSpeechRecognizer] via
+// [ElevenLabs.StartRealtimeTranscription] (and
+// [core.Client.StartRealtimeTranscription]) targeting
+// wss://api.elevenlabs.io/v1/speech-to-text/realtime with
+// [ModelScribeV2Realtime]:
+//
+//	sess, err := client.StartRealtimeTranscription(ctx, core.RealtimeTranscriptionConfig{
+//	    Model:          elevenlabs.ModelScribeV2Realtime,
+//	    Format:         core.AudioFormatPCM16000,
+//	    CommitStrategy: core.CommitStrategyManual,
+//	})
+//
+// Supported real-time formats are mono PCM (8000/16000/22050/24000/44100/
+// 48000Hz) and G.711 mu-law (8000Hz). Chunks are validated before transmission
+// (max chunk size, even byte length for 16-bit PCM, format matching) and
+// partial vs. committed events are delivered over a bounded Events channel.
+//
 // # Voice Discovery and Settings (Read-Only)
 //
 // Read-only voice listing, cursor pagination, metadata retrieval, and voice
@@ -99,8 +118,8 @@
 //
 // # Current Limitations
 //
-// Synchronous TTS, HTTP streaming TTS, file-based Scribe transcription, and
-// read-only voice discovery/settings are implemented. Real-time Scribe STT,
-// WebSocket incremental-input TTS, real-time voice sessions, and consent-gated
-// voice management are implemented in subsequent issues.
+// Synchronous TTS, HTTP streaming TTS, file-based Scribe transcription,
+// real-time Scribe WebSocket STT, and read-only voice discovery/settings are
+// implemented. WebSocket incremental-input TTS, full-duplex voice sessions,
+// and consent-gated voice management are implemented in subsequent issues.
 package elevenlabs
