@@ -112,6 +112,11 @@
 //   - [FeatureEmbeddings]: Text embedding generation
 //   - [FeatureContextualizedEmbeddings]: Document-aware embeddings
 //   - [FeatureReranking]: Search result reranking
+//   - [FeatureSpeechSynthesis]: Synchronous text-to-speech synthesis
+//   - [FeatureSpeechSynthesisStreaming]: Streaming text-to-speech synthesis
+//   - [FeatureSpeechRecognition]: File or buffered speech-to-text transcription
+//   - [FeatureSpeechRecognitionRealtime]: Real-time streaming speech-to-text
+//   - [FeatureVoiceSession]: Full-duplex real-time voice sessions
 //
 // # Error Handling
 //
@@ -203,8 +208,21 @@
 //   - [TranscriptionRequest], [TranscriptionResponse], [TranscriptionWord],
 //     [TranscriptionSegment], and [AudioEvent] for speech-to-text with optional
 //     timestamps, speaker diarization, and committed-utterance flags
+//   - Optional provider interfaces [SpeechSynthesizer] and [SpeechRecognizer],
+//     discoverable through [AsSpeechSynthesizer] and [AsSpeechRecognizer]
+//     (following [ProviderUnwrapper] chains), plus model capability helpers
+//     [ModelsWithCapability] and [ProviderSupportsModelFeature]
+//   - [Client.Synthesize], [Client.StreamSynthesize], and [Client.Transcribe]
+//     for client-managed validation, rate limiting, timeouts, retries, and
+//     privacy-safe telemetry
 //
 // Limitations and contracts:
+//   - Existing [Provider] implementations do not need to implement speech
+//     interfaces; callers targeting unsupported providers receive [ErrNotSupported].
+//   - Reader-backed [TranscriptionRequest] calls are not automatically retried
+//     by [Client.Transcribe] because io.Reader cannot be rewound safely.
+//   - Real-time speech recognition and full-duplex voice session interfaces are
+//     defined separately from the synchronous/HTTP-streaming speech interfaces.
 //   - Audio capture and playback are application-side responsibilities; Iris
 //     accepts and produces encoded/raw audio bytes and streams, not hardware
 //     microphone or speaker drivers.
