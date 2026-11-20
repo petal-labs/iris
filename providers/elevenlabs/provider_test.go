@@ -150,8 +150,14 @@ func TestAPIKeyAndHeaderRedaction(t *testing.T) {
 func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 	p := New("test-key")
 
-	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureSpeechSynthesis) {
+	if !p.Supports(core.FeatureSpeechSynthesis) {
+		t.Error("expected Supports(FeatureSpeechSynthesis) == true")
+	}
+	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureSpeechSynthesisStreaming) || p.Supports(core.FeatureSpeechRecognition) {
 		t.Error("Supports() must not advertise unimplemented capabilities")
+	}
+	if synth, ok := core.AsSpeechSynthesizer(p); !ok || synth != p {
+		t.Fatalf("AsSpeechSynthesizer() = (%v, %v), want provider, true", synth, ok)
 	}
 
 	if _, err := p.Chat(context.Background(), &core.ChatRequest{}); !errors.Is(err, core.ErrNotSupported) {
@@ -168,16 +174,25 @@ func TestModelsCatalogAndDefensiveCopy(t *testing.T) {
 	if len(got) != 5 {
 		t.Fatalf("len(Models()) = %d, want 5", len(got))
 	}
+	if !core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesis) {
+		t.Error("expected ModelElevenMultilingualV2 to support FeatureSpeechSynthesis")
+	}
+	if !core.ProviderSupportsModelFeature(p, ModelElevenFlashV25, core.FeatureSpeechSynthesis) {
+		t.Error("expected ModelElevenFlashV25 to support FeatureSpeechSynthesis")
+	}
+	if core.ProviderSupportsModelFeature(p, ModelScribeV2, core.FeatureSpeechSynthesis) {
+		t.Error("expected ModelScribeV2 NOT to support FeatureSpeechSynthesis")
+	}
 
 	// Mutating returned slice must not mutate catalog.
 	got[0].ID = "mutated"
-	got[0].Capabilities = []core.Feature{core.FeatureChat}
+	got[0].Capabilities[0] = core.FeatureChat
 
 	again := p.Models()
 	if again[0].ID != ModelElevenMultilingualV2 {
 		t.Errorf("catalog mutated: got %q, want %q", again[0].ID, ModelElevenMultilingualV2)
 	}
-	if len(again[0].Capabilities) != 0 {
+	if len(again[0].Capabilities) != 1 || again[0].Capabilities[0] != core.FeatureSpeechSynthesis {
 		t.Errorf("catalog capabilities mutated: got %v", again[0].Capabilities)
 	}
 
