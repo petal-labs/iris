@@ -150,10 +150,10 @@ func TestAPIKeyAndHeaderRedaction(t *testing.T) {
 func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 	p := New("test-key")
 
-	if !p.Supports(core.FeatureSpeechSynthesis) {
-		t.Error("expected Supports(FeatureSpeechSynthesis) == true")
+	if !p.Supports(core.FeatureSpeechSynthesis) || !p.Supports(core.FeatureSpeechSynthesisStreaming) {
+		t.Error("expected Supports(FeatureSpeechSynthesis) and Supports(FeatureSpeechSynthesisStreaming) == true")
 	}
-	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureSpeechSynthesisStreaming) || p.Supports(core.FeatureSpeechRecognition) {
+	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureSpeechRecognition) || p.Supports(core.FeatureVoiceSession) {
 		t.Error("Supports() must not advertise unimplemented capabilities")
 	}
 	if synth, ok := core.AsSpeechSynthesizer(p); !ok || synth != p {
@@ -174,11 +174,12 @@ func TestModelsCatalogAndDefensiveCopy(t *testing.T) {
 	if len(got) != 5 {
 		t.Fatalf("len(Models()) = %d, want 5", len(got))
 	}
-	if !core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesis) {
-		t.Error("expected ModelElevenMultilingualV2 to support FeatureSpeechSynthesis")
+	if !core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesis) ||
+		!core.ProviderSupportsModelFeature(p, ModelElevenMultilingualV2, core.FeatureSpeechSynthesisStreaming) {
+		t.Error("expected ModelElevenMultilingualV2 to support sync and streaming TTS")
 	}
-	if !core.ProviderSupportsModelFeature(p, ModelElevenFlashV25, core.FeatureSpeechSynthesis) {
-		t.Error("expected ModelElevenFlashV25 to support FeatureSpeechSynthesis")
+	if !core.ProviderSupportsModelFeature(p, ModelElevenFlashV25, core.FeatureSpeechSynthesisStreaming) {
+		t.Error("expected ModelElevenFlashV25 to support FeatureSpeechSynthesisStreaming")
 	}
 	if core.ProviderSupportsModelFeature(p, ModelScribeV2, core.FeatureSpeechSynthesis) {
 		t.Error("expected ModelScribeV2 NOT to support FeatureSpeechSynthesis")
@@ -192,7 +193,7 @@ func TestModelsCatalogAndDefensiveCopy(t *testing.T) {
 	if again[0].ID != ModelElevenMultilingualV2 {
 		t.Errorf("catalog mutated: got %q, want %q", again[0].ID, ModelElevenMultilingualV2)
 	}
-	if len(again[0].Capabilities) != 1 || again[0].Capabilities[0] != core.FeatureSpeechSynthesis {
+	if len(again[0].Capabilities) != 2 || again[0].Capabilities[0] != core.FeatureSpeechSynthesis || again[0].Capabilities[1] != core.FeatureSpeechSynthesisStreaming {
 		t.Errorf("catalog capabilities mutated: got %v", again[0].Capabilities)
 	}
 
