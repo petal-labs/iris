@@ -1,6 +1,6 @@
 # Iris SDK Examples
 
-This directory contains runnable examples for the Iris SDK across chat, streaming, tools, batch, testing, and image workflows.
+This directory contains runnable examples for the Iris SDK across chat, streaming, tools, batch, testing, image, and speech workflows.
 
 ## Module Structure
 
@@ -21,6 +21,7 @@ export GEMINI_API_KEY=your-key      # Gemini image example
 export XAI_API_KEY=your-key         # xAI examples
 export ZAI_API_KEY=your-key         # Z.ai examples
 export HF_TOKEN=your-key            # Hugging Face examples
+export ELEVENLABS_API_KEY=your-key  # ElevenLabs speech examples
 ```
 
 ## Running Examples
@@ -68,6 +69,11 @@ go run ./examples/image/basic
 go run ./examples/image/streaming
 go run ./examples/image/edit
 go run ./examples/image/gemini
+
+# Speech examples (ElevenLabs)
+go run ./examples/speech/elevenlabs-synthesize -text "Hello from Iris." -out speech.mp3
+go run ./examples/speech/elevenlabs-stream -text "Streaming audio from Iris." -out stream.mp3
+go run ./examples/speech/elevenlabs-transcribe -file speech.mp3 -diarize -timestamps word
 ```
 
 ### From `examples/` Directory
@@ -93,3 +99,6 @@ go run ./image/basic
 - `tools/weather`: tool calling with middleware (`WithBasicValidation`, `WithTimeout`, `WithLogging`) and warning routing (`WithWarningHandler`).
 - `chat/huggingface-discovery`: model discovery helpers (`GetModelStatus`, `GetModelProviders`, `ListModels`).
 - `image/gemini`: Gemini image generation path.
+- `speech/elevenlabs-synthesize`: Synchronous ElevenLabs TTS saving audio to disk.
+- `speech/elevenlabs-stream`: HTTP streaming TTS measuring first-chunk latency and writing incremental chunks.
+- `speech/elevenlabs-transcribe`: File/reader Scribe transcription with optional diarization, timestamps, and audio events.
