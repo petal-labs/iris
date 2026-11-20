@@ -83,10 +83,24 @@
 // granularity (none/word/character; segment is not supported), and raw PCM
 // (16000Hz mono pcm_s16le_16 only).
 //
+// # Voice Discovery and Settings (Read-Only)
+//
+// Read-only voice listing, cursor pagination, metadata retrieval, and voice
+// settings inspection are available directly on [ElevenLabs]:
+//
+//   - [ElevenLabs.ListVoices] / [ElevenLabs.ListAllVoices] (GET /v2/voices)
+//   - [ElevenLabs.GetVoice] (GET /v1/voices/{voice_id})
+//   - [ElevenLabs.GetVoiceSettings] (GET /v1/voices/{voice_id}/settings)
+//   - [ElevenLabs.GetDefaultVoiceSettings] (GET /v1/voices/settings/default)
+//
+// Returned [core.VoiceSettings] values can be passed directly into
+// [core.SpeechRequest.VoiceSettings]. Voice creation, editing, deletion, and
+// voice cloning are intentionally not exposed by this read-only API.
+//
 // # Current Limitations
 //
-// Synchronous TTS, HTTP streaming TTS, and file-based Scribe transcription are
-// implemented. Voice discovery, real-time Scribe STT, WebSocket
-// incremental-input TTS, and real-time voice sessions are implemented in
-// subsequent issues.
+// Synchronous TTS, HTTP streaming TTS, file-based Scribe transcription, and
+// read-only voice discovery/settings are implemented. Real-time Scribe STT,
+// WebSocket incremental-input TTS, real-time voice sessions, and consent-gated
+// voice management are implemented in subsequent issues.
 package elevenlabs

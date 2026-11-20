@@ -154,3 +154,52 @@ func TestElevenLabs_InvalidAPIKey_ReturnsUnauthorized(t *testing.T) {
 		t.Errorf("error leaked API key: %v", err)
 	}
 }
+
+func TestElevenLabs_VoiceDiscovery_And_Settings(t *testing.T) {
+	skipIfNoElevenLabsKey(t)
+
+	provider := elevenlabs.New(getElevenLabsKey(t), elevenlabs.WithTimeout(20*time.Second))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	page, err := provider.ListVoices(ctx, &elevenlabs.VoiceListRequest{PageSize: 5})
+	if err != nil {
+		t.Fatalf("ListVoices() error = %v", err)
+	}
+	if len(page.Voices) == 0 {
+		t.Fatal("ListVoices() returned 0 voices")
+	}
+
+	first := page.Voices[0]
+	if first.VoiceID == "" || first.Name == "" {
+		t.Errorf("first voice missing ID or Name: %+v", first)
+	}
+
+	voice, err := provider.GetVoice(ctx, first.VoiceID)
+	if err != nil {
+		t.Fatalf("GetVoice(%q) error = %v", first.VoiceID, err)
+	}
+	if voice.VoiceID != first.VoiceID {
+		t.Errorf("GetVoice().VoiceID = %q, want %q", voice.VoiceID, first.VoiceID)
+	}
+
+	settings, err := provider.GetVoiceSettings(ctx, first.VoiceID)
+	if err != nil {
+		t.Fatalf("GetVoiceSettings(%q) error = %v", first.VoiceID, err)
+	}
+	if err := settings.Validate(); err != nil {
+		t.Errorf("GetVoiceSettings() returned invalid settings: %v", err)
+	}
+
+	defaults, err := provider.GetDefaultVoiceSettings(ctx)
+	if err != nil {
+		t.Fatalf("GetDefaultVoiceSettings() error = %v", err)
+	}
+	if err := defaults.Validate(); err != nil {
+		t.Errorf("GetDefaultVoiceSettings() returned invalid settings: %v", err)
+	}
+
+	t.Logf("VoiceDiscovery ok: page_count=%d has_more=%t total=%d first_voice=%q category=%q",
+		len(page.Voices), page.HasMore, page.TotalCount, voice.Name, voice.Category)
+}
