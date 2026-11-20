@@ -189,6 +189,32 @@
 // Providers declare support through [ContentPartSupporter]; undeclared parts
 // invoke the client's [WarningHandler] before they are omitted.
 //
+// # Audio and Speech
+//
+// Provider-agnostic audio and speech types support text-to-speech synthesis and
+// speech-to-text transcription across providers without coupling callers to
+// provider-specific wire formats:
+//
+//   - [AudioEncoding] and [AudioFormat] (with presets such as
+//     [AudioFormatMP3_44100_128], [AudioFormatPCM16000], and [AudioFormatULaw8000])
+//   - [AudioData] and [AudioChunk] for complete and streaming audio payloads
+//   - [SpeechRequest], [VoiceSettings], [SpeechResponse], [SpeechStream], and
+//     [DrainSpeechStream] for synchronous and streaming text-to-speech
+//   - [TranscriptionRequest], [TranscriptionResponse], [TranscriptionWord],
+//     [TranscriptionSegment], and [AudioEvent] for speech-to-text with optional
+//     timestamps, speaker diarization, and committed-utterance flags
+//
+// Limitations and contracts:
+//   - Audio capture and playback are application-side responsibilities; Iris
+//     accepts and produces encoded/raw audio bytes and streams, not hardware
+//     microphone or speaker drivers.
+//   - Validation methods check structural validity and value bounds; individual
+//     providers enforce model-specific format, voice, and size restrictions.
+//   - To prevent accidental logging of sensitive audio or transcripts, String
+//     and GoString methods on [AudioData], [AudioChunk], [SpeechRequest],
+//     [SpeechResponse], [TranscriptionRequest], and [TranscriptionResponse]
+//     emit metadata summaries and omit raw audio bytes and text payloads.
+//
 // # Thread Safety
 //
 // [Client] is safe for concurrent use across goroutines.
