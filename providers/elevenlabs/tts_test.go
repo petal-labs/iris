@@ -359,11 +359,3 @@ func TestSynthesizeFailuresAndCancellation(t *testing.T) {
 		}
 	})
 }
-
-func TestStreamSynthesizeNotYetSupported(t *testing.T) {
-	p := New("k")
-	_, err := p.StreamSynthesize(context.Background(), &core.SpeechRequest{VoiceID: "v1", Text: "hi"})
-	if !errors.Is(err, core.ErrNotSupported) {
-		t.Fatalf("StreamSynthesize() err = %v, want core.ErrNotSupported", err)
-	}
-}

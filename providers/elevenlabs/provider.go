@@ -22,10 +22,12 @@ type ElevenLabs struct {
 // New creates a new ElevenLabs provider with the given API key and options.
 func New(apiKey string, opts ...Option) *ElevenLabs {
 	cfg := Config{
-		APIKey:     core.NewSecret(apiKey),
-		BaseURL:    DefaultBaseURL,
-		HTTPClient: http.DefaultClient,
-		Timeout:    timeoutx.Default,
+		APIKey:           core.NewSecret(apiKey),
+		BaseURL:          DefaultBaseURL,
+		HTTPClient:       http.DefaultClient,
+		Timeout:          timeoutx.Default,
+		StreamChunkSize:  DefaultStreamChunkSize,
+		StreamBufferSize: DefaultStreamBufferSize,
 	}
 
 	for _, opt := range opts {
@@ -36,6 +38,12 @@ func New(apiKey string, opts ...Option) *ElevenLabs {
 
 	if cfg.HTTPClient == nil {
 		cfg.HTTPClient = http.DefaultClient
+	}
+	if cfg.StreamChunkSize <= 0 {
+		cfg.StreamChunkSize = DefaultStreamChunkSize
+	}
+	if cfg.StreamBufferSize <= 0 {
+		cfg.StreamBufferSize = DefaultStreamBufferSize
 	}
 	cfg.BaseURL = strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
 	if cfg.BaseURL == "" {
@@ -75,7 +83,12 @@ func (p *ElevenLabs) Models() []core.ModelInfo {
 
 // Supports reports whether the provider currently supports the given feature.
 func (p *ElevenLabs) Supports(feature core.Feature) bool {
-	return feature == core.FeatureSpeechSynthesis
+	switch feature {
+	case core.FeatureSpeechSynthesis, core.FeatureSpeechSynthesisStreaming:
+		return true
+	default:
+		return false
+	}
 }
 
 // Chat is not supported by ElevenLabs. Returns [*core.ProviderError] wrapping

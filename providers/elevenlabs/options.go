@@ -16,6 +16,14 @@ const DefaultBaseURL = "https://api.elevenlabs.io"
 // DefaultAPIKeyEnvVar is the environment variable read by [NewFromEnv].
 const DefaultAPIKeyEnvVar = "ELEVENLABS_API_KEY"
 
+// DefaultStreamChunkSize is the default maximum byte size per emitted audio
+// chunk during HTTP streaming TTS.
+const DefaultStreamChunkSize = 16 * 1024
+
+// DefaultStreamBufferSize is the default bounded channel capacity for queued
+// audio chunks during HTTP streaming TTS.
+const DefaultStreamBufferSize = 16
+
 // ErrAPIKeyNotFound is returned by [NewFromEnv] when ELEVENLABS_API_KEY is unset or blank.
 var ErrAPIKeyNotFound = errors.New("elevenlabs: ELEVENLABS_API_KEY environment variable not set")
 
@@ -40,6 +48,14 @@ type Config struct {
 	// Timeout bounds direct provider unary requests when the caller's context
 	// does not already supply a deadline. Zero or negative disables the default timeout.
 	Timeout time.Duration `json:"timeout_ns,omitempty"`
+
+	// StreamChunkSize sets the maximum read buffer size per AudioChunk during
+	// HTTP streaming TTS. Defaults to DefaultStreamChunkSize (16 KiB).
+	StreamChunkSize int `json:"stream_chunk_size,omitempty"`
+
+	// StreamBufferSize sets the bounded channel capacity for AudioChunk values
+	// during HTTP streaming TTS. Defaults to DefaultStreamBufferSize (16 chunks).
+	StreamBufferSize int `json:"stream_buffer_size,omitempty"`
 }
 
 // String returns a log-safe summary with the API key and custom header values redacted.
@@ -104,5 +120,25 @@ func WithHeader(key, value string) Option {
 func WithTimeout(d time.Duration) Option {
 	return func(c *Config) {
 		c.Timeout = d
+	}
+}
+
+// WithStreamChunkSize sets the maximum byte size per emitted [core.AudioChunk]
+// for HTTP streaming TTS. Non-positive values are ignored.
+func WithStreamChunkSize(bytes int) Option {
+	return func(c *Config) {
+		if bytes > 0 {
+			c.StreamChunkSize = bytes
+		}
+	}
+}
+
+// WithStreamBufferSize sets the bounded channel capacity (in chunks) for
+// [core.SpeechStream.Ch]. Non-positive values are ignored.
+func WithStreamBufferSize(chunks int) Option {
+	return func(c *Config) {
+		if chunks > 0 {
+			c.StreamBufferSize = chunks
+		}
 	}
 }

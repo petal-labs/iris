@@ -30,6 +30,7 @@ var models = []core.ModelInfo{
 		DisplayName: "Eleven Multilingual v2",
 		Capabilities: []core.Feature{
 			core.FeatureSpeechSynthesis,
+			core.FeatureSpeechSynthesisStreaming,
 		},
 	},
 	{
@@ -37,6 +38,7 @@ var models = []core.ModelInfo{
 		DisplayName: "Eleven Flash v2.5",
 		Capabilities: []core.Feature{
 			core.FeatureSpeechSynthesis,
+			core.FeatureSpeechSynthesisStreaming,
 		},
 	},
 	{
@@ -44,6 +46,7 @@ var models = []core.ModelInfo{
 		DisplayName: "Eleven v3",
 		Capabilities: []core.Feature{
 			core.FeatureSpeechSynthesis,
+			core.FeatureSpeechSynthesisStreaming,
 		},
 	},
 	{

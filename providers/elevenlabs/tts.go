@@ -133,17 +133,6 @@ func (p *ElevenLabs) Synthesize(ctx context.Context, req *core.SpeechRequest) (*
 	}, nil
 }
 
-// StreamSynthesize is not yet implemented for ElevenLabs. Returns
-// [*core.ProviderError] wrapping [core.ErrNotSupported] until HTTP streaming
-// TTS is implemented.
-func (p *ElevenLabs) StreamSynthesize(ctx context.Context, req *core.SpeechRequest) (*core.SpeechStream, error) {
-	return nil, &core.ProviderError{
-		Provider: providerID,
-		Message:  "streaming speech synthesis is not yet supported by ElevenLabs",
-		Err:      core.ErrNotSupported,
-	}
-}
-
 func parseCharacterCost(headers http.Header) int {
 	raw := strings.TrimSpace(headers.Get("character-cost"))
 	if raw == "" {
