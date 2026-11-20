@@ -209,16 +209,23 @@
 //     [TranscriptionSegment], and [AudioEvent] for speech-to-text with optional
 //     timestamps, speaker diarization, and committed-utterance flags
 //   - Optional provider interfaces [SpeechSynthesizer],
-//     [RealtimeSpeechSynthesizer], [SpeechRecognizer], and
-//     [RealtimeSpeechRecognizer], discoverable through [AsSpeechSynthesizer],
-//     [AsRealtimeSpeechSynthesizer], [AsSpeechRecognizer], and
-//     [AsRealtimeSpeechRecognizer] (following [ProviderUnwrapper] chains), plus
+//     [RealtimeSpeechSynthesizer], [SpeechRecognizer],
+//     [RealtimeSpeechRecognizer], and [VoiceSessionProvider], discoverable
+//     through [AsSpeechSynthesizer], [AsRealtimeSpeechSynthesizer],
+//     [AsSpeechRecognizer], [AsRealtimeSpeechRecognizer], and
+//     [AsVoiceSessionProvider] (following [ProviderUnwrapper] chains), plus
 //     model capability helpers [ModelsWithCapability] and
 //     [ProviderSupportsModelFeature]
+//   - Full-duplex real-time voice session contracts: [VoiceSessionConfig],
+//     [VoiceSessionState], [VoiceEvent], [VoiceEventType], [VoiceInterruption],
+//     [VoiceSession], [VoiceTurnTracker] (turn ID generation, cancellation, and
+//     stale-audio filtering after interruption), and [VoiceEventEmitter]
+//     (bounded, race-free event stream delivery)
 //   - [Client.Synthesize], [Client.StreamSynthesize],
-//     [Client.StartRealtimeSynthesis], [Client.Transcribe], and
-//     [Client.StartRealtimeTranscription] for client-managed validation, rate
-//     limiting, timeouts, retries, and privacy-safe telemetry
+//     [Client.StartRealtimeSynthesis], [Client.Transcribe],
+//     [Client.StartRealtimeTranscription], and [Client.StartVoiceSession] for
+//     client-managed validation, rate limiting, timeouts, retries, and
+//     privacy-safe telemetry
 //
 // Limitations and contracts:
 //   - Existing [Provider] implementations do not need to implement speech
@@ -232,10 +239,11 @@
 //     microphone or speaker drivers.
 //   - Validation methods check structural validity and value bounds; individual
 //     providers enforce model-specific format, voice, and size restrictions.
-//   - To prevent accidental logging of sensitive audio or transcripts, String
-//     and GoString methods on [AudioData], [AudioChunk], [SpeechRequest],
-//     [SpeechResponse], [TranscriptionRequest], and [TranscriptionResponse]
-//     emit metadata summaries and omit raw audio bytes and text payloads.
+//   - To prevent accidental logging of sensitive audio, transcripts, prompts, or
+//     tool payloads, String and GoString methods on [AudioData], [AudioChunk],
+//     [SpeechRequest], [SpeechResponse], [TranscriptionRequest],
+//     [TranscriptionResponse], [VoiceSessionConfig], and [VoiceEvent] emit
+//     metadata summaries and omit raw audio bytes and text payloads.
 //
 // # Thread Safety
 //
