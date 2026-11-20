@@ -150,14 +150,19 @@ func TestAPIKeyAndHeaderRedaction(t *testing.T) {
 func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 	p := New("test-key")
 
-	if !p.Supports(core.FeatureSpeechSynthesis) || !p.Supports(core.FeatureSpeechSynthesisStreaming) {
-		t.Error("expected Supports(FeatureSpeechSynthesis) and Supports(FeatureSpeechSynthesisStreaming) == true")
+	if !p.Supports(core.FeatureSpeechSynthesis) ||
+		!p.Supports(core.FeatureSpeechSynthesisStreaming) ||
+		!p.Supports(core.FeatureSpeechRecognition) {
+		t.Error("expected sync TTS, streaming TTS, and STT features to be supported")
 	}
-	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureSpeechRecognition) || p.Supports(core.FeatureVoiceSession) {
+	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureSpeechRecognitionRealtime) || p.Supports(core.FeatureVoiceSession) {
 		t.Error("Supports() must not advertise unimplemented capabilities")
 	}
 	if synth, ok := core.AsSpeechSynthesizer(p); !ok || synth != p {
 		t.Fatalf("AsSpeechSynthesizer() = (%v, %v), want provider, true", synth, ok)
+	}
+	if rec, ok := core.AsSpeechRecognizer(p); !ok || rec != p {
+		t.Fatalf("AsSpeechRecognizer() = (%v, %v), want provider, true", rec, ok)
 	}
 
 	if _, err := p.Chat(context.Background(), &core.ChatRequest{}); !errors.Is(err, core.ErrNotSupported) {
@@ -180,6 +185,10 @@ func TestModelsCatalogAndDefensiveCopy(t *testing.T) {
 	}
 	if !core.ProviderSupportsModelFeature(p, ModelElevenFlashV25, core.FeatureSpeechSynthesisStreaming) {
 		t.Error("expected ModelElevenFlashV25 to support FeatureSpeechSynthesisStreaming")
+	}
+	if !core.ProviderSupportsModelFeature(p, ModelScribeV2, core.FeatureSpeechRecognition) ||
+		!core.ProviderSupportsModelFeature(p, ModelScribeV1, core.FeatureSpeechRecognition) {
+		t.Error("expected Scribe models to support FeatureSpeechRecognition")
 	}
 	if core.ProviderSupportsModelFeature(p, ModelScribeV2, core.FeatureSpeechSynthesis) {
 		t.Error("expected ModelScribeV2 NOT to support FeatureSpeechSynthesis")

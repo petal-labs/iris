@@ -60,9 +60,32 @@
 // promptly closes the HTTP body and closes Ch, Err, and Final without leaking
 // goroutines.
 //
+// # Speech-to-Text (File and Reader Scribe Transcription)
+//
+// [ElevenLabs] implements [core.SpeechRecognizer] via [ElevenLabs.Transcribe]
+// (and [core.Client.Transcribe]) targeting POST /v1/speech-to-text:
+//
+//	resp, err := client.Transcribe(ctx, &core.TranscriptionRequest{
+//	    Model:          elevenlabs.ModelScribeV2,
+//	    Reader:         audioFile,
+//	    Filename:       "meeting.mp3",
+//	    Diarize:        true,
+//	    Timestamps:     core.TimestampGranularityWord,
+//	    TagAudioEvents: true,
+//	})
+//
+// Both in-memory [core.AudioData] and streaming io.Reader inputs are supported
+// via multipart/form-data upload with bounded size enforcement (req.MaxBytes or
+// [DefaultMaxTranscriptionBytes] = 100 MiB). Returned responses set
+// IsFinal = true. Scribe limits validated before HTTP include keyterms <= 1000
+// (scribe_v2 only), num_speakers <= 32, temperature <= 2.0, timestamp
+// granularity (none/word/character; segment is not supported), and raw PCM
+// (16000Hz mono pcm_s16le_16 only).
+//
 // # Current Limitations
 //
-// Synchronous and HTTP streaming TTS are implemented. File-based Scribe
-// transcription, voice discovery, WebSocket incremental-input TTS, and
-// real-time voice protocols are implemented in subsequent issues.
+// Synchronous TTS, HTTP streaming TTS, and file-based Scribe transcription are
+// implemented. Voice discovery, real-time Scribe STT, WebSocket
+// incremental-input TTS, and real-time voice sessions are implemented in
+// subsequent issues.
 package elevenlabs

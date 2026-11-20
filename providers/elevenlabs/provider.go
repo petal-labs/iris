@@ -84,7 +84,9 @@ func (p *ElevenLabs) Models() []core.ModelInfo {
 // Supports reports whether the provider currently supports the given feature.
 func (p *ElevenLabs) Supports(feature core.Feature) bool {
 	switch feature {
-	case core.FeatureSpeechSynthesis, core.FeatureSpeechSynthesisStreaming:
+	case core.FeatureSpeechSynthesis,
+		core.FeatureSpeechSynthesisStreaming,
+		core.FeatureSpeechRecognition:
 		return true
 	default:
 		return false
