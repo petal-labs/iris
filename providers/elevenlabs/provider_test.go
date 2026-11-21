@@ -154,10 +154,11 @@ func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 		!p.Supports(core.FeatureSpeechSynthesisStreaming) ||
 		!p.Supports(core.FeatureSpeechSynthesisRealtime) ||
 		!p.Supports(core.FeatureSpeechRecognition) ||
-		!p.Supports(core.FeatureSpeechRecognitionRealtime) {
-		t.Error("expected sync TTS, streaming TTS, realtime TTS, STT, and realtime STT features to be supported")
+		!p.Supports(core.FeatureSpeechRecognitionRealtime) ||
+		!p.Supports(core.FeatureVoiceSession) {
+		t.Error("expected sync TTS, streaming TTS, realtime TTS, STT, realtime STT, and voice session features to be supported")
 	}
-	if p.Supports(core.FeatureChat) || p.Supports(core.FeatureVoiceSession) {
+	if p.Supports(core.FeatureChat) {
 		t.Error("Supports() must not advertise unimplemented capabilities")
 	}
 	if synth, ok := core.AsSpeechSynthesizer(p); !ok || synth != p {
@@ -171,6 +172,9 @@ func TestProviderInterfaceAndUnsupportedChat(t *testing.T) {
 	}
 	if rt, ok := core.AsRealtimeSpeechRecognizer(p); !ok || rt != p {
 		t.Fatalf("AsRealtimeSpeechRecognizer() = (%v, %v), want provider, true", rt, ok)
+	}
+	if vsp, ok := core.AsVoiceSessionProvider(p); !ok || vsp != p {
+		t.Fatalf("AsVoiceSessionProvider() = (%v, %v), want provider, true", vsp, ok)
 	}
 
 	if _, err := p.Chat(context.Background(), &core.ChatRequest{}); !errors.Is(err, core.ErrNotSupported) {

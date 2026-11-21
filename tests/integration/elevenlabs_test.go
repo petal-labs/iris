@@ -362,3 +362,38 @@ func TestElevenLabs_RealtimeTTS(t *testing.T) {
 	}
 	t.Logf("RealtimeTTS completed: chunks=%d bytes=%d saw_final=%t", chunks, totalBytes, sawFinal)
 }
+
+func TestElevenLabs_AgentSession(t *testing.T) {
+	skipIfNoElevenLabsKey(t)
+	agentID := strings.TrimSpace(os.Getenv("ELEVENLABS_AGENT_ID"))
+	if agentID == "" {
+		t.Skip("ELEVENLABS_AGENT_ID not set")
+	}
+
+	provider := elevenlabs.New(getElevenLabsKey(t))
+	client := core.NewClient(provider)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	sess, err := client.StartVoiceSession(ctx, core.VoiceSessionConfig{
+		AgentID: agentID,
+	})
+	if err != nil {
+		t.Fatalf("StartVoiceSession() err = %v", err)
+	}
+	defer sess.Close()
+
+	select {
+	case evt, ok := <-sess.Events():
+		if !ok {
+			if err := <-sess.Err(); err != nil {
+				t.Fatalf("agent session error: %v", err)
+			}
+			t.Fatal("agent session closed before conversation_initiation_metadata")
+		}
+		t.Logf("ElevenAgents first event: %s", evt.String())
+	case <-ctx.Done():
+		t.Fatalf("timed out waiting for ElevenAgents session event: %v", ctx.Err())
+	}
+}

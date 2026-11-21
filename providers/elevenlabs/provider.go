@@ -88,7 +88,8 @@ func (p *ElevenLabs) Supports(feature core.Feature) bool {
 		core.FeatureSpeechSynthesisStreaming,
 		core.FeatureSpeechSynthesisRealtime,
 		core.FeatureSpeechRecognition,
-		core.FeatureSpeechRecognitionRealtime:
+		core.FeatureSpeechRecognitionRealtime,
+		core.FeatureVoiceSession:
 		return true
 	default:
 		return false

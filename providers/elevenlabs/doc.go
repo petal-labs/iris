@@ -164,11 +164,35 @@
 // raw-audio streaming; use package voice ([github.com/petal-labs/iris/voice])
 // when your application needs client-initiated audio streaming.
 //
+// # Hosted ElevenAgents Sessions (Conversational AI)
+//
+// [ElevenLabs] implements [core.VoiceSessionProvider] via
+// [ElevenLabs.StartVoiceSession] (and [core.Client.StartVoiceSession]) plus the
+// provider-specific [ElevenLabs.StartAgentSession] and
+// [ElevenLabs.GetAgentSignedURL] helpers targeting
+// wss://api.elevenlabs.io/v1/convai/conversation and
+// GET /v1/convai/conversation/get-signed-url:
+//
+//	sess, err := client.StartVoiceSession(ctx, core.VoiceSessionConfig{
+//	    AgentID: "agent_...",
+//	})
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer sess.Close()
+//
+// For private agents, StartVoiceSession automatically mints a short-lived
+// signed URL (stored as [core.Secret] and scrubbed from logs and errors) before
+// dialing the WebSocket. Untrusted/client callers can also pass a pre-minted
+// SignedURL into [ElevenLabs.StartAgentSession] without holding an API key.
+// Hosted ElevenAgents executes its LLM and prompt on ElevenLabs' platform; use
+// package voice or [SpeechEngineHandler] when Iris should control LLM reasoning.
+//
 // # Current Limitations
 //
 // Synchronous TTS, HTTP streaming TTS, incremental-input WebSocket TTS,
 // file-based Scribe transcription, real-time Scribe WebSocket STT, Speech
-// Engine upstream server handling, and read-only voice discovery/settings are
-// implemented. Hosted ElevenAgents sessions and consent-gated voice management
-// are implemented in subsequent issues.
+// Engine upstream server handling, hosted ElevenAgents sessions, and read-only
+// voice discovery/settings are implemented. Consent-gated voice management and
+// cloning are implemented in subsequent issues.
 package elevenlabs

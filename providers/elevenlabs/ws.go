@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/coder/websocket"
+
+	"github.com/petal-labs/iris/core"
 )
 
 const maxWSMessageBytes int64 = 4 * 1024 * 1024 // 4 MiB per WebSocket message
@@ -83,12 +85,28 @@ func (p *ElevenLabs) dialWebSocket(ctx context.Context, path string) (wsConn, er
 		return nil, redactSecretError(newNetworkError(err), p.config.APIKey)
 	}
 
+	return p.dialWebSocketURL(ctx, wsURL, p.buildHeaders(""), core.Secret{})
+}
+
+func (p *ElevenLabs) dialWebSocketURL(ctx context.Context, wsURL string, headers http.Header, extraSecret core.Secret) (wsConn, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	dial := p.config.wsDialer
 	if dial == nil {
 		dial = p.defaultWSDialer
 	}
 
-	conn, resp, err := dial(ctx, wsURL, p.buildHeaders(""))
+	scrub := func(err error) error {
+		err = redactSecretError(err, p.config.APIKey)
+		if !extraSecret.IsEmpty() {
+			err = redactSecretError(err, extraSecret)
+		}
+		return err
+	}
+
+	conn, resp, err := dial(ctx, wsURL, headers)
 	if err != nil {
 		if resp != nil {
 			var errBody []byte
@@ -98,7 +116,7 @@ func (p *ElevenLabs) dialWebSocket(ctx context.Context, path string) (wsConn, er
 			}
 			if resp.StatusCode >= 400 {
 				requestID := extractRequestID(resp.Header)
-				return nil, redactSecretError(normalizeError(resp.StatusCode, errBody, requestID, resp.Header), p.config.APIKey)
+				return nil, scrub(normalizeError(resp.StatusCode, errBody, requestID, resp.Header))
 			}
 		}
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -107,7 +125,7 @@ func (p *ElevenLabs) dialWebSocket(ctx context.Context, path string) (wsConn, er
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return nil, ctxErr
 		}
-		return nil, redactSecretError(newNetworkError(err), p.config.APIKey)
+		return nil, scrub(newNetworkError(err))
 	}
 	if resp != nil && resp.Body != nil {
 		_ = resp.Body.Close()

@@ -269,6 +269,31 @@ Protocol, security, and fallback notes:
 - **Interruption cancellation**: Receiving a `user_transcript` with a higher `event_id` cancels the in-flight LLM turn context immediately and discards stale responses.
 - **Fallback / Limitations**: Speech Engine requires a publicly reachable server endpoint (`wsUrl`), does not expose raw audio bytes to your server, and has no official ElevenLabs Go SDK (protocol schemas follow ElevenLabs' upstream WebSocket documentation and may evolve). Use the Iris-managed `voice.Pipeline` when you want client-initiated raw-audio streaming with zero inbound webhook/WebSocket infrastructure.
 
+## Hosted ElevenAgents Sessions
+
+For hosted ElevenLabs Conversational AI agents (`wss://api.elevenlabs.io/v1/convai/conversation`), `*elevenlabs.ElevenLabs` implements `core.VoiceSessionProvider` (`core.FeatureVoiceSession`):
+
+```go
+// Private agent: automatically mints a short-lived signed URL via GET /v1/convai/conversation/get-signed-url
+sess, err := client.StartVoiceSession(ctx, core.VoiceSessionConfig{
+	AgentID: "agent_...",
+})
+if err != nil {
+	return err
+}
+defer sess.Close()
+
+// Or mint a signed URL on your backend for a client without an API key:
+signed, err := provider.GetAgentSignedURL(ctx, &elevenlabs.AgentSignedURLRequest{
+	AgentID: "agent_...",
+})
+```
+
+Architectural distinction & limitations:
+- **Hosted reasoning**: ElevenAgents runs the LLM, prompt, and turn-taking configured in your ElevenLabs agent dashboard. Use `voice.Pipeline` or `SpeechEngineHandler` when you want Iris to control external LLM reasoning directly.
+- **Signed URLs & privacy**: `AgentSignedURLResponse.SignedURL` is stored as `core.Secret`, redacted in `String()`/`GoString()`/JSON, and scrubbed from dial/network/server errors.
+- **Client tools & heartbeats**: `ping` frames are automatically answered with `pong`; `client_tool_call` events emit `core.VoiceEventToolCall` and accept responses via `sess.SubmitToolResult(ctx, result)`.
+
 ## Unsupported Models, Formats, and Current Limitations
 
 - **Chat completions**: `ElevenLabs.Chat` and `ElevenLabs.StreamChat` return `*core.ProviderError` wrapping `core.ErrNotSupported`.
@@ -280,7 +305,7 @@ Protocol, security, and fallback notes:
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented)**: Hosted ElevenAgents sessions, voice metrics/tracing hooks, and consent-gated voice management/cloning.
+- **Planned (not yet implemented)**: Voice metrics/tracing hooks and consent-gated voice management/cloning.
 
 ## Privacy and Reliability Defaults
 

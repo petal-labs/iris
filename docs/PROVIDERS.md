@@ -574,8 +574,9 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 - TTS supports mono MP3, PCM, G.711 (`ulaw`/`alaw`), and Opus only (`wav`, `flac`, `ogg`, `aac`, `webm`, and stereo fail fast with `core.ErrInvalidAudioFormat`).
 - Incremental-input WebSocket TTS (`StartRealtimeSynthesis`) rejects `eleven_v3`, `eleven_v4*`, and Scribe models with `core.ErrNotSupported` before dialing.
 - Speech Engine (`NewSpeechEngineHandler`) implements ElevenLabs' inverted upstream WebSocket server protocol (`http.Handler` with `X-Elevenlabs-Speech-Engine-Authorization` HS256 JWT verification); use `voice.Pipeline` for client-initiated raw-audio streaming.
+- Hosted ElevenAgents (`StartVoiceSession` / `StartAgentSession` / `GetAgentSignedURL`) runs hosted agent reasoning on ElevenLabs' platform (distinct from Iris-controlled `voice.Pipeline` and `SpeechEngineHandler`).
 - Scribe rejects `keyterms` on `scribe_v1`, `core.TimestampGranularitySegment`, `num_speakers > 32`, `temperature > 2.0`, and non-16kHz/stereo raw PCM.
-- Hosted ElevenAgents sessions and consent-gated voice cloning/management are planned in follow-up issues (voice discovery via `ListVoices`, `ListAllVoices`, `GetVoice`, `GetVoiceSettings`, and `GetDefaultVoiceSettings` is strictly read-only).
+- Consent-gated voice cloning/management is planned in a follow-up issue (voice discovery via `ListVoices`, `ListAllVoices`, `GetVoice`, `GetVoiceSettings`, and `GetDefaultVoiceSettings` is strictly read-only).
 
 **Usage Example**:
 ```go
