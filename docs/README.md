@@ -17,7 +17,8 @@ Task-focused pages, each one thing you might want to do with the SDK.
 | [Structured Output](guides/structured-output.md) | `ResponseJSON()` for JSON mode and strict-by-default `ResponseJSONSchema()` |
 | [Conversation Management](guides/conversations.md) | `core.Conversation` history handling, streaming turns, and tool results |
 | [Multimodal and Image Generation](guides/multimodal.md) | Sending images to models, plus generating, streaming, and editing images |
-| [Speech and Audio (ElevenLabs)](guides/speech.md) | Synchronous TTS, HTTP streaming TTS, file/reader Scribe STT, capability discovery, formats, limits, and privacy defaults |
+| [Speech and Audio (ElevenLabs)](guides/speech.md) | Synchronous TTS, HTTP & WebSocket streaming TTS, file/real-time Scribe STT, voice sessions, Iris-managed voice pipeline, Speech Engine, ElevenAgents, and telemetry |
+| [PetalFlow Voice Integration Spec](guides/petalflow-voice-integration.md) | Typed node/tool ports, session execution modes, credential hydration, Cortex boundaries, and cross-repo acceptance gates |
 | [Responses API (GPT-5+)](guides/responses-api.md) | Reasoning effort, built-in tools like web search, and response chaining |
 | [Batch API](guides/batch-api.md) | Async submission and `core.BatchWaiter` polling for reduced cost |
 | [Testing Utilities](guides/testing.md) | `MockProvider` and `RecordingProvider` for deterministic, offline tests |
