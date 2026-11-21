@@ -307,6 +307,8 @@ Architectural distinction & limitations:
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
 - **Planned (not yet implemented)**: Consent-gated voice management/cloning.
 
+For downstream workflow orchestration contracts (typed Transcription/Synthesis/Session nodes, tool ports, credential hydration, Cortex boundaries, and acceptance gates), see the [PetalFlow Voice Integration Specification](petalflow-voice-integration.md).
+
 ## Privacy and Reliability Defaults
 
 - **No secrets, audio, or transcripts in default logs**: `core.Secret` redacts API keys in `String`, `GoString`, and JSON; `ElevenLabs`, `Config`, `AudioData`, `AudioChunk`, `SpeechRequest`, `SpeechResponse`, `TranscriptionRequest`, and `TranscriptionResponse` emit metadata summaries only in `String()`/`GoString()`.
