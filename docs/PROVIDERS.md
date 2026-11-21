@@ -8,25 +8,33 @@ Ollama is the exception: its catalog is discovered from the configured instance 
 
 Cells reflect each provider's `Supports()` implementation. For chat-based features, availability can also vary by model — see the model-specific tables below.
 
-| Provider | Chat | Streaming | Tool Calling | Reasoning | Built-in Tools | Response Chain | Token Counting | Structured Output | Embeddings | Reranking | Images |
-|----------|------|-----------|--------------|-----------|----------------|----------------|----------------|--------------------|------------|-----------|--------|
-| OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | No | Yes | Yes | No | Yes |
-| Anthropic | Yes | Yes | Yes | Yes | No | No | Yes | No† | No | No | No |
-| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | Yes | Yes | No | Yes |
-| xAI (Grok) | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No |
-| Perplexity | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No |
-| Z.ai (GLM) | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No |
-| Ollama | Yes | Yes | Yes | Yes | No | No | No | No† | Yes | No | No |
-| HuggingFace | Yes | Yes | Yes | No | No | No | No | No† | No | No | No |
-| Azure AI Foundry | Yes | Yes | Yes | Yes | No | No | No | Yes | Yes | No | No |
-| VoyageAI | No | No | No | No | No | No | No | N/A | Yes | Yes | No |
-| ElevenLabs | No | No | No | No | No | No | No | N/A | No | No | No |
+| Provider | Chat | Streaming | Tool Calling | Reasoning | Built-in Tools | Response Chain | Token Counting | Structured Output | Embeddings | Reranking | Images | Voice |
+|----------|------|-----------|--------------|-----------|----------------|----------------|----------------|--------------------|------------|-----------|--------|-------|
+| OpenAI | Yes | Yes | Yes | Yes* | Yes* | Yes* | No | Yes | Yes | No | Yes | No |
+| Anthropic | Yes | Yes | Yes | Yes | No | No | Yes | No† | No | No | No | No |
+| Gemini | Yes | Yes | Yes | Yes | No | No | Yes | Yes | Yes | No | Yes | No |
+| xAI (Grok) | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No | No |
+| Perplexity | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No | No |
+| Z.ai (GLM) | Yes | Yes | Yes | Yes | No | No | No | No† | No | No | No | No |
+| Ollama | Yes | Yes | Yes | Yes | No | No | No | No† | Yes | No | No | No |
+| HuggingFace | Yes | Yes | Yes | No | No | No | No | No† | No | No | No | No |
+| Azure AI Foundry | Yes | Yes | Yes | Yes | No | No | No | Yes | Yes | No | No | No |
+| VoyageAI | No | No | No | No | No | No | No | N/A | Yes | Yes | No | No |
+| ElevenLabs | No | No | No | No | No | No | No | N/A | No | No | No | Yes* |
 
-Perplexity additionally supports web-search grounding (`core.SearchOptions`, response citations) via `core.FeatureWebSearch`. ElevenLabs supports speech synthesis (`core.FeatureSpeechSynthesis`), HTTP streaming synthesis (`core.FeatureSpeechSynthesisStreaming`), and file/reader speech recognition (`core.FeatureSpeechRecognition`).
+Perplexity additionally supports web-search grounding (`core.SearchOptions`, response citations) via `core.FeatureWebSearch`.
 
-*Feature availability varies by model. See model-specific tables below.
+For **Voice** (`*`), ElevenLabs implements the full Iris speech and real-time voice capability set, while `voice.Pipeline` (`github.com/petal-labs/iris/voice`) and `elevenlabs.SpeechEngineHandler` compose ElevenLabs voice capabilities with **any** Iris chat LLM provider above:
+
+| Provider | Sync TTS | HTTP Stream TTS | Realtime WS TTS | File/Reader STT | Realtime WS STT | Voice Sessions (ElevenAgents) | Speech Engine Upstream | Voice Discovery | Voice Management (Opt-In) |
+|----------|----------|-----------------|-----------------|-----------------|-----------------|-------------------------------|------------------------|-----------------|---------------------------|
+| ElevenLabs | Yes | Yes | Yes* | Yes | Yes | Yes | Yes | Yes | Yes‡ |
+
+*Feature availability varies by model. See model-specific tables below (for example, `eleven_v3` supports Sync and HTTP Streaming TTS, not Realtime WS TTS).
 
 †"No" means a `ResponseJSONSchema` request against this provider fails fast with `core.ErrStructuredOutputUnsupported` before being sent, rather than silently ignoring the schema (the prior behavior). Plain `ResponseJSON()` (`json_object` mode) is unaffected and is not gated by this check.
+
+‡Mutating voice operations (`CreateVoice`, `EditVoice`, `EditVoiceSettings`, `DeleteVoice`) are disabled by default and require explicit `elevenlabs.WithVoiceManagementEnabled()` opt-in plus confirmed `VoiceConsent` for cloning/sample uploads.
 
 ## Supported Providers
 
@@ -42,7 +50,7 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 | Hugging Face | Supported | Chat, Streaming, Tools (Inference Providers router, model discovery) |
 | Azure AI Foundry | Supported | Chat, Streaming, Tools, Reasoning, Structured Output, Embeddings (Entra ID auth) |
 | Voyage AI | Supported | Embeddings, Contextualized Embeddings, Reranking (no chat) |
-| ElevenLabs | Supported | Text-to-Speech (Sync & HTTP Streaming), Scribe Speech-to-Text (File & Real-Time WebSocket), Read-Only Voice Discovery & Settings (no chat) |
+| ElevenLabs | Supported | TTS (Sync, HTTP Streaming, Realtime WS), Scribe STT (File & Realtime WS), Hosted Voice Sessions (ElevenAgents), Speech Engine Upstream, Voice Discovery, Opt-In Consent-Gated Voice Management (no chat) |
 
 ## Provider Details
 
@@ -615,7 +623,8 @@ transcript, err := client.Transcribe(ctx, &core.TranscriptionRequest{
 | Code generation | OpenAI (Codex models), Anthropic |
 | Multimodal (vision) | OpenAI (GPT-4o), Anthropic (Claude), Gemini, Azure AI Foundry vision deployments |
 | Image generation | OpenAI (GPT-Image), Gemini (Nano Banana) |
-| Speech synthesis & transcription | ElevenLabs (`eleven_flash_v2_5`, `eleven_multilingual_v2`, `scribe_v2`) |
+| Speech synthesis & transcription | ElevenLabs (`eleven_flash_v2_5`, `eleven_multilingual_v2`, `eleven_v3`, `scribe_v2`, `scribe_v2_realtime`) |
+| Real-time voice agents | `voice.Pipeline` (ElevenLabs STT/TTS + any Iris LLM), ElevenLabs `SpeechEngineHandler`, or hosted `ElevenAgents` |
 
 Iris currently maps `Message.Parts` for OpenAI, Anthropic, Gemini, and Azure AI Foundry. Other providers invoke `core.WithWarningHandler` before omitting undeclared content parts, even when an upstream model advertises vision support.
 

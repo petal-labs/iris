@@ -152,9 +152,24 @@ current optional interfaces and built-in implementers are:
 | `TokenCounter` | `AsTokenCounter` | `FeatureTokenCounting` | Anthropic, Gemini |
 | `ImageGenerator` | `AsImageGenerator` | `FeatureImageGeneration` | Gemini, OpenAI |
 | `ContentPartSupporter` | `AsContentPartSupporter` | Per-content-part declaration | Anthropic, Azure AI Foundry, Gemini, OpenAI |
+| `SpeechSynthesizer` | `AsSpeechSynthesizer` | `FeatureSpeechSynthesis`, `FeatureSpeechSynthesisStreaming` | ElevenLabs |
+| `SpeechRecognizer` | `AsSpeechRecognizer` | `FeatureSpeechRecognition` | ElevenLabs |
+| `RealtimeSpeechRecognizer` | `AsRealtimeSpeechRecognizer` | `FeatureSpeechRecognitionRealtime` | ElevenLabs |
+| `RealtimeSpeechSynthesizer` | `AsRealtimeSpeechSynthesizer` | `FeatureSpeechSynthesisRealtime` | ElevenLabs |
+| `VoiceSessionProvider` | `AsVoiceSessionProvider` | `FeatureVoiceSession` | ElevenLabs (ElevenAgents), `voice.Pipeline` |
 
 Third-party providers can implement the same interfaces; this table describes
 only the implementations shipped with Iris.
+
+For speech and real-time voice operations, prefer the `core.Client` wrappers
+(`Synthesize`, `StreamSynthesize`, `Transcribe`, `StartRealtimeTranscription`,
+`StartRealtimeSynthesis`, and `StartVoiceSession`), which perform the same
+interface discovery while applying rate limiting, retry policy (for unary calls),
+and privacy-safe `core.VoiceTelemetryHook` instrumentation. The optional
+`github.com/petal-labs/iris/voice` package composes `RealtimeSpeechRecognizer`,
+any `core.Provider` LLM, tools, and `RealtimeSpeechSynthesizer` /
+`SpeechSynthesizer` into a full-duplex `core.VoiceSession` without pulling voice
+orchestration dependencies into `core`.
 
 For the common embedding path, prefer `client.Embed(ctx, request)`. It performs
 the same interface discovery and delegates to `EmbeddingProvider` while also

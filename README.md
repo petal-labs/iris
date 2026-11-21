@@ -15,7 +15,7 @@ Building AI applications often requires:
 - Building reusable chat and tool-driven workflows
 
 Iris solves these problems by providing:
-- **Unified SDK**: A consistent Go API across providers (OpenAI, Anthropic, Google Gemini, xAI Grok, Z.ai GLM, Perplexity, Ollama, Hugging Face, Azure AI Foundry, Voyage AI)
+- **Unified SDK**: A consistent Go API across providers (OpenAI, Anthropic, Google Gemini, xAI Grok, Z.ai GLM, Perplexity, Ollama, Hugging Face, Azure AI Foundry, Voyage AI, ElevenLabs)
 - **Fluent Builder Pattern**: Intuitive, chainable API for constructing requests
 - **Built-in Streaming**: First-class support for streaming responses with proper channel handling
 - **Secure Key Management**: Encrypted local storage for API keys
@@ -34,6 +34,9 @@ Iris solves these problems by providing:
 - **Batch API** for async processing at 50% cost savings (OpenAI)
 - **Testing Utilities** with `MockProvider` and `RecordingProvider`
 - **Responses API support** for GPT-5+ models with reasoning, built-in tools (web search, code interpreter), and response chaining
+- **Speech & Audio (ElevenLabs)** with synchronous & HTTP/WebSocket streaming TTS, file & real-time WebSocket Scribe STT, read-only voice discovery, and opt-in consent-gated voice management/cloning
+- **Real-Time Voice Agents** via the provider-agnostic `core.VoiceSession` event API, Iris-managed full-duplex `voice.Pipeline` (STT → any Iris LLM + tools → streaming TTS with barge-in interruption and stale-audio suppression), ElevenLabs Speech Engine upstream server adapter, and hosted ElevenAgents sessions
+- **Voice Telemetry & Tracing** with privacy-safe `core.VoiceTelemetryHook` and OpenTelemetry (`contrib/otel.NewVoiceHook`) metrics and spans
 - Automatic retry with exponential backoff
 - Telemetry hooks for observability
 - Configurable non-fatal warning routing with `core.WithWarningHandler(...)`
@@ -201,6 +204,7 @@ iris keys set huggingface
 iris keys set perplexity
 iris keys set voyageai
 iris keys set azurefoundry
+iris keys set elevenlabs
 iris keys set ollama  # Only needed for Ollama Cloud
 
 # Upgrade the keystore to master-key encryption (V2)
@@ -241,6 +245,8 @@ export PERPLEXITY_API_KEY=<your-key>
 go run .
 ```
 
+> **Note on CLI voice support**: The `iris` CLI can store your ElevenLabs API key in the encrypted keystore (`iris keys set elevenlabs`), but it does not yet provide speech synthesis, transcription, or voice-agent subcommands (`iris chat`, `iris models`, and `iris init` target text/embedding providers). For ElevenLabs speech and real-time voice workflows, use the Go SDK or the runnable programs in [`examples/speech/`](examples/README.md) and [`examples/voice/`](examples/README.md).
+
 ## 📚 Documentation
 
 The guides below live in [`docs/`](docs/README.md). Start there for the full index.
@@ -255,6 +261,8 @@ The guides below live in [`docs/`](docs/README.md). Start there for the full ind
 | [Structured Output](docs/guides/structured-output.md) | `ResponseJSON()` and strict `ResponseJSONSchema()` |
 | [Conversation Management](docs/guides/conversations.md) | `core.Conversation`, history, and tool results |
 | [Multimodal and Images](docs/guides/multimodal.md) | Image inputs, generation, editing, and streaming partials |
+| [Speech and Audio (ElevenLabs)](docs/guides/speech.md) | Sync & streaming TTS, file/real-time Scribe STT, voice sessions, `voice.Pipeline`, Speech Engine, ElevenAgents, and voice management |
+| [PetalFlow Voice Integration](docs/guides/petalflow-voice-integration.md) | Workflow node/tool ports, session execution modes, credential hydration, and Cortex boundaries |
 | [Responses API](docs/guides/responses-api.md) | Reasoning, built-in tools, and response chaining on GPT-5+ |
 | [Batch API](docs/guides/batch-api.md) | Async submission and polling for cost savings |
 | [Testing Utilities](docs/guides/testing.md) | `MockProvider` and `RecordingProvider` |

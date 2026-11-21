@@ -156,6 +156,14 @@ func (t SafeTelemetry) OnRequestEnd(e core.RequestEndEvent) {
 }
 ```
 
+### Voice and Speech Privacy & Auth Controls
+
+Speech and real-time voice APIs enforce additional privacy and authorization boundaries by default:
+
+- **No raw audio, transcripts, or signed URLs in logs/telemetry**: `core.VoiceTelemetryHook`, `contrib/otel.NewVoiceHook`, `core.VoiceEvent.String()`, `core.VoiceSessionConfig.String()`, and ElevenLabs request/response formatters emit operational metadata (provider, model, timing, first-audio latency, byte/turn/interruption counts) only — never raw audio bytes, user transcripts, assistant text, system prompts, API keys, or ElevenAgents signed URLs (`core.Secret`).
+- **Speech Engine inbound authentication**: `elevenlabs.SpeechEngineHandler` verifies `X-Elevenlabs-Speech-Engine-Authorization` HS256 JWTs on every WebSocket upgrade before executing LLM calls or tools.
+- **Opt-in consent-gated voice management**: Mutating ElevenLabs voice APIs (`CreateVoice`, `EditVoice`, `EditVoiceSettings`, `DeleteVoice`) are disabled by default (`ErrVoiceManagementDisabled`), require `WithVoiceManagementEnabled()` (and optional `WithVoiceAuthorizer` RBAC checks), and enforce a confirmed `VoiceConsent` record for voice cloning and sample uploads.
+
 ## CI/CD Best Practices
 
 ### GitHub Actions
