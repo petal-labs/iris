@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/petal-labs/iris/cli/keystore"
+	"github.com/petal-labs/iris/v2/cli/keystore"
 )
 
 // newKeysTestApp builds an App whose keystore points at a temp file and whose

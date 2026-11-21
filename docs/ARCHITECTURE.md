@@ -166,7 +166,7 @@ For speech and real-time voice operations, prefer the `core.Client` wrappers
 `StartRealtimeSynthesis`, and `StartVoiceSession`), which perform the same
 interface discovery while applying rate limiting, retry policy (for unary calls),
 and privacy-safe `core.VoiceTelemetryHook` instrumentation. The optional
-`github.com/petal-labs/iris/voice` package composes `RealtimeSpeechRecognizer`,
+`github.com/petal-labs/iris/v2/voice` package composes `RealtimeSpeechRecognizer`,
 any `core.Provider` LLM, tools, and `RealtimeSpeechSynthesizer` /
 `SpeechSynthesizer` into a full-duplex `core.VoiceSession` without pulling voice
 orchestration dependencies into `core`.

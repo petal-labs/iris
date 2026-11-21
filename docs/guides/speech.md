@@ -241,7 +241,7 @@ Full-duplex conversational voice sessions share a provider-agnostic contract in 
 
 ## Iris-Managed Voice Pipeline (`voice` package)
 
-The optional `github.com/petal-labs/iris/voice` package composes real-time STT, any Iris LLM provider, and streaming TTS into a full-duplex `core.VoiceSession` while keeping LLM reasoning and tool execution completely under Iris control:
+The optional `github.com/petal-labs/iris/v2/voice` package composes real-time STT, any Iris LLM provider, and streaming TTS into a full-duplex `core.VoiceSession` while keeping LLM reasoning and tool execution completely under Iris control:
 
 ```go
 pipeline, err := voice.NewPipeline(voice.PipelineConfig{

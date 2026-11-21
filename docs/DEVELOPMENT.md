@@ -109,9 +109,9 @@ gofmt -w .
 VERSION=$(git describe --tags --always --dirty)
 COMMIT=$(git rev-parse --short HEAD)
 DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-go build -ldflags "-X github.com/petal-labs/iris/cli/commands.Version=$VERSION \
-  -X github.com/petal-labs/iris/cli/commands.Commit=$COMMIT \
-  -X github.com/petal-labs/iris/cli/commands.BuildDate=$DATE" \
+go build -ldflags "-X github.com/petal-labs/iris/v2/cli/commands.Version=$VERSION \
+  -X github.com/petal-labs/iris/v2/cli/commands.Commit=$COMMIT \
+  -X github.com/petal-labs/iris/v2/cli/commands.BuildDate=$DATE" \
   -o bin/iris ./cmd/iris
 ```
 
@@ -170,7 +170,7 @@ Iris uses a Go workspace with three modules:
 
 ```
 iris/
-├── go.mod             # Main SDK module (github.com/petal-labs/iris)
+├── go.mod             # Main SDK module (github.com/petal-labs/iris/v2)
 ├── go.work            # Workspace file for local development
 ├── contrib/otel/
 │   └── go.mod         # OpenTelemetry integration module
@@ -194,21 +194,21 @@ against the OpenTelemetry integration on every pull request.
 
 ```go
 import (
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/openai"
-    "github.com/petal-labs/iris/providers/anthropic"
-    "github.com/petal-labs/iris/providers/gemini"
-    "github.com/petal-labs/iris/providers/xai"
-    "github.com/petal-labs/iris/providers/zai"
-    "github.com/petal-labs/iris/providers/perplexity"
-    "github.com/petal-labs/iris/providers/ollama"
-    "github.com/petal-labs/iris/providers/huggingface"
-    "github.com/petal-labs/iris/providers/azurefoundry"
-    "github.com/petal-labs/iris/providers/voyageai"
-    "github.com/petal-labs/iris/providers/elevenlabs"
-    "github.com/petal-labs/iris/voice"
-    "github.com/petal-labs/iris/tools"
-    "github.com/petal-labs/iris/iristest"  // Test utilities
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/openai"
+    "github.com/petal-labs/iris/v2/providers/anthropic"
+    "github.com/petal-labs/iris/v2/providers/gemini"
+    "github.com/petal-labs/iris/v2/providers/xai"
+    "github.com/petal-labs/iris/v2/providers/zai"
+    "github.com/petal-labs/iris/v2/providers/perplexity"
+    "github.com/petal-labs/iris/v2/providers/ollama"
+    "github.com/petal-labs/iris/v2/providers/huggingface"
+    "github.com/petal-labs/iris/v2/providers/azurefoundry"
+    "github.com/petal-labs/iris/v2/providers/voyageai"
+    "github.com/petal-labs/iris/v2/providers/elevenlabs"
+    "github.com/petal-labs/iris/v2/voice"
+    "github.com/petal-labs/iris/v2/tools"
+    "github.com/petal-labs/iris/v2/iristest"  // Test utilities
 )
 ```
 
@@ -258,21 +258,21 @@ List registered providers:
 ```go
 import (
     // The registry itself.
-    "github.com/petal-labs/iris/providers"
+    "github.com/petal-labs/iris/v2/providers"
 
     // Provider packages register themselves via init(). Import the ones
     // you want available — the registry is empty without these imports.
-    _ "github.com/petal-labs/iris/providers/anthropic"
-    _ "github.com/petal-labs/iris/providers/azurefoundry"
-    _ "github.com/petal-labs/iris/providers/elevenlabs"
-    _ "github.com/petal-labs/iris/providers/gemini"
-    _ "github.com/petal-labs/iris/providers/huggingface"
-    _ "github.com/petal-labs/iris/providers/ollama"
-    _ "github.com/petal-labs/iris/providers/openai"
-    _ "github.com/petal-labs/iris/providers/perplexity"
-    _ "github.com/petal-labs/iris/providers/voyageai"
-    _ "github.com/petal-labs/iris/providers/xai"
-    _ "github.com/petal-labs/iris/providers/zai"
+    _ "github.com/petal-labs/iris/v2/providers/anthropic"
+    _ "github.com/petal-labs/iris/v2/providers/azurefoundry"
+    _ "github.com/petal-labs/iris/v2/providers/elevenlabs"
+    _ "github.com/petal-labs/iris/v2/providers/gemini"
+    _ "github.com/petal-labs/iris/v2/providers/huggingface"
+    _ "github.com/petal-labs/iris/v2/providers/ollama"
+    _ "github.com/petal-labs/iris/v2/providers/openai"
+    _ "github.com/petal-labs/iris/v2/providers/perplexity"
+    _ "github.com/petal-labs/iris/v2/providers/voyageai"
+    _ "github.com/petal-labs/iris/v2/providers/xai"
+    _ "github.com/petal-labs/iris/v2/providers/zai"
 )
 
 fmt.Println(providers.List())

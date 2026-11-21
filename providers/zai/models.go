@@ -1,6 +1,6 @@
 package zai
 
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 // Model constants for Z.ai GLM models.
 const (

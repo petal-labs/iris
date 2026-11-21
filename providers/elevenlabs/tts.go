@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // DefaultTTSModel is the default ElevenLabs text-to-speech model used when

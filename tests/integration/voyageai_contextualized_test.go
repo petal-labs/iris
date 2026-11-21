@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/voyageai"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/voyageai"
 )
 
 func TestVoyageAI_ContextualizedEmbeddings_Basic(t *testing.T) {

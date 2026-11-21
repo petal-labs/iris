@@ -67,4 +67,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/petal-labs/iris
+        - github.com/petal-labs/iris/v2

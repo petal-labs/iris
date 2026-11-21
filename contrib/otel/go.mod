@@ -3,8 +3,9 @@ module github.com/petal-labs/iris/contrib/otel
 go 1.25.0
 
 require (
-	github.com/petal-labs/iris v0.13.0
+	github.com/petal-labs/iris/v2 v2.0.0
 	go.opentelemetry.io/otel v1.46.0
+	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
 )
@@ -15,8 +16,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 )
 
-replace github.com/petal-labs/iris => ../..
+replace github.com/petal-labs/iris/v2 => ../..

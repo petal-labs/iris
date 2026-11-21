@@ -229,7 +229,7 @@ var modelTemplate = template.Must(template.New("models").Parse(`// Code generate
 
 package {{.Package}}
 
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 // Model constants generated from models.dev.
 const (

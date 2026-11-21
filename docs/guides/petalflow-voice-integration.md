@@ -1,7 +1,7 @@
 # PetalFlow Voice Integration Specification
 
 **Status**: Active Specification (Iris `#160` / `IRIS-VOICE-017`)  
-**Applies to**: `github.com/petal-labs/iris` (upstream), `github.com/petal-labs/petalflow` (orchestration), and `github.com/petal-labs/cortex` (memory/transcript persistence)  
+**Applies to**: `github.com/petal-labs/iris/v2` (upstream), `github.com/petal-labs/petalflow` (orchestration), and `github.com/petal-labs/cortex` (memory/transcript persistence)  
 **Source FRD**: Iris — ElevenLabs Voice Integration FRD
 
 This specification defines the exact typed node/tool port contracts, full-duplex session boundaries, credential hydration rules, observability wiring, and integration acceptance gates for integrating Iris voice capabilities into **PetalFlow** (issues `#249`–`#254`) and coordinating downstream **Cortex** persistence (`#76`–`#80`).

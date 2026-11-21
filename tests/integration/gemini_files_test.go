@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/providers/gemini"
+	"github.com/petal-labs/iris/v2/providers/gemini"
 )
 
 func TestGemini_Files_UploadAndDelete(t *testing.T) {

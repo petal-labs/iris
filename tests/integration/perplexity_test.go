@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/perplexity"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/perplexity"
 )
 
 func TestPerplexity_ChatCompletion(t *testing.T) {

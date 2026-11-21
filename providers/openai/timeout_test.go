@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // blockingServer returns an httptest server whose handler blocks until the

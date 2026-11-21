@@ -21,12 +21,12 @@ import (
 	"errors"
 	"os"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/anthropic"
-	"github.com/petal-labs/iris/providers/gemini"
-	"github.com/petal-labs/iris/providers/ollama"
-	"github.com/petal-labs/iris/providers/openai"
-	"github.com/petal-labs/iris/providers/xai"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/anthropic"
+	"github.com/petal-labs/iris/v2/providers/gemini"
+	"github.com/petal-labs/iris/v2/providers/ollama"
+	"github.com/petal-labs/iris/v2/providers/openai"
+	"github.com/petal-labs/iris/v2/providers/xai"
 )
 
 // ErrNoAPIKey is returned when no API key is found in environment variables.

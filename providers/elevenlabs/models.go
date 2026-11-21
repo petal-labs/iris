@@ -1,6 +1,6 @@
 package elevenlabs
 
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 // Verified ElevenLabs model identifiers for TTS and Scribe STT.
 const (

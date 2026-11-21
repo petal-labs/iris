@@ -136,7 +136,7 @@ type templateData struct {
 
 const (
 	scaffoldGoVersion          = "1.25.0"
-	scaffoldSDKVersionFallback = "v1.0.0"
+	scaffoldSDKVersionFallback = "v2.0.0"
 )
 
 var (
@@ -267,8 +267,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/{{.Provider}}"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/{{.Provider}}"
 )
 
 func main() {
@@ -300,8 +300,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/ollama"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/ollama"
 )
 
 func main() {
@@ -327,8 +327,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/voyageai"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/voyageai"
 )
 
 func main() {
@@ -361,8 +361,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/azurefoundry"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/azurefoundry"
 )
 
 func main() {
@@ -389,5 +389,5 @@ var goModTemplate = `module {{.ProjectName}}
 
 go {{.GoVersion}}
 
-require github.com/petal-labs/iris {{.SDKVersion}}
+require github.com/petal-labs/iris/v2 {{.SDKVersion}}
 `

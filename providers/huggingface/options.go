@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // DefaultBaseURL is the default Hugging Face inference router URL.

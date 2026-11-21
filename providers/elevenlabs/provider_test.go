@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers"
-	"github.com/petal-labs/iris/providers/internal/timeoutx"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers"
+	"github.com/petal-labs/iris/v2/providers/internal/timeoutx"
 )
 
 func TestNewDefaultsAndOptions(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // buildRequest creates a Gemini API request from an Iris ChatRequest.

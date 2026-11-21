@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/elevenlabs"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/elevenlabs"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)

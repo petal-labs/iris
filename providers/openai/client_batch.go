@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/internal/timeoutx"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/internal/timeoutx"
 )
 
 // batchesPath is the API path for batch operations.

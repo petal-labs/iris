@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // messagesPath is the API endpoint for messages.

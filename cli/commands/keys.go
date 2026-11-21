@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/petal-labs/iris/cli/keystore"
+	"github.com/petal-labs/iris/v2/cli/keystore"
 )
 
 func (a *App) newKeysCommand() *cobra.Command {

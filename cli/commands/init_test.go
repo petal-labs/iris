@@ -227,7 +227,7 @@ func TestScaffoldSDKVersionFallbackMatchesLatestChangelogRelease(t *testing.T) {
 
 func TestInitUsesBuildVersionForSDKDependency(t *testing.T) {
 	originalVersion := Version
-	Version = "v0.18.0"
+	Version = "v2.0.0"
 	t.Cleanup(func() { Version = originalVersion })
 
 	projectPath := filepath.Join(t.TempDir(), "scaffold")
@@ -238,7 +238,7 @@ func TestInitUsesBuildVersionForSDKDependency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read generated go.mod: %v", err)
 	}
-	want := "require github.com/petal-labs/iris v0.18.0"
+	want := "require github.com/petal-labs/iris/v2 v2.0.0"
 	if !strings.Contains(string(content), want) {
 		t.Errorf("generated go.mod missing %q:\n%s", want, content)
 	}
@@ -305,7 +305,7 @@ func TestInitCreatesProjectStructure(t *testing.T) {
 	if !strings.Contains(string(goModContent), "module testproject") {
 		t.Error("go.mod missing generated module name")
 	}
-	if !strings.Contains(string(goModContent), "github.com/petal-labs/iris") {
+	if !strings.Contains(string(goModContent), "github.com/petal-labs/iris/v2") {
 		t.Error("go.mod missing Iris dependency")
 	}
 
@@ -378,7 +378,7 @@ func compileGeneratedProject(t *testing.T, projectPath string) {
 		t.Fatalf("resolve repository root: %v", err)
 	}
 
-	runGoCommand(t, projectPath, "mod", "edit", "-replace=github.com/petal-labs/iris="+repoRoot)
+	runGoCommand(t, projectPath, "mod", "edit", "-replace=github.com/petal-labs/iris/v2="+repoRoot)
 	runGoCommand(t, projectPath, "test", "./...")
 }
 

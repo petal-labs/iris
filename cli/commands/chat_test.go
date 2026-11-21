@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/cli/config"
-	"github.com/petal-labs/iris/cli/keystore"
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/cli/config"
+	"github.com/petal-labs/iris/v2/cli/keystore"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 func TestExitError(t *testing.T) {

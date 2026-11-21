@@ -1,7 +1,7 @@
 // Package openai provides an OpenAI API provider implementation for Iris.
 package openai
 
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 // Model constants for OpenAI models.
 const (

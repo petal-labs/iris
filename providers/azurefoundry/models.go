@@ -1,6 +1,6 @@
 package azurefoundry
 
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 // models defines the common models available through Azure AI Foundry.
 // Actual availability depends on your Azure deployment configuration.

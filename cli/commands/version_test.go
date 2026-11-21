@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/petal-labs/iris/cli/config"
+	"github.com/petal-labs/iris/v2/cli/config"
 )
 
 func TestVersionVariables(t *testing.T) {

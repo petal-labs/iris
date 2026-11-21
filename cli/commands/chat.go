@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/petal-labs/iris/cli/keystore"
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/cli/keystore"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // Exit codes.

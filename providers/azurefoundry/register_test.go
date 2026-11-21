@@ -3,7 +3,7 @@ package azurefoundry
 import (
 	"testing"
 
-	"github.com/petal-labs/iris/providers"
+	"github.com/petal-labs/iris/v2/providers"
 )
 
 func TestConfiguredRegistryFactory(t *testing.T) {

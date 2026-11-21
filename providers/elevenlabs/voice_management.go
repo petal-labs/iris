@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // Safeguard defaults and API limits for advanced voice management and cloning.

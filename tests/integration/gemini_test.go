@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/gemini"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/gemini"
 )
 
 func TestGemini_ChatCompletion(t *testing.T) {

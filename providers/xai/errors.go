@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/petal-labs/iris/providers/internal/normalize"
+	"github.com/petal-labs/iris/v2/providers/internal/normalize"
 )
 
 // ErrToolArgsInvalidJSON is returned when tool call arguments contain invalid JSON.

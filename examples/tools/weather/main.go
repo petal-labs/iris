@@ -18,9 +18,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/openai"
-	"github.com/petal-labs/iris/tools"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/openai"
+	"github.com/petal-labs/iris/v2/tools"
 )
 
 // WeatherTool is a simple tool that "gets" weather for a location.

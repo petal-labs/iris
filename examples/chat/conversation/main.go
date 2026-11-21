@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/openai"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/openai"
 )
 
 // Conversation maintains the message history

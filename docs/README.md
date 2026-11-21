@@ -48,4 +48,4 @@ history. Listed here so they are discoverable rather than hidden.
 
 - [Examples](../examples/README.md) — runnable programs for each provider and feature
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — setup, test tiers, and PR expectations
-- [GoDoc](https://godoc.org/github.com/petal-labs/iris) — generated API reference
+- [GoDoc](https://pkg.go.dev/github.com/petal-labs/iris/v2) — generated API reference

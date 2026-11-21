@@ -1,7 +1,7 @@
 // Package perplexity provides a Perplexity Search API provider implementation for Iris.
 package perplexity
 
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 // Model constants for Perplexity models.
 //

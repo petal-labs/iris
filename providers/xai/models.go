@@ -1,7 +1,7 @@
 // Package xai provides an xAI Grok API provider implementation for Iris.
 package xai
 
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 // Model constants for xAI Grok models.
 const (

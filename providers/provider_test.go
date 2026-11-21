@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // testProvider is a mock implementation of Provider for testing.

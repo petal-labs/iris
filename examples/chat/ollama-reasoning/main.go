@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/ollama"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/ollama"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // mockProvider implements core.Provider for testing.

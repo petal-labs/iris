@@ -32,7 +32,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/petal-labs/iris/internal/gen/models"
+	"github.com/petal-labs/iris/v2/internal/gen/models"
 )
 
 var (

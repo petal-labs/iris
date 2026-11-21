@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"mime"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // DefaultTTSFormat is the default audio format used for ElevenLabs TTS requests

@@ -3,7 +3,7 @@ package openai
 import (
 	"strconv"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // mapImageGenerateRequest converts a core request to OpenAI format.

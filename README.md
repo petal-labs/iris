@@ -1,7 +1,7 @@
 # Iris
 [![Build Status](https://github.com/petal-labs/iris/actions/workflows/ci.yml/badge.svg)](https://github.com/petal-labs/iris/actions/workflows/ci.yml)&nbsp;
 [![codecov](https://codecov.io/gh/petal-labs/iris/graph/badge.svg?token=OJP9V6R441)](https://codecov.io/gh/petal-labs/iris)&nbsp;
-[![GoDoc](https://godoc.org/github.com/petal-labs/iris?status.svg)](https://godoc.org/github.com/petal-labs/iris)&nbsp;
+[![GoDoc](https://pkg.go.dev/badge/github.com/petal-labs/iris/v2.svg)](https://pkg.go.dev/github.com/petal-labs/iris/v2)&nbsp;
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/petal-labs/iris/blob/main/LICENSE)
 
 Iris is a Go SDK and CLI for building AI-powered applications. It provides a unified interface for working with large language models (LLMs), making it easy to integrate AI capabilities into your Go projects.
@@ -52,13 +52,13 @@ Iris solves these problems by providing:
 ### SDK
 
 ```bash
-go get github.com/petal-labs/iris
+go get github.com/petal-labs/iris/v2
 ```
 
 ### CLI
 
 ```bash
-go install github.com/petal-labs/iris/cmd/iris@latest
+go install github.com/petal-labs/iris/v2/cmd/iris@latest
 ```
 
 The CLI reads the module version recorded by Go, so binaries installed with
@@ -80,12 +80,12 @@ downloaded binary:
 ```bash
 cosign verify-blob \
   --bundle iris-linux-amd64.sig \
-  --certificate-identity "https://github.com/petal-labs/iris/.github/workflows/release.yml@refs/tags/v1.0.0" \
+  --certificate-identity "https://github.com/petal-labs/iris/.github/workflows/release.yml@refs/tags/v2.0.0" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   iris-linux-amd64
 ```
 
-Replace `v1.0.0` with the tag you downloaded. The command exits `0` only when
+Replace `v2.0.0` with the tag you downloaded. The command exits `0` only when
 the signature is valid **and** the certificate was issued to the
 `petal-labs/iris` release workflow at that exact tag. Always verify both the
 `--certificate-identity` and `--certificate-oidc-issuer`; checking only the
@@ -103,8 +103,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/openai"
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/openai"
 )
 
 func main() {
@@ -141,8 +141,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/ollama"
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/ollama"
 )
 
 func main() {

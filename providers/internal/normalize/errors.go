@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // WithRetryAfter attaches a server-advised retry delay to a normalized

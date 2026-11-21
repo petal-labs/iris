@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // Compile-time check that VoiceHook implements core.VoiceTelemetryHook.
@@ -19,7 +19,7 @@ var _ core.VoiceTelemetryHook = (*VoiceHook)(nil)
 // VoiceConfig configures [VoiceHook] tracing and metrics instrumentation.
 type VoiceConfig struct {
 	// ScopeName identifies the OTel tracer and meter instrumentation scope.
-	// Defaults to "github.com/petal-labs/iris/voice".
+	// Defaults to "github.com/petal-labs/iris/v2/voice".
 	ScopeName string
 
 	// TracerProvider supplies the OpenTelemetry tracer provider.
@@ -105,7 +105,7 @@ type VoiceHook struct {
 // NewVoiceHook creates a new OpenTelemetry [VoiceHook].
 func NewVoiceHook(opts ...VoiceOption) *VoiceHook {
 	cfg := VoiceConfig{
-		ScopeName:   "github.com/petal-labs/iris/voice",
+		ScopeName:   "github.com/petal-labs/iris/v2/voice",
 		RecordError: true,
 	}
 	for _, opt := range opts {
