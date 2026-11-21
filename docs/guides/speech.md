@@ -245,6 +245,30 @@ Pipeline capabilities and guarantees:
 - **Interruption & barge-in**: Calling `sess.Interrupt(ctx)` or receiving non-empty partial user speech during an active assistant turn (unless `DisableBargeIn: true`) cancels in-flight LLM, tool, and TTS work immediately, emits `core.VoiceEventTurnInterrupted`, and suppresses stale audio chunks from the cancelled turn.
 - **Bounded memory**: Conversation history is capped by `MaxHistoryMessages` (default 64) and event delivery uses a bounded `core.VoiceEventEmitter`.
 
+## ElevenLabs Speech Engine Upstream Adapter
+
+ElevenLabs **Speech Engine** is distinct from both client-initiated `voice.Pipeline` and hosted ElevenAgents. Its officially documented **Speech Engine Upstream** protocol reverses the WebSocket direction: **ElevenLabs connects outbound as a WebSocket client** to your server's publicly reachable `wsUrl`, handles audio capture/STT/turn-taking/TTS on the ElevenLabs side, and streams `user_transcript` frames to your Go server while expecting streamed `agent_response` frames back.
+
+Mount `elevenlabs.SpeechEngineHandler` (`http.Handler`) on your Go HTTP server to connect Speech Engine to any Iris LLM provider and tools:
+
+```go
+handler, err := provider.NewSpeechEngineHandler(elevenlabs.SpeechEngineConfig{
+	LLM:          openAIProvider, // any core.Provider
+	Model:        "gpt-5",
+	SystemPrompt: "Be concise and conversational.",
+	Tools:        []core.Tool{weatherTool},
+})
+if err != nil {
+	return err
+}
+http.Handle("/speech-engine", handler)
+```
+
+Protocol, security, and fallback notes:
+- **Inbound JWT verification**: Every upgrade verifies `X-Elevenlabs-Speech-Engine-Authorization` (HS256 signed with SHA-256 of your ElevenLabs API key, `iss: https://api.elevenlabs.io/convai/speech-engine`, `sub: convai_speech_engine_upstream`, 60s clock-skew leeway) via `elevenlabs.VerifySpeechEngineJWT`. Set `DisableAuth: true` only behind an IP allowlist restricting traffic to ElevenLabs egress ranges.
+- **Interruption cancellation**: Receiving a `user_transcript` with a higher `event_id` cancels the in-flight LLM turn context immediately and discards stale responses.
+- **Fallback / Limitations**: Speech Engine requires a publicly reachable server endpoint (`wsUrl`), does not expose raw audio bytes to your server, and has no official ElevenLabs Go SDK (protocol schemas follow ElevenLabs' upstream WebSocket documentation and may evolve). Use the Iris-managed `voice.Pipeline` when you want client-initiated raw-audio streaming with zero inbound webhook/WebSocket infrastructure.
+
 ## Unsupported Models, Formats, and Current Limitations
 
 - **Chat completions**: `ElevenLabs.Chat` and `ElevenLabs.StreamChat` return `*core.ProviderError` wrapping `core.ErrNotSupported`.
@@ -256,7 +280,7 @@ Pipeline capabilities and guarantees:
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented)**: Speech Engine adapter, hosted ElevenAgents sessions, voice metrics/tracing hooks, and consent-gated voice management/cloning.
+- **Planned (not yet implemented)**: Hosted ElevenAgents sessions, voice metrics/tracing hooks, and consent-gated voice management/cloning.
 
 ## Privacy and Reliability Defaults
 

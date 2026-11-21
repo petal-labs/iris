@@ -140,11 +140,35 @@
 // [core.SpeechRequest.VoiceSettings]. Voice creation, editing, deletion, and
 // voice cloning are intentionally not exposed by this read-only API.
 //
+// # Speech Engine Upstream Server Adapter
+//
+// ElevenLabs Speech Engine uses an inverted WebSocket protocol where
+// ElevenLabs connects outbound to your server's publicly reachable wsUrl,
+// delivers transcribed conversation history, and synthesizes streamed text
+// replies from your chosen Iris LLM provider. Mount [SpeechEngineHandler]
+// created via [ElevenLabs.NewSpeechEngineHandler] on your HTTP server:
+//
+//	handler, err := provider.NewSpeechEngineHandler(elevenlabs.SpeechEngineConfig{
+//	    LLM:          openAIProvider,
+//	    Model:        "gpt-5",
+//	    SystemPrompt: "Be concise and conversational.",
+//	    Tools:        []core.Tool{weatherTool},
+//	})
+//	http.Handle("/speech-engine", handler)
+//
+// Inbound upgrades are authenticated via [VerifySpeechEngineJWT] against the
+// X-Elevenlabs-Speech-Engine-Authorization HS256 JWT header (signed with the
+// SHA-256 hash of your ElevenLabs API key, iss/sub claims, and 60s clock-skew
+// leeway). Higher event_id transcripts immediately cancel in-flight LLM turns.
+// Speech Engine is distinct from hosted ElevenAgents and from client-initiated
+// raw-audio streaming; use package voice ([github.com/petal-labs/iris/voice])
+// when your application needs client-initiated audio streaming.
+//
 // # Current Limitations
 //
 // Synchronous TTS, HTTP streaming TTS, incremental-input WebSocket TTS,
-// file-based Scribe transcription, real-time Scribe WebSocket STT, and
-// read-only voice discovery/settings are implemented. Full-duplex voice
-// sessions, Iris-managed voice pipelines, and consent-gated voice management
+// file-based Scribe transcription, real-time Scribe WebSocket STT, Speech
+// Engine upstream server handling, and read-only voice discovery/settings are
+// implemented. Hosted ElevenAgents sessions and consent-gated voice management
 // are implemented in subsequent issues.
 package elevenlabs
