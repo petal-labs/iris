@@ -1,6 +1,6 @@
 # Iris SDK Examples
 
-This directory contains runnable examples for the Iris SDK across chat, streaming, tools, batch, testing, image, and speech workflows.
+This directory contains runnable examples for the Iris SDK across chat, streaming, tools, batch, testing, image, speech, and real-time voice-agent workflows.
 
 ## Module Structure
 
@@ -21,7 +21,8 @@ export GEMINI_API_KEY=your-key      # Gemini image example
 export XAI_API_KEY=your-key         # xAI examples
 export ZAI_API_KEY=your-key         # Z.ai examples
 export HF_TOKEN=your-key            # Hugging Face examples
-export ELEVENLABS_API_KEY=your-key  # ElevenLabs speech examples
+export ELEVENLABS_API_KEY=your-key  # ElevenLabs speech and voice examples
+export ELEVENLABS_AGENT_ID=agent_... # Optional: hosted ElevenAgents example
 ```
 
 ## Running Examples
@@ -74,6 +75,13 @@ go run ./examples/image/gemini
 go run ./examples/speech/elevenlabs-synthesize -text "Hello from Iris." -out speech.mp3
 go run ./examples/speech/elevenlabs-stream -text "Streaming audio from Iris." -out stream.mp3
 go run ./examples/speech/elevenlabs-transcribe -file speech.mp3 -diarize -timestamps word
+go run ./examples/speech/elevenlabs-voices -category premade -limit 10
+
+# Real-time voice-agent examples (ElevenLabs + Iris LLM)
+go run ./examples/voice/pipeline -prompt "Give me a one-sentence fun fact about Go." -out reply.pcm
+go run ./examples/voice/speech-engine -addr :8080 -path /speech-engine
+go run ./examples/voice/elevenagents -prompt "Hello! What can you help with?" -out agent.pcm
+go run ./examples/voice/elevenagents -signed-url-only
 ```
 
 ### From `examples/` Directory
@@ -87,6 +95,9 @@ go run ./batch/basic
 go run ./testing/mock-provider
 go run ./tools/weather
 go run ./image/basic
+go run ./speech/elevenlabs-synthesize -text "Hello from Iris." -out speech.mp3
+go run ./speech/elevenlabs-voices -category premade -limit 10
+go run ./voice/pipeline -prompt "Hello!" -out reply.pcm
 ```
 
 ## Highlights
@@ -102,3 +113,7 @@ go run ./image/basic
 - `speech/elevenlabs-synthesize`: Synchronous ElevenLabs TTS saving audio to disk.
 - `speech/elevenlabs-stream`: HTTP streaming TTS measuring first-chunk latency and writing incremental chunks.
 - `speech/elevenlabs-transcribe`: File/reader Scribe transcription with optional diarization, timestamps, and audio events.
+- `speech/elevenlabs-voices`: Read-only voice library discovery (`ListVoices`) and voice settings lookup (`GetVoiceSettings`).
+- `voice/pipeline`: Iris-managed full-duplex voice pipeline (`voice.Pipeline`) streaming OpenAI tokens into ElevenLabs Flash v2.5 WebSocket TTS (with optional 16kHz PCM input via Scribe v2 Realtime STT), `core.VoiceTurnTracker`, and latency telemetry.
+- `voice/speech-engine`: ElevenLabs Speech Engine upstream WebSocket server (`elevenlabs.NewSpeechEngineHandler` `http.Handler` with HS256 JWT verification) backed by any Iris LLM.
+- `voice/elevenagents`: Hosted ElevenAgents `core.VoiceSession` consumption and backend signed-URL minting (`GetAgentSignedURL`).

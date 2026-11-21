@@ -18,10 +18,12 @@ iris/
 │   ├── ollama/     # Ollama provider (local and cloud, embeddings)
 │   ├── huggingface/# Hugging Face Inference Providers router
 │   ├── azurefoundry/# Azure AI Foundry provider (Entra ID auth, embeddings)
-│   └── voyageai/   # Voyage AI provider (embeddings, reranking)
+│   ├── voyageai/   # Voyage AI provider (embeddings, reranking)
+│   └── elevenlabs/ # ElevenLabs speech & voice provider (TTS, Scribe STT, Speech Engine, ElevenAgents)
+├── voice/          # Provider-independent full-duplex voice pipeline (STT -> LLM + tools -> TTS)
 ├── tools/          # Tool/function calling framework + middleware
 ├── iristest/       # Test utilities (MockProvider, RecordingProvider)
-├── contrib/        # Optional integrations (OpenTelemetry hook)
+├── contrib/        # Optional integrations (OpenTelemetry chat + voice hooks)
 ├── cmd/            # Command entry points
 │   ├── iris/       # CLI entry point
 │   └── gen-models/ # Model catalog generator
@@ -29,8 +31,8 @@ iris/
 │   ├── commands/   # CLI commands
 │   ├── config/     # Configuration loading
 │   └── keystore/   # Encrypted key storage
-└── tests/
-    └── integration/ # Provider integration + conformance harness
+└── tests/          # Cross-package conformance & voice-agent integration tests
+    └── integration/ # Live provider integration + conformance harness
 ```
 
 ## Prerequisites
@@ -138,6 +140,8 @@ export GEMINI_API_KEY=your-key     # optional
 export XAI_API_KEY=your-key        # optional
 export ZAI_API_KEY=your-key        # optional
 export HF_TOKEN=your-token         # optional
+export ELEVENLABS_API_KEY=your-key # optional (speech & live voice pipeline tests)
+export ELEVENLABS_AGENT_ID=agent_… # optional (live ElevenAgents tests)
 
 # Run integration tests
 go test -tags=integration ./tests/integration/...
@@ -201,6 +205,8 @@ import (
     "github.com/petal-labs/iris/providers/huggingface"
     "github.com/petal-labs/iris/providers/azurefoundry"
     "github.com/petal-labs/iris/providers/voyageai"
+    "github.com/petal-labs/iris/providers/elevenlabs"
+    "github.com/petal-labs/iris/voice"
     "github.com/petal-labs/iris/tools"
     "github.com/petal-labs/iris/iristest"  // Test utilities
 )
@@ -220,12 +226,16 @@ go run ./examples/chat/huggingface-basic
 go run ./examples/chat/xai-basic
 go run ./examples/chat/zai-basic
 go run ./examples/tools/weather
+go run ./examples/speech/elevenlabs-synthesize -text "Hello from Iris." -out speech.mp3
+go run ./examples/speech/elevenlabs-voices -category premade -limit 10
+go run ./examples/voice/pipeline -prompt "Give me a fun fact about Go." -out reply.pcm
 
 # Or from the examples directory
 cd examples
 go run ./chat/basic
 go run ./chat/responses-api
 go run ./chat/ollama-basic
+go run ./speech/elevenlabs-synthesize -text "Hello from Iris." -out speech.mp3
 ```
 
 See [examples/README.md](../examples/README.md) for detailed documentation on each example.
@@ -254,6 +264,7 @@ import (
     // you want available — the registry is empty without these imports.
     _ "github.com/petal-labs/iris/providers/anthropic"
     _ "github.com/petal-labs/iris/providers/azurefoundry"
+    _ "github.com/petal-labs/iris/providers/elevenlabs"
     _ "github.com/petal-labs/iris/providers/gemini"
     _ "github.com/petal-labs/iris/providers/huggingface"
     _ "github.com/petal-labs/iris/providers/ollama"
@@ -265,7 +276,7 @@ import (
 )
 
 fmt.Println(providers.List())
-// [anthropic azurefoundry gemini huggingface ollama openai perplexity voyageai xai zai]
+// [anthropic azurefoundry elevenlabs gemini huggingface ollama openai perplexity voyageai xai zai]
 ```
 
 ---

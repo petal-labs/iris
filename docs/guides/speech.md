@@ -10,6 +10,7 @@ Audio capture and playback remain application-side responsibilities: Iris accept
 |---|---|---|---|
 | `ELEVENLABS_API_KEY` | Yes (for `NewFromEnv`) | — | API key sent in the `xi-api-key` HTTP header (stored as `core.Secret`) |
 | `ELEVENLABS_VOICE_ID` | No (examples & live tests) | `JBFqnCBsd6RMkjVDRZzb` | Default voice ID used by examples and `//go:build integration` tests |
+| `ELEVENLABS_AGENT_ID` | No (ElevenAgents only) | — | Hosted ElevenAgents agent ID used by `examples/voice/elevenagents` and live ElevenAgents tests |
 
 Create a provider from the environment or with explicit options:
 
@@ -25,7 +26,7 @@ if err != nil {
 client := core.NewClient(provider)
 ```
 
-Available options: `WithAPIKey`, `WithBaseURL`, `WithHTTPClient`, `WithHeader`, `WithTimeout`, `WithStreamChunkSize`, and `WithStreamBufferSize`.
+Available options: `WithAPIKey`, `WithBaseURL`, `WithHTTPClient`, `WithHeader`, `WithTimeout`, `WithStreamChunkSize`, `WithStreamBufferSize`, `WithVoiceManagementEnabled`, and `WithVoiceAuthorizer`.
 
 ## Capability Discovery
 
@@ -343,6 +344,10 @@ For downstream workflow orchestration contracts (typed Transcription/Synthesis/S
 - **Telemetry**: `core.TelemetryHook` and `core.VoiceTelemetryHook` (via `core.WithVoiceTelemetry`, `voice.PipelineConfig.Telemetry`, `core.ObserveVoiceSession`, and OpenTelemetry `contrib/otel.NewVoiceHook`) emit provider, model, operation, timing, first-chunk latency, byte/character/turn/interruption/tool counts, and error status only—never raw audio, prompts, transcripts, or credentials.
 - **Bounded retries**: `core.Client` honors server `Retry-After` headers on HTTP 429, retries 5xx/network errors up to `MaxRetries`, and never retries 400/401/403/404/422 errors.
 
+## CLI Support
+
+The `iris` CLI can store an ElevenLabs API key in the encrypted keystore (`iris keys set elevenlabs`), but it does **not** currently expose speech synthesis, transcription, or voice-agent subcommands (`iris chat`, `iris models`, and `iris init` target text/embedding providers). Use the Go SDK or the runnable example commands below instead.
+
 ## Runnable Examples and Live Tests
 
 ```bash
@@ -356,6 +361,21 @@ go run ./examples/speech/elevenlabs-stream -text "Streaming audio from Iris." -o
 
 # File-based Scribe transcription
 go run ./examples/speech/elevenlabs-transcribe -file speech.mp3 -diarize -timestamps word
+
+# Read-only voice discovery and voice settings
+go run ./examples/speech/elevenlabs-voices -category premade -limit 10
+
+# Iris-managed full-duplex voice pipeline (ElevenLabs STT/TTS + OpenAI LLM)
+export OPENAI_API_KEY=your-key
+go run ./examples/voice/pipeline -prompt "Give me a one-sentence fun fact about Go." -out reply.pcm
+
+# ElevenLabs Speech Engine upstream WebSocket server (http.Handler + HS256 JWT auth)
+go run ./examples/voice/speech-engine -addr :8080 -path /speech-engine
+
+# Hosted ElevenAgents voice session or backend signed-URL minting
+export ELEVENLABS_AGENT_ID=agent_...
+go run ./examples/voice/elevenagents -prompt "Hello! What can you help with?" -out agent.pcm
+go run ./examples/voice/elevenagents -signed-url-only
 
 # Offline real-time voice-agent integration tests (multi-turn, barge-in, tools, provider switching, cleanup)
 go test -race -count=1 -v ./tests -run TestVoiceAgent

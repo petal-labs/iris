@@ -258,6 +258,58 @@ for _, url := range resp.Citations {
 
 Citations are also populated on the final response of a stream (`core.DrainStream` returns them). Requests carrying `SearchOptions` against providers without web-search support fail fast with `core.ErrSearchUnsupported` before any HTTP call is made.
 
+## Using ElevenLabs (Speech & Voice)
+
+ElevenLabs is a speech synthesis, transcription, and real-time voice provider (`Chat` and `StreamChat` return `core.ErrNotSupported`). Wrap `elevenlabs.NewFromEnv()` in `core.Client` for TTS/STT or pair it with any Iris chat LLM inside `voice.Pipeline`:
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+
+    "github.com/petal-labs/iris/core"
+    "github.com/petal-labs/iris/providers/elevenlabs"
+)
+
+func main() {
+    provider, err := elevenlabs.NewFromEnv()
+    if err != nil {
+        fmt.Fprintln(os.Stderr, "Error:", err)
+        os.Exit(1)
+    }
+    client := core.NewClient(provider)
+
+    // Text-to-speech synthesis
+    speech, err := client.Synthesize(context.Background(), &core.SpeechRequest{
+        Model:   elevenlabs.ModelElevenFlashV25,
+        VoiceID: "JBFqnCBsd6RMkjVDRZzb", // public "George" voice
+        Text:    "Hello from Iris and ElevenLabs.",
+        Format:  core.AudioFormatMP3_44100_128,
+    })
+    if err != nil {
+        fmt.Fprintln(os.Stderr, "Error:", err)
+        os.Exit(1)
+    }
+
+    // Transcribe the generated audio back with Scribe v2
+    transcript, err := client.Transcribe(context.Background(), &core.TranscriptionRequest{
+        Model: elevenlabs.ModelScribeV2,
+        Audio: &speech.Audio,
+    })
+    if err != nil {
+        fmt.Fprintln(os.Stderr, "Error:", err)
+        os.Exit(1)
+    }
+
+    fmt.Println(transcript.Text)
+}
+```
+
+For real-time WebSocket STT/TTS, full-duplex `voice.Pipeline` agents, Speech Engine upstream servers, hosted ElevenAgents sessions, voice discovery, and opt-in voice management, see the [Speech and Audio Guide](speech.md) and the runnable examples in [`examples/speech/`](../../examples/README.md) and [`examples/voice/`](../../examples/README.md).
+
 ---
 
-See also: [Provider Comparison](../PROVIDERS.md) · [Documentation index](../README.md)
+See also: [Provider Comparison](../PROVIDERS.md) · [Speech and Audio Guide](speech.md) · [Documentation index](../README.md)
