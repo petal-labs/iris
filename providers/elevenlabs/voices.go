@@ -24,8 +24,13 @@ const (
 
 // Voice represents metadata and default synthesis settings for an ElevenLabs voice.
 //
-// Voice discovery is strictly read-only; voice creation, editing, and cloning
-// are not exposed by this API.
+// Read-only discovery methods ([ElevenLabs.ListVoices],
+// [ElevenLabs.ListAllVoices], [ElevenLabs.GetVoice],
+// [ElevenLabs.GetVoiceSettings], and [ElevenLabs.GetDefaultVoiceSettings]) are
+// always available. Mutating operations ([ElevenLabs.CreateVoice],
+// [ElevenLabs.EditVoice], [ElevenLabs.EditVoiceSettings], and
+// [ElevenLabs.DeleteVoice]) are strictly opt-in via
+// [WithVoiceManagementEnabled] and enforce consent and authorization checks.
 type Voice struct {
 	// VoiceID is the unique ElevenLabs voice identifier passed to SpeechRequest.VoiceID.
 	VoiceID string `json:"voice_id"`

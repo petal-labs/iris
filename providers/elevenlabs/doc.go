@@ -137,8 +137,22 @@
 //   - [ElevenLabs.GetDefaultVoiceSettings] (GET /v1/voices/settings/default)
 //
 // Returned [core.VoiceSettings] values can be passed directly into
-// [core.SpeechRequest.VoiceSettings]. Voice creation, editing, deletion, and
-// voice cloning are intentionally not exposed by this read-only API.
+// [core.SpeechRequest.VoiceSettings].
+//
+// # Advanced Voice Management and Cloning (Opt-In, Consent-Gated)
+//
+// Mutating voice library operations are disabled by default (returning
+// [ErrVoiceManagementDisabled]) and require explicitly constructing the
+// provider with [WithVoiceManagementEnabled] (optionally paired with
+// [WithVoiceAuthorizer] for RBAC/audit policies):
+//
+//   - [ElevenLabs.CreateVoice] (POST /v1/voices/add) — requires confirmed [VoiceConsent]
+//   - [ElevenLabs.EditVoice] (POST /v1/voices/{voice_id}/edit) — requires [VoiceConsent] when uploading samples
+//   - [ElevenLabs.EditVoiceSettings] (POST /v1/voices/{voice_id}/settings/edit)
+//   - [ElevenLabs.DeleteVoice] (DELETE /v1/voices/{voice_id})
+//
+// Uploaded samples are sanitized against path traversal and bounded per-sample
+// (10 MiB default) and total (50 MiB, max 25 samples).
 //
 // # Speech Engine Upstream Server Adapter
 //
@@ -192,7 +206,8 @@
 //
 // Synchronous TTS, HTTP streaming TTS, incremental-input WebSocket TTS,
 // file-based Scribe transcription, real-time Scribe WebSocket STT, Speech
-// Engine upstream server handling, hosted ElevenAgents sessions, and read-only
-// voice discovery/settings are implemented. Consent-gated voice management and
-// cloning are implemented in subsequent issues.
+// Engine upstream server handling, hosted ElevenAgents sessions, read-only
+// voice discovery/settings, and opt-in consent-gated voice management/instant
+// cloning are implemented. Professional Voice Cloning (PVC) verification
+// workflows remain managed via the ElevenLabs dashboard.
 package elevenlabs

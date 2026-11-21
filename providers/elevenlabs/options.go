@@ -57,6 +57,15 @@ type Config struct {
 	// during HTTP streaming TTS. Defaults to DefaultStreamBufferSize (16 chunks).
 	StreamBufferSize int `json:"stream_buffer_size,omitempty"`
 
+	// VoiceManagementEnabled explicitly opts this provider instance into mutating
+	// voice operations (CreateVoice, EditVoice, EditVoiceSettings, DeleteVoice).
+	// Defaults to false so voice APIs remain read-only unless explicitly enabled.
+	VoiceManagementEnabled bool `json:"voice_management_enabled,omitempty"`
+
+	// VoiceAuthorizer optionally enforces application-level RBAC, consent policy,
+	// or audit checks before executing any mutating voice management operation.
+	VoiceAuthorizer VoiceAuthorizer `json:"-"`
+
 	// wsDialer overrides the default WebSocket dialer in tests.
 	wsDialer wsDialer
 }
@@ -143,5 +152,26 @@ func WithStreamBufferSize(chunks int) Option {
 		if chunks > 0 {
 			c.StreamBufferSize = chunks
 		}
+	}
+}
+
+// WithVoiceManagementEnabled explicitly opts this provider instance into
+// mutating voice operations ([ElevenLabs.CreateVoice], [ElevenLabs.EditVoice],
+// [ElevenLabs.EditVoiceSettings], and [ElevenLabs.DeleteVoice]).
+//
+// Without this option, all mutating voice methods fail fast with
+// [ErrVoiceManagementDisabled] before making any HTTP requests.
+func WithVoiceManagementEnabled() Option {
+	return func(c *Config) {
+		c.VoiceManagementEnabled = true
+	}
+}
+
+// WithVoiceAuthorizer registers an authorization hook invoked before every
+// mutating voice operation. Combine with [WithVoiceManagementEnabled] to
+// enforce application-level RBAC, quota, or audit controls.
+func WithVoiceAuthorizer(auth VoiceAuthorizer) Option {
+	return func(c *Config) {
+		c.VoiceAuthorizer = auth
 	}
 }

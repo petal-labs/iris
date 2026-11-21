@@ -576,7 +576,7 @@ resp, err := client.Chat("gpt-5.6"). // any deployed model
 - Speech Engine (`NewSpeechEngineHandler`) implements ElevenLabs' inverted upstream WebSocket server protocol (`http.Handler` with `X-Elevenlabs-Speech-Engine-Authorization` HS256 JWT verification); use `voice.Pipeline` for client-initiated raw-audio streaming.
 - Hosted ElevenAgents (`StartVoiceSession` / `StartAgentSession` / `GetAgentSignedURL`) runs hosted agent reasoning on ElevenLabs' platform (distinct from Iris-controlled `voice.Pipeline` and `SpeechEngineHandler`).
 - Scribe rejects `keyterms` on `scribe_v1`, `core.TimestampGranularitySegment`, `num_speakers > 32`, `temperature > 2.0`, and non-16kHz/stereo raw PCM.
-- Consent-gated voice cloning/management is planned in a follow-up issue (voice discovery via `ListVoices`, `ListAllVoices`, `GetVoice`, `GetVoiceSettings`, and `GetDefaultVoiceSettings` is strictly read-only).
+- Mutating voice operations (`CreateVoice`, `EditVoice`, `EditVoiceSettings`, `DeleteVoice`) are disabled by default (`ErrVoiceManagementDisabled`), require `WithVoiceManagementEnabled()` (and optional `WithVoiceAuthorizer`), and enforce confirmed `VoiceConsent` on cloning/sample uploads; read-only discovery (`ListVoices`, `ListAllVoices`, `GetVoice`, `GetVoiceSettings`, `GetDefaultVoiceSettings`) is always available.
 
 **Usage Example**:
 ```go
