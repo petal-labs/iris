@@ -194,7 +194,34 @@ settings, err := provider.GetVoiceSettings(ctx, "JBFqnCBsd6RMkjVDRZzb")
 defaults, err := provider.GetDefaultVoiceSettings(ctx)
 ```
 
-Voice discovery is strictly read-only: voice creation, editing, deletion, and voice cloning are not exposed.
+Voice discovery methods (`ListVoices`, `ListAllVoices`, `GetVoice`, `GetVoiceSettings`, `GetDefaultVoiceSettings`) are always read-only.
+
+### Opt-In Voice Management and Consent-Gated Cloning
+
+Mutating operations (`CreateVoice`, `EditVoice`, `EditVoiceSettings`, `DeleteVoice`) are **disabled by default** (failing fast with `elevenlabs.ErrVoiceManagementDisabled` / `core.ErrNotSupported`) and must be explicitly enabled with `elevenlabs.WithVoiceManagementEnabled()` (optionally paired with `elevenlabs.WithVoiceAuthorizer(...)` for RBAC/audit enforcement):
+
+```go
+provider, err := elevenlabs.NewFromEnv(
+	elevenlabs.WithVoiceManagementEnabled(),
+	elevenlabs.WithVoiceAuthorizer(myRBACAuthorizer),
+)
+created, err := provider.CreateVoice(ctx, &elevenlabs.CreateVoiceRequest{
+	Name:    "Studio Host",
+	Samples: []elevenlabs.VoiceSample{{Filename: "sample1.mp3", Data: sampleBytes}},
+	Consent: &elevenlabs.VoiceConsent{
+		Confirmed:   true,
+		SubjectID:   "user-opaque-id",
+		GrantedBy:   "self",
+		GrantedAt:   time.Now(),
+		EvidenceRef: "audit-consent-123",
+	},
+})
+```
+
+Security & consent safeguards:
+- **Consent gate**: `CreateVoice` and `EditVoice` (when adding audio samples) require a confirmed, non-future `VoiceConsent` record (`ErrVoiceConsentRequired`).
+- **Filename & size bounds**: Sample filenames reject path traversal (`..`, `/`, `\`, control chars); uploads stream through bounded `io.LimitReader` caps (default `10 MiB` per sample, `50 MiB` total, max `25` samples).
+- **Privacy**: `VoiceConsent.String()` and `VoiceSample.String()` omit `SubjectID`, `EvidenceRef`, and raw audio bytes.
 
 ## Real-Time Voice Session and Event API
 
@@ -305,7 +332,7 @@ Architectural distinction & limitations:
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented)**: Consent-gated voice management/cloning.
+- **Voice cloning scope**: Instant Voice Cloning (`POST /v1/voices/add`) is opt-in and consent-gated; Professional Voice Cloning (PVC) verification flows remain managed through the ElevenLabs dashboard.
 
 For downstream workflow orchestration contracts (typed Transcription/Synthesis/Session nodes, tool ports, credential hydration, Cortex boundaries, and acceptance gates), see the [PetalFlow Voice Integration Specification](petalflow-voice-integration.md).
 
