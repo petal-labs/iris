@@ -111,7 +111,7 @@ func TestGemini_ImageGeneration(t *testing.T) {
 	defer cancel()
 
 	resp, err := provider.GenerateImage(ctx, &core.ImageGenerateRequest{
-		Model:  gemini.ModelGemini25FlashImage,
+		Model:  gemini.ModelGemini31FlashImage,
 		Prompt: "A simple red circle on a white background",
 	})
 	if err != nil {
@@ -145,7 +145,7 @@ func TestGemini_ImageGeneration_StreamingNotSupported(t *testing.T) {
 
 	// Streaming should return an error for Gemini.
 	_, err := provider.StreamImage(ctx, &core.ImageGenerateRequest{
-		Model:  gemini.ModelGemini25FlashImage,
+		Model:  gemini.ModelGemini31FlashImage,
 		Prompt: "A simple blue square",
 	})
 	if err == nil {

@@ -35,7 +35,7 @@ func main() {
 	fmt.Println("Streaming response from Grok:")
 	fmt.Println("---")
 
-	// Start streaming request with grok-4.6
+	// Start streaming request with grok-4.7
 	stream, err := client.Chat(xai.ModelGrok47).
 		User("Write a short poem about space exploration. Make it 4 lines.").
 		Stream(ctx)

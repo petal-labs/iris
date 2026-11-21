@@ -33,6 +33,17 @@ var models = []core.ModelInfo{
 		},
 	},
 	{
+		ID:          "claude-fable-5-2",
+		DisplayName: "Claude Fable 5.2",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
 		ID:          "claude-haiku-4-5",
 		DisplayName: "Claude Haiku 4.5",
 		Capabilities: []core.Feature{
@@ -555,6 +566,39 @@ var models = []core.ModelInfo{
 	{
 		ID:          "gpt-6.1-sol",
 		DisplayName: "GPT-6.1 Sol",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-6.1-terra",
+		DisplayName: "GPT-6.1 Terra",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-6.2-astra",
+		DisplayName: "GPT-6.2 Astra",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureStructuredOutput,
+		},
+	},
+	{
+		ID:          "gpt-6.2-sol",
+		DisplayName: "GPT-6.2 Sol",
 		Capabilities: []core.Feature{
 			core.FeatureChat,
 			core.FeatureChatStreaming,

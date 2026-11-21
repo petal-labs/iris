@@ -10,7 +10,10 @@ import (
 // Model constants for Google Gemini models.
 const (
 	// Gemini 4 series (latest)
-	ModelGemini4Argon core.ModelID = "gemini-4-argon"
+	ModelGemini4Neon     core.ModelID = "gemini-4-neon"
+	ModelGemini4Hydrogen core.ModelID = "gemini-4-hydrogen"
+	ModelGemini4Carbon   core.ModelID = "gemini-4-carbon"
+	ModelGemini4Argon    core.ModelID = "gemini-4-argon"
 
 	// Gemini 3.8 series
 	ModelGemini38Flash core.ModelID = "gemini-3.8-flash"
@@ -26,18 +29,15 @@ const (
 	ModelGemini35FlashLite core.ModelID = "gemini-3.5-flash-lite"
 
 	// Gemini 3.1 series (preview)
-	ModelGemini31Pro               core.ModelID = "gemini-3.1-pro-preview"
-	ModelGemini31FlashLite         core.ModelID = "gemini-3.1-flash-lite"
-	ModelGemini31FlashLiteImage    core.ModelID = "gemini-3.1-flash-lite-image"
-	ModelGemini31FlashImagePreview core.ModelID = "gemini-3.1-flash-image-preview"
-	ModelGemini31FlashImage        core.ModelID = "gemini-3.1-flash-image"
+	ModelGemini31Pro            core.ModelID = "gemini-3.1-pro-preview"
+	ModelGemini31FlashLite      core.ModelID = "gemini-3.1-flash-lite"
+	ModelGemini31FlashLiteImage core.ModelID = "gemini-3.1-flash-lite-image"
+	ModelGemini31FlashImage     core.ModelID = "gemini-3.1-flash-image"
 
 	// Gemini 3 series (preview)
 	ModelGemini3Flash core.ModelID = "gemini-3-flash-preview"
-	// ModelGemini3ProImage retains the preview ID it shipped with so the
-	// exported constant's value stays stable; use ModelGemini3ProImageStable
-	// for the generally available release.
-	ModelGemini3ProImage       core.ModelID = "gemini-3-pro-image-preview"
+	// ModelGemini3ProImageStable keeps its Stable suffix for backward
+	// compatibility after the preview model ID was retired.
 	ModelGemini3ProImageStable core.ModelID = "gemini-3-pro-image"
 
 	// Latest aliases (point at the most recent stable snapshot)
@@ -50,9 +50,6 @@ const (
 	ModelGemini25FlashLite core.ModelID = "gemini-2.5-flash-lite"
 	ModelGemini25Pro       core.ModelID = "gemini-2.5-pro"
 
-	// Image generation models (Nano Banana)
-	ModelGemini25FlashImage core.ModelID = "gemini-2.5-flash-image"
-
 	// Embedding models
 	ModelGeminiEmbedding2   core.ModelID = "gemini-embedding-2"
 	ModelGeminiEmbedding001 core.ModelID = "gemini-embedding-001"
@@ -61,6 +58,36 @@ const (
 // models is the static list of supported models.
 var models = []core.ModelInfo{
 	// Gemini 4 series (latest)
+	{
+		ID:          ModelGemini4Neon,
+		DisplayName: "Gemini 4 Neon",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGemini4Hydrogen,
+		DisplayName: "Gemini 4 Hydrogen",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
+	{
+		ID:          ModelGemini4Carbon,
+		DisplayName: "Gemini 4 Carbon",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
 	{
 		ID:          ModelGemini4Argon,
 		DisplayName: "Gemini 4 Argon",
@@ -156,15 +183,6 @@ var models = []core.ModelInfo{
 		},
 	},
 	{
-		ID:          ModelGemini31FlashImagePreview,
-		DisplayName: "Gemini 3.1 Flash Image Preview",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureImageGeneration,
-		},
-	},
-	{
 		ID:          ModelGemini31FlashImage,
 		DisplayName: "Gemini 3.1 Flash Image (Nano Banana 2)",
 		Capabilities: []core.Feature{
@@ -182,13 +200,6 @@ var models = []core.ModelInfo{
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
 			core.FeatureReasoning,
-		},
-	},
-	{
-		ID:          ModelGemini3ProImage,
-		DisplayName: "Gemini 3 Pro Image Preview (Nano Banana Pro)",
-		Capabilities: []core.Feature{
-			core.FeatureImageGeneration,
 		},
 	},
 	{
@@ -258,14 +269,6 @@ var models = []core.ModelInfo{
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
 			core.FeatureReasoning,
-		},
-	},
-	// Image generation models (Nano Banana)
-	{
-		ID:          ModelGemini25FlashImage,
-		DisplayName: "Gemini 2.5 Flash Image (Nano Banana)",
-		Capabilities: []core.Feature{
-			core.FeatureImageGeneration,
 		},
 	},
 	{

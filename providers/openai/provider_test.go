@@ -346,6 +346,9 @@ func TestShouldUseResponsesAPI(t *testing.T) {
 		model core.ModelID
 		want  bool
 	}{
+		{name: "gpt-6.2 astra routes to responses", model: ModelGPT62Astra, want: true},
+		{name: "gpt-6.2 sol routes to responses", model: ModelGPT62Sol, want: true},
+		{name: "gpt-6.1 terra routes to responses", model: ModelGPT61Terra, want: true},
 		{name: "gpt-6 astra routes to responses", model: ModelGPT6Astra, want: true},
 		{name: "gpt-5.6 routes to responses", model: ModelGPT56, want: true},
 		{name: "gpt-4o routes to completions", model: ModelGPT4o, want: false},

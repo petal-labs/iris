@@ -38,7 +38,7 @@ func main() {
 	defer cancel()
 
 	// Send chat request using fluent builder
-	// Using grok-4.6 for quick responses
+	// Using grok-4.7 for quick responses
 	resp, err := client.Chat(xai.ModelGrok47).
 		User("What is the capital of France? Please respond in one sentence.").
 		GetResponse(ctx)

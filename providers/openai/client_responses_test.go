@@ -816,8 +816,8 @@ func TestResponsesAPIMultimodalFileWithID(t *testing.T) {
 // valid as individual models.dev entries come and go.
 func TestChatRoutesByDeclaredAPIEndpoint(t *testing.T) {
 	// One representative model per endpoint. ModelGPT52 is a Responses-API
-	// model; ModelGPT4Turbo is a Chat Completions model.
-	for _, model := range []core.ModelID{ModelGPT52, ModelGPT4Turbo} {
+	// model; ModelGPT4o is a Chat Completions model.
+	for _, model := range []core.ModelID{ModelGPT52, ModelGPT4o} {
 		info := GetModelInfo(model)
 		if info == nil {
 			t.Fatalf("model %q missing from catalog", model)

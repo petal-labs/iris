@@ -3,8 +3,8 @@
 GPT-5+ models automatically use OpenAI's Responses API, which provides advanced features like reasoning, built-in tools, and response chaining.
 
 ```go
-// GPT-5.6 uses the Responses API automatically
-resp, err := client.Chat("gpt-5.6").
+// GPT-6.2 Astra uses the Responses API automatically
+resp, err := client.Chat("gpt-6.2-astra").
     Instructions("You are a helpful research assistant.").
     User("What are the latest developments in quantum computing?").
     ReasoningEffort(core.ReasoningEffortHigh).
@@ -25,7 +25,7 @@ if resp.Reasoning != nil {
 }
 
 // Response chaining - continue from a previous response
-followUp, err := client.Chat("gpt-5.6").
+followUp, err := client.Chat("gpt-6.2-astra").
     ContinueFrom(resp.ID).
     User("Can you elaborate on the most promising approach?").
     GetResponse(ctx)

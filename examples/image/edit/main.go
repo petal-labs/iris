@@ -55,7 +55,7 @@ func main() {
 
 	// Edit the image
 	resp, err := provider.EditImage(ctx, &core.ImageEditRequest{
-		Model:  openai.ModelGPTImage1,
+		Model:  openai.ModelGPTImage2,
 		Prompt: "Add a rainbow arching across the sky",
 		Images: []core.ImageInput{
 			{Data: imageData, Filename: inputPath},

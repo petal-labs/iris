@@ -38,7 +38,7 @@ func main() {
 
 	// Generate an image
 	resp, err := provider.GenerateImage(ctx, &core.ImageGenerateRequest{
-		Model:   openai.ModelGPTImage1,
+		Model:   openai.ModelGPTImage2,
 		Prompt:  "A serene mountain landscape at sunset with a calm lake in the foreground reflecting the orange and purple sky",
 		Size:    core.ImageSize1024x1024,
 		Quality: core.ImageQualityHigh,

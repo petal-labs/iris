@@ -54,18 +54,21 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 
 **API Types**: the provider picks the route per model, from each model's
 `APIEndpoint`. The Route column below records which one applies.
-- Chat Completions API — GPT-4o, GPT-4, and GPT-3.5 series
-- Responses API — GPT-5.x, GPT-4.1, and o-series models; required for reasoning,
+- Chat Completions API — GPT-4o series
+- Responses API — GPT-6.x, GPT-5.x, GPT-4.1, and o-series models; required for reasoning,
   built-in tools, and response chaining
 
 **Models**:
 
 | Model | Display Name | Route | Reasoning | Built-in Tools | Notes |
 |-------|--------------|-------|-----------|----------------|-------|
+| gpt-6.2-astra | GPT-6.2 Astra | Responses | Yes | Yes | Latest flagship |
+| gpt-6.2-sol | GPT-6.2 Sol | Responses | Yes | Yes | GPT-6.2 variant |
+| gpt-6.1-sol | GPT-6.1 Sol | Responses | Yes | Yes | GPT-6.1 variant |
+| gpt-6.1-terra | GPT-6.1 Terra | Responses | Yes | Yes | GPT-6.1 variant |
 | gpt-6-astra | GPT-6 Astra | Responses | Yes | Yes | GPT-6 flagship |
 | gpt-6-luna | GPT-6 Luna | Responses | Yes | Yes | GPT-6 variant |
 | gpt-6-sol | GPT-6 Sol | Responses | Yes | Yes | GPT-6 variant |
-| gpt-6.1-sol | GPT-6.1 Sol | Responses | Yes | Yes | Latest flagship |
 | gpt-daybreak-blue-latest | Daybreak Blue | Responses | Yes | Yes | Defensive cybersecurity alias |
 | gpt-daybreak-red-latest | Daybreak Red | Responses | Yes | Yes | Offensive cybersecurity alias |
 | gpt-5.6 | GPT-5.6 | Responses | Yes | Yes | GPT-5.6 flagship |
@@ -89,22 +92,14 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 | gpt-5-pro | GPT-5 Pro | Responses | Yes | Yes | Enhanced capabilities |
 | gpt-4.1 | GPT-4.1 | Responses | No | Yes |  |
 | gpt-4.1-mini | GPT-4.1 Mini | Responses | No | Yes |  |
-| gpt-4.1-nano | GPT-4.1 Nano | Responses | No | Yes |  |
 | gpt-4o | GPT-4o | Chat Completions | No | No | Multimodal |
 | gpt-4o-mini | GPT-4o Mini | Chat Completions | No | No | Cost-effective |
-| gpt-4-turbo | GPT-4 Turbo | Chat Completions | No | No | Legacy |
-| gpt-4 | GPT-4 | Chat Completions | No | No | Legacy |
-| gpt-3.5-turbo | GPT-3.5 Turbo | Chat Completions | No | No | Legacy; no structured output |
-| o4-mini | o4-mini | Responses | Yes | Yes | Reasoning focused |
 | o3 | o3 | Responses | Yes | Yes | Reasoning focused |
 | o3-pro | o3-pro | Responses | Yes | Yes | Enhanced reasoning |
-| o3-mini | o3-mini | Responses | Yes | Yes | Smaller reasoning |
-| o1 | o1 | Responses | Yes | No | Reasoning focused |
-| o1-pro | o1 Pro | Responses | Yes | No | Enhanced reasoning |
 
-**Image Generation Models**: gpt-image-2, gpt-image-1.5, gpt-image-1, gpt-image-1-mini, chatgpt-image-latest
+**Image Generation Models**: gpt-image-2
 
-**Structured Output**: `ResponseJSONSchema` works on both the Chat Completions API and the Responses API (GPT-5.x), mapped to each API's native `response_format`/`text.format` shape respectively. Requesting it against a Chat Completions-only model that lacks `core.FeatureStructuredOutput` (e.g. gpt-3.5-turbo) fails with `core.ErrStructuredOutputUnsupported`.
+**Structured Output**: `ResponseJSONSchema` works on both the Chat Completions API and the Responses API (GPT-5+), mapped to each API's native `response_format`/`text.format` shape respectively. Requesting it against a catalog model that lacks `core.FeatureStructuredOutput` fails with `core.ErrStructuredOutputUnsupported`.
 
 **Multimodal Input**: Image URLs and base64 data URLs are mapped on both Chat Completions and Responses routes. Responses-routed models also accept image file IDs and document inputs.
 
@@ -113,7 +108,7 @@ Perplexity additionally supports web-search grounding (`core.SearchOptions`, res
 provider := openai.New(os.Getenv("OPENAI_API_KEY"))
 client := core.NewClient(provider)
 
-resp, err := client.Chat(openai.ModelGPT4o).
+resp, err := client.Chat(openai.ModelGPT62Astra).
     User("Hello!").
     GetResponse(ctx)
 ```
@@ -141,7 +136,8 @@ resp, err := client.Chat(openai.ModelGPT4o).
 | claude-opus-5-thinking | Claude Opus 5 (Thinking) | Yes | Extended reasoning |
 | claude-sonnet-5 | Claude Sonnet 5 | Yes | Balanced performance |
 | claude-sonnet-5-thinking | Claude Sonnet 5 (Thinking) | Yes | Extended reasoning |
-| claude-fable-5-1 | Claude Fable 5.1 | Yes | Latest Fable release |
+| claude-fable-5-2 | Claude Fable 5.2 | Yes | Latest Fable release |
+| claude-fable-5-1 | Claude Fable 5.1 | Yes |  |
 | claude-fable-5 | Claude Fable 5 | Yes |  |
 | claude-opus-4-8 | Claude Opus 4.8 | Yes | High capability |
 | claude-opus-4-8-thinking | Claude Opus 4.8 (Thinking) | Yes | Extended reasoning |
@@ -150,8 +146,6 @@ resp, err := client.Chat(openai.ModelGPT4o).
 | claude-sonnet-4-6-thinking | Claude Sonnet 4.6 (Thinking) | Yes | Extended reasoning |
 | claude-opus-4-6 | Claude Opus 4.6 | Yes | High capability |
 | claude-opus-4-6-thinking | Claude Opus 4.6 (Thinking) | Yes | Extended reasoning |
-| claude-sonnet-4-5 | Claude Sonnet 4.5 | Yes | Balanced performance |
-| claude-sonnet-4-5-thinking | Claude Sonnet 4.5 (Thinking) | Yes | Extended reasoning |
 | claude-haiku-4-5 | Claude Haiku 4.5 | Yes | Fast, cost-effective |
 | claude-opus-4-5 | Claude Opus 4.5 | Yes | High capability |
 | claude-opus-4-5-thinking | Claude Opus 4.5 (Thinking) | Yes | Extended reasoning |
@@ -169,14 +163,14 @@ resp, err := client.Chat(openai.ModelGPT4o).
 provider := anthropic.New(os.Getenv("ANTHROPIC_API_KEY"))
 client := core.NewClient(provider)
 
-resp, err := client.Chat(anthropic.ModelClaudeSonnet46).
+resp, err := client.Chat(anthropic.ModelClaudeSonnet55).
     System("You are a helpful assistant.").
     User("Explain quantum computing.").
     GetResponse(ctx)
 
 counter, _ := core.AsTokenCounter(provider)
 count, err := counter.CountTokens(ctx, &core.ChatRequest{
-    Model: anthropic.ModelClaudeSonnet46,
+    Model: anthropic.ModelClaudeSonnet55,
     Messages: []core.Message{{Role: core.RoleUser, Content: "Explain quantum computing."}},
 })
 fmt.Println(count.InputTokens)
@@ -194,7 +188,10 @@ fmt.Println(count.InputTokens)
 
 | Model | Display Name | Reasoning | Tool Calling | Notes |
 |-------|--------------|-----------|--------------|-------|
-| gemini-4-argon | Gemini 4 Argon | Yes | Yes | Latest flagship (`thinkingLevel`) |
+| gemini-4-neon | Gemini 4 Neon | Yes | Yes | Latest flagship (`thinkingLevel`) |
+| gemini-4-hydrogen | Gemini 4 Hydrogen | Yes | Yes | `thinkingLevel` |
+| gemini-4-carbon | Gemini 4 Carbon | Yes | Yes | `thinkingLevel` |
+| gemini-4-argon | Gemini 4 Argon | Yes | Yes | `thinkingLevel` |
 | gemini-3.8-flash | Gemini 3.8 Flash | Yes | Yes | `thinkingLevel` |
 | gemini-3.7-flash | Gemini 3.7 Flash | Yes | Yes | `thinkingLevel` |
 | gemini-3.6-flash | Gemini 3.6 Flash | Yes | Yes | `thinkingLevel` |
@@ -204,19 +201,16 @@ fmt.Println(count.InputTokens)
 | gemini-3.1-flash-lite | Gemini 3.1 Flash Lite | Yes | Yes | `thinkingLevel`, lightweight |
 | gemini-3.1-flash-lite-image | Gemini 3.1 Flash Lite Image | No | No | Chat, streaming, image generation (Nano Banana 2 Lite) |
 | gemini-3.1-flash-image | Gemini 3.1 Flash Image | No | No | Chat, streaming, image generation (Nano Banana 2) |
-| gemini-3.1-flash-image-preview | Gemini 3.1 Flash Image Preview | No | No | Chat, streaming, image generation |
 | gemini-3-flash-preview | Gemini 3 Flash Preview | Yes | Yes | `thinkingLevel` |
 | gemini-flash-latest | Gemini Flash Latest | Yes | Yes | Latest alias (`thinkingLevel`) |
 | gemini-flash-lite-latest | Gemini Flash-Lite Latest | Yes | Yes | Latest alias (`thinkingLevel`) |
 | gemini-pro-latest | Gemini Pro Latest | Yes | Yes | Latest alias (`thinkingLevel`) |
-| gemini-3-pro-image | Gemini 3 Pro Image | No | No | Image generation only (Nano Banana Pro, GA) |
-| gemini-3-pro-image-preview | Gemini 3 Pro Image Preview | No | No | Image generation only (Nano Banana Pro, preview) |
+| gemini-3-pro-image | Gemini 3 Pro Image | No | No | Image generation only (Nano Banana Pro) |
 | gemini-2.5-pro | Gemini 2.5 Pro | Yes | Yes | `thinkingBudget`, production ready |
 | gemini-2.5-flash | Gemini 2.5 Flash | Yes | Yes | `thinkingBudget`, fast |
 | gemini-2.5-flash-lite | Gemini 2.5 Flash Lite | Yes | Yes | `thinkingBudget`, lightweight |
-| gemini-2.5-flash-image | Gemini 2.5 Flash Image | No | No | Image generation only (Nano Banana) |
 
-**Image Generation Models**: gemini-3.1-flash-lite-image, gemini-3.1-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image, gemini-3-pro-image-preview, gemini-2.5-flash-image (Nano Banana)
+**Image Generation Models**: gemini-3.1-flash-lite-image, gemini-3.1-flash-image, gemini-3-pro-image (Nano Banana)
 
 **Embedding Models**:
 
@@ -237,13 +231,13 @@ fmt.Println(count.InputTokens)
 provider := gemini.New(os.Getenv("GEMINI_API_KEY"))
 client := core.NewClient(provider)
 
-resp, err := client.Chat(gemini.ModelGemini25Flash).
+resp, err := client.Chat(gemini.ModelGemini4Neon).
     User("Summarize this document.").
     GetResponse(ctx)
 
 embeddingProvider := gemini.New(os.Getenv("GEMINI_API_KEY"))
 embeddingResp, err := embeddingProvider.CreateEmbeddings(ctx, &core.EmbeddingRequest{
-    Model:     gemini.ModelGeminiEmbedding001,
+    Model:     gemini.ModelGeminiEmbedding2,
     Input:     []core.EmbeddingInput{{Text: "A document to index"}},
     InputType: core.InputTypeDocument,
 })
@@ -268,7 +262,6 @@ embeddingResp, err := embeddingProvider.CreateEmbeddings(ctx, &core.EmbeddingReq
 | grok-4.20-multi-agent-0309 | Grok 4.20 Multi-Agent | Yes | Multi-agent; no tool calling |
 | grok-4.20-0309-reasoning | Grok 4.20 (Reasoning) | Yes | GA reasoning variant |
 | grok-4.20-0309-non-reasoning | Grok 4.20 (Non-Reasoning) | No | GA non-reasoning variant |
-| grok-build-0.1 | Grok Build 0.1 | Yes | Build / agentic workloads |
 
 **Special Features**:
 - Real-time information access
@@ -295,12 +288,14 @@ resp, err := client.Chat(xai.ModelGrok47).
 
 **Models**:
 
+> **Deprecation Note**: Upstream models.dev currently marks all four Sonar models as `deprecated`, with no non-deprecated replacement Sonar models listed for `/chat/completions`. Iris retains these entries until replacement models are available.
+
 | Model | Display Name | Reasoning | Tool Calling | Notes |
 |-------|--------------|-----------|--------------|-------|
-| sonar | Sonar | No | Yes | Fast search |
-| sonar-pro | Sonar Pro | No | Yes | Enhanced search |
-| sonar-reasoning-pro | Sonar Reasoning Pro | Yes | Yes | Chain of thought |
-| sonar-deep-research | Sonar Deep Research | Yes | No | Comprehensive research |
+| sonar | Sonar | No | Yes | Fast search (deprecated upstream) |
+| sonar-pro | Sonar Pro | No | Yes | Enhanced search (deprecated upstream) |
+| sonar-reasoning-pro | Sonar Reasoning Pro | Yes | Yes | Chain of thought (deprecated upstream) |
+| sonar-deep-research | Sonar Deep Research | Yes | No | Comprehensive research (deprecated upstream) |
 
 **Special Features**:
 - Built-in web search and grounding
@@ -343,7 +338,7 @@ for _, url := range resp.Citations {
 | Model | Display Name | Reasoning | Vision | Notes |
 |-------|--------------|-----------|--------|-------|
 | glm-5.3 | GLM-5.3 | Yes | No | Latest flagship |
-| glm-5.3-flash | GLM-5.3 Flash | Yes | No | Fast |
+| glm-5.3-flash | GLM-5.3 Flash | Yes | No | Fast; default model in `iris init` scaffolds |
 | glm-5.3-flashx | GLM-5.3 FlashX | Yes | No | Extra fast |
 | glm-5.2 | GLM-5.2 | Yes | No | |
 | glm-5.1 | GLM-5.1 | Yes | No | |
@@ -351,7 +346,7 @@ for _, url := range resp.Citations {
 | glm-5-turbo | GLM-5 Turbo | Yes | No | Fast |
 | glm-5v-turbo | GLM-5V Turbo | Yes | Yes | Vision capable |
 | glm-4.7 | GLM-4.7 | Yes | No | |
-| glm-4.7-flash | GLM-4.7 Flash | No | No | Fast; default model in `iris init` scaffolds |
+| glm-4.7-flash | GLM-4.7 Flash | No | No | Fast |
 | glm-4.7-flashx | GLM-4.7 FlashX | No | No | Extra fast |
 | glm-4.6 | GLM-4.6 | Yes | No | |
 | glm-4.6v | GLM-4.6V | Yes | Yes | Vision capable |
@@ -371,7 +366,7 @@ for _, url := range resp.Citations {
 provider := zai.New(os.Getenv("ZAI_API_KEY"))
 client := core.NewClient(provider)
 
-resp, err := client.Chat(zai.ModelGLM47).
+resp, err := client.Chat(zai.ModelGLM53).
     User("Explain machine learning.").
     GetResponse(ctx)
 ```
@@ -540,7 +535,7 @@ if err != nil {
 }
 client := core.NewClient(provider)
 
-resp, err := client.Chat("gpt-5.6"). // any deployed model
+resp, err := client.Chat("gpt-6.2-astra"). // any deployed model
     User("Hello").
     GetResponse(ctx)
 ```
@@ -606,8 +601,8 @@ transcript, err := client.Transcribe(ctx, &core.TranscriptionRequest{
 
 | Use Case | Recommended Provider(s) |
 |----------|------------------------|
-| General chat and coding | OpenAI (GPT-5.6, GPT-6), Anthropic (Claude) |
-| Complex reasoning | OpenAI (o-series), Gemini 3/4, xAI Grok 4 |
+| General chat and coding | OpenAI (GPT-6.2, GPT-6.1, GPT-6), Anthropic (Claude) |
+| Complex reasoning | OpenAI (o3, GPT-6.2), Gemini 3/4, xAI Grok 4 |
 | Web search integration | Perplexity |
 | Local/private deployment | Ollama |
 | Cost-sensitive applications | HuggingFace (routing), Ollama (local) |

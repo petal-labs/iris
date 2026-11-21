@@ -21,7 +21,7 @@ func TestOpenAI_ImageGeneration(t *testing.T) {
 	defer cancel()
 
 	resp, err := provider.GenerateImage(ctx, &core.ImageGenerateRequest{
-		Model:   openai.ModelGPTImage1Mini, // Use mini for faster/cheaper tests
+		Model:   openai.ModelGPTImage2,
 		Prompt:  "A simple red circle on a white background",
 		Size:    core.ImageSize1024x1024,
 		Quality: core.ImageQualityLow,
@@ -59,7 +59,7 @@ func TestOpenAI_ImageGeneration_WithOptions(t *testing.T) {
 	defer cancel()
 
 	resp, err := provider.GenerateImage(ctx, &core.ImageGenerateRequest{
-		Model:      openai.ModelGPTImage1Mini,
+		Model:      openai.ModelGPTImage2,
 		Prompt:     "A blue square with rounded corners",
 		Size:       core.ImageSize1024x1024,
 		Quality:    core.ImageQualityLow,
@@ -105,7 +105,7 @@ func TestOpenAI_ImageStreaming(t *testing.T) {
 	defer cancel()
 
 	stream, err := provider.StreamImage(ctx, &core.ImageGenerateRequest{
-		Model:         openai.ModelGPTImage1Mini,
+		Model:         openai.ModelGPTImage2,
 		Prompt:        "A simple green triangle",
 		Size:          core.ImageSize1024x1024,
 		Quality:       core.ImageQualityLow,
@@ -154,7 +154,7 @@ func TestOpenAI_ImageGeneration_MultipleImages(t *testing.T) {
 	defer cancel()
 
 	resp, err := provider.GenerateImage(ctx, &core.ImageGenerateRequest{
-		Model:   openai.ModelGPTImage1Mini,
+		Model:   openai.ModelGPTImage2,
 		Prompt:  "A yellow star",
 		Size:    core.ImageSize1024x1024,
 		Quality: core.ImageQualityLow,

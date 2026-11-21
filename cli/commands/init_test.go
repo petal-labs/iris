@@ -69,15 +69,15 @@ func TestDefaultModel(t *testing.T) {
 		provider string
 		want     string
 	}{
-		{"openai", "gpt-5.6"},
+		{"openai", "gpt-6.2-astra"},
 		{"anthropic", "claude-sonnet-5-5"},
-		{"gemini", "gemini-3.8-flash"},
+		{"gemini", "gemini-4-neon"},
 		{"xai", "grok-4.7"},
 		{"zai", "glm-5.3-flash"},
 		{"ollama", "llama3.2"},
 		{"perplexity", "sonar"},
 		{"huggingface", "meta-llama/Llama-3.1-8B-Instruct"},
-		{"azurefoundry", "gpt-4o"},
+		{"azurefoundry", "gpt-6.2-astra"},
 		{"voyageai", "voyage-4-large"},
 		{"unknown", ""},
 	}
@@ -131,7 +131,7 @@ func TestGenerateFileWithFuncs(t *testing.T) {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
 
-	expected := "Provider: openai, Env: OPENAI_API_KEY, Model: gpt-5.6"
+	expected := "Provider: openai, Env: OPENAI_API_KEY, Model: gpt-6.2-astra"
 	if string(content) != expected {
 		t.Errorf("generateFile() content = %q, want %q", string(content), expected)
 	}

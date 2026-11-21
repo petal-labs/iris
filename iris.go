@@ -40,7 +40,7 @@ var ErrNoAPIKey = errors.New("no API key found in environment")
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	resp, _ := client.Chat("gpt-4o").User("Hello!").GetResponse(ctx)
+//	resp, _ := client.Chat("gpt-6.2-astra").User("Hello!").GetResponse(ctx)
 func OpenAI() (*core.Client, error) {
 	provider, err := openai.NewFromEnv()
 	if err != nil {
@@ -57,7 +57,7 @@ func OpenAI() (*core.Client, error) {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	resp, _ := client.Chat("claude-sonnet-4-5").User("Hello!").GetResponse(ctx)
+//	resp, _ := client.Chat("claude-sonnet-5-5").User("Hello!").GetResponse(ctx)
 func Anthropic() (*core.Client, error) {
 	provider, err := anthropic.NewFromEnv()
 	if err != nil {
@@ -74,7 +74,7 @@ func Anthropic() (*core.Client, error) {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	resp, _ := client.Chat("gemini-2.5-flash").User("Hello!").GetResponse(ctx)
+//	resp, _ := client.Chat("gemini-4-neon").User("Hello!").GetResponse(ctx)
 func Gemini() (*core.Client, error) {
 	provider, err := gemini.NewFromEnv()
 	if err != nil {
@@ -91,7 +91,7 @@ func Gemini() (*core.Client, error) {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	resp, _ := client.Chat("grok-2").User("Hello!").GetResponse(ctx)
+//	resp, _ := client.Chat("grok-4.7").User("Hello!").GetResponse(ctx)
 func XAI() (*core.Client, error) {
 	provider, err := xai.NewFromEnv()
 	if err != nil {

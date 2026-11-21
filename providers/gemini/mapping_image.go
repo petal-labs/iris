@@ -30,7 +30,8 @@ func mapImageGenerateRequest(req *core.ImageGenerateRequest) *geminiImageRequest
 }
 
 // mapSizeToImageConfig maps core ImageSize to Gemini image config.
-// Note: imageSize is only valid for gemini-3-pro-image-preview, not gemini-2.5-flash-image.
+// Note: imageSize is only supported by Pro image models (e.g. gemini-3-pro-image),
+// not Flash image models.
 func mapSizeToImageConfig(size core.ImageSize) *geminiImageGenConfig {
 	// Default to square aspect ratio
 	aspectRatio := "1:1"
@@ -43,7 +44,7 @@ func mapSizeToImageConfig(size core.ImageSize) *geminiImageGenConfig {
 
 	return &geminiImageGenConfig{
 		AspectRatio: aspectRatio,
-		// Don't set imageSize - it's only valid for gemini-3-pro-image-preview
+		// Don't set imageSize - it's only supported by Pro image models
 	}
 }
 

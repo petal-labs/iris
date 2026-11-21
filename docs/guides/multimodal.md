@@ -42,7 +42,7 @@ os.WriteFile("landscape.png", data, 0644)
 
 ```go
 stream, _ := provider.StreamImage(ctx, &core.ImageGenerateRequest{
-    Model:         openai.ModelGPTImage1,
+    Model:         openai.ModelGPTImage2,
     Prompt:        "A futuristic cityscape",
     PartialImages: 3,
 })
@@ -62,7 +62,7 @@ final := <-stream.Final
 imageData, _ := os.ReadFile("input.png")
 
 resp, _ := provider.EditImage(ctx, &core.ImageEditRequest{
-    Model:  openai.ModelGPTImage1,
+    Model:  openai.ModelGPTImage2,
     Prompt: "Add a rainbow in the sky",
     Images: []core.ImageInput{
         {Data: imageData},
@@ -73,13 +73,12 @@ resp, _ := provider.EditImage(ctx, &core.ImageEditRequest{
 
 ### Supported Image Models
 
-| Model | Description |
-|-------|-------------|
-| `gpt-image-2` | Latest GPT Image model |
-| `gpt-image-1.5` | GPT Image 1.5 |
-| `gpt-image-1` | Standard GPT Image |
-| `gpt-image-1-mini` | Fast, cost-effective |
-| `chatgpt-image-latest` | ChatGPT Image model |
+| Provider | Model | Description |
+|----------|-------|-------------|
+| OpenAI | `gpt-image-2` | Latest GPT Image model |
+| Gemini | `gemini-3.1-flash-image` | Nano Banana 2 (chat, streaming, image generation) |
+| Gemini | `gemini-3.1-flash-lite-image` | Nano Banana 2 Lite (chat, streaming, image generation) |
+| Gemini | `gemini-3-pro-image` | Nano Banana Pro (image generation) |
 
 ---
 

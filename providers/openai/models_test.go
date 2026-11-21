@@ -10,9 +10,6 @@ import (
 func TestImageModels(t *testing.T) {
 	imageModels := []core.ModelID{
 		ModelGPTImage2,
-		ModelGPTImage15,
-		ModelGPTImage1,
-		ModelGPTImage1Mini,
 	}
 
 	for _, id := range imageModels {
@@ -27,12 +24,24 @@ func TestImageModels(t *testing.T) {
 	}
 }
 
-func TestChatGPTImageLatestModel(t *testing.T) {
-	info := GetModelInfo(ModelChatGPTImageLatest)
-	if info == nil {
-		t.Fatal("GetModelInfo(ModelChatGPTImageLatest) = nil")
+func TestNewGPT6Models(t *testing.T) {
+	newModels := []core.ModelID{
+		ModelGPT62Astra,
+		ModelGPT62Sol,
+		ModelGPT61Terra,
 	}
-	if !info.HasCapability(core.FeatureImageGeneration) {
-		t.Error("chatgpt-image-latest missing FeatureImageGeneration")
+
+	for _, id := range newModels {
+		info := GetModelInfo(id)
+		if info == nil {
+			t.Errorf("GetModelInfo(%s) = nil, want non-nil", id)
+			continue
+		}
+		if info.GetAPIEndpoint() != core.APIEndpointResponses {
+			t.Errorf("Model %s APIEndpoint = %q, want %q", id, info.GetAPIEndpoint(), core.APIEndpointResponses)
+		}
+		if !info.HasCapability(core.FeatureReasoning) {
+			t.Errorf("Model %s missing FeatureReasoning", id)
+		}
 	}
 }
