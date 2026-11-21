@@ -211,6 +211,40 @@ Full-duplex conversational voice sessions share a provider-agnostic contract in 
 - **Bounded Delivery (`core.VoiceEventEmitter`)**: Provides race-free, deadlock-free bounded event emission and idempotent `Close()` / `Fail(err)` channel closure.
 - **Privacy**: `VoiceSessionConfig.String()` and `VoiceEvent.String()` omit system prompts, raw transcripts, assistant text, audio bytes, and tool argument/result payloads.
 
+## Iris-Managed Voice Pipeline (`voice` package)
+
+The optional `github.com/petal-labs/iris/voice` package composes real-time STT, any Iris LLM provider, and streaming TTS into a full-duplex `core.VoiceSession` while keeping LLM reasoning and tool execution completely under Iris control:
+
+```go
+pipeline, err := voice.NewPipeline(voice.PipelineConfig{
+	STT:         elevenLabsProvider, // core.RealtimeSpeechRecognizer
+	LLM:         openAIProvider,     // any core.Provider
+	LLMModel:    "gpt-5",
+	RealtimeTTS: elevenLabsProvider, // prefers WebSocket TTS; falls back to TTS (HTTP streaming)
+	VoiceID:     "JBFqnCBsd6RMkjVDRZzb",
+	Tools:       []core.Tool{weatherTool},
+})
+if err != nil {
+	return err
+}
+
+sess, err := pipeline.StartVoiceSession(ctx, core.VoiceSessionConfig{
+	InputFormat:  core.AudioFormatPCM16000,
+	OutputFormat: core.AudioFormatPCM16000,
+	SystemPrompt: "Be concise and conversational.",
+})
+if err != nil {
+	return err
+}
+defer sess.Close()
+```
+
+Pipeline capabilities and guarantees:
+- **Streaming token-to-audio**: When `LLM` supports `core.FeatureChatStreaming` and `RealtimeTTS` is configured, LLM text deltas stream directly into `RealtimeTTS.SendText` as tokens arrive; otherwise the pipeline falls back cleanly to `Chat` and/or `SpeechSynthesizer.StreamSynthesize`.
+- **Tool handling**: Supports automatic execution via `ToolExecutor` (including `voice.RegistryToolExecutor(reg)` for `*tools.Registry`), direct `tools.Tool` execution, and caller-driven `SubmitToolResult` for schema-only `core.Tool` definitions, bounded by `MaxToolRounds` (default 5) and `ToolTimeout` (default 30s).
+- **Interruption & barge-in**: Calling `sess.Interrupt(ctx)` or receiving non-empty partial user speech during an active assistant turn (unless `DisableBargeIn: true`) cancels in-flight LLM, tool, and TTS work immediately, emits `core.VoiceEventTurnInterrupted`, and suppresses stale audio chunks from the cancelled turn.
+- **Bounded memory**: Conversation history is capped by `MaxHistoryMessages` (default 64) and event delivery uses a bounded `core.VoiceEventEmitter`.
+
 ## Unsupported Models, Formats, and Current Limitations
 
 - **Chat completions**: `ElevenLabs.Chat` and `ElevenLabs.StreamChat` return `*core.ProviderError` wrapping `core.ErrNotSupported`.
@@ -222,7 +256,7 @@ Full-duplex conversational voice sessions share a provider-agnostic contract in 
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented)**: Iris-managed voice pipelines (`voice` package), Speech Engine adapter, hosted ElevenAgents sessions, voice metrics/tracing hooks, and consent-gated voice management/cloning.
+- **Planned (not yet implemented)**: Speech Engine adapter, hosted ElevenAgents sessions, voice metrics/tracing hooks, and consent-gated voice management/cloning.
 
 ## Privacy and Reliability Defaults
 
