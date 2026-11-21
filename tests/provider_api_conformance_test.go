@@ -10,6 +10,7 @@ import (
 	"github.com/petal-labs/iris/providers"
 	"github.com/petal-labs/iris/providers/anthropic"
 	"github.com/petal-labs/iris/providers/azurefoundry"
+	"github.com/petal-labs/iris/providers/elevenlabs"
 	"github.com/petal-labs/iris/providers/gemini"
 	"github.com/petal-labs/iris/providers/huggingface"
 	"github.com/petal-labs/iris/providers/ollama"
@@ -41,6 +42,7 @@ type providerAPISurface struct {
 var providerAPISurfaces = []providerAPISurface{
 	{id: "anthropic", constructor: anthropic.New, newFromEnv: anthropic.NewFromEnv, withAPIKey: anthropic.WithAPIKey, withHeader: anthropic.WithHeader, defaultKeyEnv: anthropic.DefaultAPIKeyEnvVar, shape: standardConstructor},
 	{id: "azurefoundry", constructor: azurefoundry.New, newFromEnv: azurefoundry.NewFromEnv, withAPIKey: azurefoundry.WithAPIKey, withHeader: azurefoundry.WithHeader, defaultKeyEnv: azurefoundry.DefaultAPIKeyEnvVar, shape: azureConstructor},
+	{id: "elevenlabs", constructor: elevenlabs.New, newFromEnv: elevenlabs.NewFromEnv, withAPIKey: elevenlabs.WithAPIKey, withHeader: elevenlabs.WithHeader, defaultKeyEnv: elevenlabs.DefaultAPIKeyEnvVar, shape: standardConstructor},
 	{id: "gemini", constructor: gemini.New, newFromEnv: gemini.NewFromEnv, withAPIKey: gemini.WithAPIKey, withHeader: gemini.WithHeader, defaultKeyEnv: gemini.DefaultAPIKeyEnvVar, shape: standardConstructor},
 	{id: "huggingface", constructor: huggingface.New, newFromEnv: huggingface.NewFromEnv, withAPIKey: huggingface.WithAPIKey, withHeader: huggingface.WithHeader, defaultKeyEnv: huggingface.DefaultAPIKeyEnvVar, shape: standardConstructor},
 	{id: "ollama", constructor: ollama.New, newFromEnv: ollama.NewFromEnv, withAPIKey: ollama.WithAPIKey, withHeader: ollama.WithHeader, defaultKeyEnv: ollama.DefaultAPIKeyEnvVar, shape: ollamaConstructor},

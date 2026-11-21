@@ -185,12 +185,12 @@ Per the FRD gate policy, downstream PetalFlow and Cortex issues depend on the fo
 | `#251` Credential hydration | PetalFlow | `#145`, `#146` | **Unblocked** (merged) |
 | `#252` Session-oriented execution | PetalFlow | `#155`, `#156` | **Unblocked** (merged) |
 | `#253` Voice agent integration | PetalFlow | `#153`, `#154`, `#155`, `#156` | **Unblocked** (merged) |
-| `#254` Voice examples/tests | PetalFlow | `#148`, `#149`, `#156`, `#162` | Waiting on Iris `#162` |
+| `#254` Voice examples/tests | PetalFlow | `#148`, `#149`, `#156`, `#162` | **Unblocked** (complete) |
 | `#76` Committed transcript persistence | Cortex | `#144`, `#149` | **Unblocked** (merged) |
 | `#77` Session and turn metadata | Cortex | `#155` | **Unblocked** (merged) |
 | `#78` Voice history retrieval | Cortex | `#149`, `#156` | **Unblocked** (merged) |
 | `#79` Transcript privacy/retention | Cortex | `#149` | **Unblocked** (merged) |
-| `#80` Integration tests and example | Cortex | `#155`, `#156`, `#162` | Waiting on Iris `#162` |
+| `#80` Integration tests and example | Cortex | `#155`, `#156`, `#162` | **Unblocked** (complete) |
 
 ---
 
@@ -223,4 +223,4 @@ Every PetalFlow PR implementing `#249`–`#254` MUST pass the following five acc
 - **Non-Rewindable Readers**: `core.Client.Transcribe` cannot automatically retry requests backed by `TranscriptionRequest.Reader`; pass `AudioData` when automatic transient retries are required.
 - **Speech Engine Deployment**: `elevenlabs.SpeechEngineHandler` requires a publicly reachable HTTPS/WSS endpoint (`wsUrl`) because ElevenLabs dials into your server; use `voice.Pipeline` when inbound server hosting is unavailable.
 - **Hosted Reasoning Boundary**: ElevenAgents runs its own hosted LLM and prompt on ElevenLabs; selecting an external Iris LLM requires `voice.Pipeline` or `SpeechEngineHandler`.
-- **Upcoming Iris Work**: Consent-gated voice cloning/management (`#161`) and end-to-end real-time voice-agent integration tests + first-audio latency benchmarks (`#162`) are tracked in subsequent Iris issues.
+- **Latency Benchmarks vs. SLAs**: `BenchmarkVoiceAgent_FirstAudioLatency` (`tests/voice_agent_integration_test.go`) and `TestElevenLabs_LiveVoicePipeline` (`tests/integration/elevenlabs_test.go`) capture measured first-audio latency (`first_audio_ms/op` / `first_audio_latency`) for regression visibility rather than asserting hard wall-clock SLA guarantees across variable network/provider conditions.

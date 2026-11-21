@@ -347,22 +347,18 @@ func (p *Pipeline) StartVoiceSession(ctx context.Context, cfg core.VoiceSessionC
 		turnTrigger:   make(chan turnRequest, 1),
 		pendingTools:  make(map[string]chan core.ToolResult),
 	}
-	s.setState(core.VoiceSessionStateActive)
+	initialState := s.idleState()
+	s.setState(initialState)
 
 	_ = s.bus.Emit(sessCtx, core.VoiceEvent{
 		Type:  core.VoiceEventSessionStarted,
-		State: core.VoiceSessionStateActive,
+		State: initialState,
 	})
 
 	s.wg.Add(1)
 	go s.turnWorker()
 
 	if sttSess != nil {
-		s.setState(core.VoiceSessionStateListening)
-		_ = s.bus.Emit(sessCtx, core.VoiceEvent{
-			Type:  core.VoiceEventSessionState,
-			State: core.VoiceSessionStateListening,
-		})
 		s.wg.Add(1)
 		go s.sttLoop()
 	}

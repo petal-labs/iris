@@ -357,6 +357,12 @@ go run ./examples/speech/elevenlabs-stream -text "Streaming audio from Iris." -o
 # File-based Scribe transcription
 go run ./examples/speech/elevenlabs-transcribe -file speech.mp3 -diarize -timestamps word
 
-# Optional live integration tests
+# Offline real-time voice-agent integration tests (multi-turn, barge-in, tools, provider switching, cleanup)
+go test -race -count=1 -v ./tests -run TestVoiceAgent
+
+# First-audio latency benchmark (mocked STT -> LLM -> incremental TTS; captures first_audio_ms/op)
+go test -bench=BenchmarkVoiceAgent_FirstAudioLatency -benchmem -run "^$" ./tests
+
+# Optional live integration tests (including TestElevenLabs_LiveVoicePipeline)
 go test -count=1 -tags=integration -v ./tests/integration -run TestElevenLabs
 ```
