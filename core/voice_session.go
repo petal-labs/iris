@@ -510,7 +510,18 @@ func (c *Client) StartVoiceSession(ctx context.Context, cfg VoiceSessionConfig) 
 	if err := c.waitForRateLimit(ctx); err != nil {
 		return nil, err
 	}
-	return vsp.StartVoiceSession(ctx, cfg)
+	sess, err := vsp.StartVoiceSession(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return ObserveVoiceSession(ctx, sess, c.voiceTelemetry, VoiceSessionObserverMeta{
+		Provider:     c.speechProviderID(),
+		Mode:         "provider",
+		Model:        cfg.Model,
+		VoiceID:      cfg.VoiceID,
+		InputFormat:  cfg.InputFormat,
+		OutputFormat: cfg.OutputFormat,
+	}), nil
 }
 
 // VoiceTurnTracker coordinates active turn IDs, per-turn cancellation contexts,

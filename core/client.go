@@ -57,6 +57,7 @@ func AsImageGenerator(p Provider) (ImageGenerator, bool) {
 type Client struct {
 	provider          Provider
 	telemetry         TelemetryHook
+	voiceTelemetry    VoiceTelemetryHook
 	retry             RetryPolicy
 	rateLimiter       RateLimiter
 	warningHandler    WarningHandler
@@ -76,6 +77,7 @@ func NewClient(p Provider, opts ...ClientOption) *Client {
 	c := &Client{
 		provider:       p,
 		telemetry:      NoopTelemetryHook{},
+		voiceTelemetry: NoopVoiceTelemetryHook{},
 		retry:          DefaultRetryPolicy(),
 		warningHandler: func(string) {},
 		timeout:        DefaultTimeout,
@@ -91,6 +93,16 @@ func WithTelemetry(h TelemetryHook) ClientOption {
 	return func(c *Client) {
 		if h != nil {
 			c.telemetry = h
+		}
+	}
+}
+
+// WithVoiceTelemetry sets the voice-specific telemetry hook for speech
+// synthesis, transcription, streaming first-chunk latency, and voice sessions.
+func WithVoiceTelemetry(h VoiceTelemetryHook) ClientOption {
+	return func(c *Client) {
+		if h != nil {
+			c.voiceTelemetry = h
 		}
 	}
 }

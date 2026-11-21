@@ -129,10 +129,37 @@ func (c *Client) Synthesize(ctx context.Context, req *SpeechRequest) (*SpeechRes
 	start := time.Now()
 	providerID := c.provider.ID()
 	ctx = c.startSpeechTelemetry(ctx, providerID, req.Model, start)
+	ctx = c.voiceTelemetry.OnVoiceRequestStart(ctx, VoiceRequestStartEvent{
+		Operation: VoiceOperationSynthesize,
+		Provider:  providerID,
+		Model:     req.Model,
+		VoiceID:   req.VoiceID,
+		Format:    req.Format,
+		Start:     start,
+	})
 	resp, err := c.synthesizeWithRetry(ctx, synth, req)
 	if timeout > 0 && err != nil && errors.Is(err, context.DeadlineExceeded) {
 		err = newTimeoutError(timeout, providerID, req.Model)
 	}
+	end := time.Now()
+	voiceEnd := VoiceRequestEndEvent{
+		Operation: VoiceOperationSynthesize,
+		Provider:  providerID,
+		Model:     req.Model,
+		VoiceID:   req.VoiceID,
+		Start:     start,
+		End:       end,
+		Err:       err,
+	}
+	if resp != nil {
+		voiceEnd.InputCharacters = resp.Usage.InputCharacters
+		voiceEnd.OutputBytes = resp.Usage.OutputBytes
+		voiceEnd.AudioDuration = resp.Usage.AudioDuration
+		if voiceEnd.OutputBytes == 0 && len(resp.Audio.Data) > 0 {
+			voiceEnd.OutputBytes = int64(len(resp.Audio.Data))
+		}
+	}
+	c.voiceTelemetry.OnVoiceRequestEnd(ctx, voiceEnd)
 	c.endSpeechTelemetry(ctx, providerID, req.Model, start, err)
 	return resp, err
 }
@@ -187,36 +214,45 @@ func (c *Client) StreamSynthesize(ctx context.Context, req *SpeechRequest) (*Spe
 	start := time.Now()
 	providerID := c.provider.ID()
 	ctx = c.startSpeechTelemetry(ctx, providerID, req.Model, start)
+	ctx = c.voiceTelemetry.OnVoiceRequestStart(ctx, VoiceRequestStartEvent{
+		Operation: VoiceOperationStreamSynthesize,
+		Provider:  providerID,
+		Model:     req.Model,
+		VoiceID:   req.VoiceID,
+		Format:    req.Format,
+		Start:     start,
+	})
 
-	if err := c.waitForRateLimit(ctx); err != nil {
+	recordSetupFail := func(e error) error {
 		if cancel != nil {
 			cancel()
 		}
-		if timeout > 0 && errors.Is(err, context.DeadlineExceeded) {
-			err = newTimeoutError(timeout, providerID, req.Model)
+		if timeout > 0 && errors.Is(e, context.DeadlineExceeded) {
+			e = newTimeoutError(timeout, providerID, req.Model)
 		}
-		c.endSpeechTelemetry(ctx, providerID, req.Model, start, err)
-		return nil, err
+		c.voiceTelemetry.OnVoiceRequestEnd(ctx, VoiceRequestEndEvent{
+			Operation: VoiceOperationStreamSynthesize,
+			Provider:  providerID,
+			Model:     req.Model,
+			VoiceID:   req.VoiceID,
+			Start:     start,
+			End:       time.Now(),
+			Err:       e,
+		})
+		c.endSpeechTelemetry(ctx, providerID, req.Model, start, e)
+		return e
+	}
+
+	if err := c.waitForRateLimit(ctx); err != nil {
+		return nil, recordSetupFail(err)
 	}
 
 	stream, err := synth.StreamSynthesize(ctx, req)
 	if err != nil {
-		if cancel != nil {
-			cancel()
-		}
-		if timeout > 0 && errors.Is(err, context.DeadlineExceeded) {
-			err = newTimeoutError(timeout, providerID, req.Model)
-		}
-		c.endSpeechTelemetry(ctx, providerID, req.Model, start, err)
-		return nil, err
+		return nil, recordSetupFail(err)
 	}
 	if stream == nil {
-		if cancel != nil {
-			cancel()
-		}
-		err = ErrNilSpeechStream
-		c.endSpeechTelemetry(ctx, providerID, req.Model, start, err)
-		return nil, err
+		return nil, recordSetupFail(ErrNilSpeechStream)
 	}
 
 	mapErr := func(e error) error {
@@ -229,7 +265,7 @@ func (c *Client) StreamSynthesize(ctx context.Context, req *SpeechRequest) (*Spe
 		return e
 	}
 
-	return wrapSpeechStreamWithTelemetry(ctx, stream, c.telemetry, providerID, req.Model, start, cancel, mapErr), nil
+	return wrapSpeechStreamWithTelemetry(ctx, stream, c.telemetry, c.voiceTelemetry, providerID, req.Model, req.VoiceID, start, cancel, mapErr), nil
 }
 
 // Transcribe converts audio to text through the client's provider. It validates
@@ -265,10 +301,38 @@ func (c *Client) Transcribe(ctx context.Context, req *TranscriptionRequest) (*Tr
 	start := time.Now()
 	providerID := c.provider.ID()
 	ctx = c.startSpeechTelemetry(ctx, providerID, req.Model, start)
+	reqFmt := req.Format
+	var inputBytes int64
+	if req.Audio != nil {
+		if reqFmt.IsZero() {
+			reqFmt = req.Audio.Format
+		}
+		inputBytes = int64(len(req.Audio.Data))
+	}
+	ctx = c.voiceTelemetry.OnVoiceRequestStart(ctx, VoiceRequestStartEvent{
+		Operation: VoiceOperationTranscribe,
+		Provider:  providerID,
+		Model:     req.Model,
+		Format:    reqFmt,
+		Start:     start,
+	})
 	resp, err := c.transcribeWithRetry(ctx, recognizer, req)
 	if timeout > 0 && err != nil && errors.Is(err, context.DeadlineExceeded) {
 		err = newTimeoutError(timeout, providerID, req.Model)
 	}
+	voiceEnd := VoiceRequestEndEvent{
+		Operation:  VoiceOperationTranscribe,
+		Provider:   providerID,
+		Model:      req.Model,
+		Start:      start,
+		End:        time.Now(),
+		InputBytes: inputBytes,
+		Err:        err,
+	}
+	if resp != nil {
+		voiceEnd.AudioDuration = resp.Duration
+	}
+	c.voiceTelemetry.OnVoiceRequestEnd(ctx, voiceEnd)
 	c.endSpeechTelemetry(ctx, providerID, req.Model, start, err)
 	return resp, err
 }
@@ -333,31 +397,86 @@ func wrapSpeechStreamWithTelemetry(
 	ctx context.Context,
 	stream *SpeechStream,
 	hook TelemetryHook,
+	voiceHook VoiceTelemetryHook,
 	provider string,
 	model ModelID,
+	voiceID string,
 	start time.Time,
 	onDone func(),
 	mapErr func(error) error,
 ) *SpeechStream {
+	_, isNoopVoice := voiceHook.(NoopVoiceTelemetryHook)
+	observeChunks := voiceHook != nil && !isNoopVoice
+
+	var outCh chan AudioChunk
+	chOut := stream.Ch
+	if observeChunks && stream.Ch != nil {
+		outCh = make(chan AudioChunk, max(cap(stream.Ch), 1))
+		chOut = outCh
+	}
+
 	finalCh := make(chan *SpeechResponse, 1)
 	errCh := make(chan error, 1)
 
 	go func() {
+		if outCh != nil {
+			defer close(outCh)
+		}
 		defer close(finalCh)
 		defer close(errCh)
 		if onDone != nil {
 			defer onDone()
 		}
 
-		var finalErr error
+		var (
+			finalErr          error
+			finalResp         *SpeechResponse
+			firstChunkLatency time.Duration
+			sawFirstChunk     bool
+			chunks            int
+			outputBytes       int64
+		)
+
+		var chRecv <-chan AudioChunk
+		if outCh != nil {
+			chRecv = stream.Ch
+		}
 		errRecv := stream.Err
 		finalRecv := stream.Final
 
-		for errRecv != nil || finalRecv != nil {
+		for chRecv != nil || errRecv != nil || finalRecv != nil {
 			select {
+			case chunk, ok := <-chRecv:
+				if !ok {
+					chRecv = nil
+					continue
+				}
+				if len(chunk.Data) > 0 {
+					chunks++
+					outputBytes += int64(len(chunk.Data))
+					if !sawFirstChunk {
+						sawFirstChunk = true
+						now := time.Now()
+						firstChunkLatency = now.Sub(start)
+						voiceHook.OnVoiceFirstChunk(ctx, VoiceFirstChunkEvent{
+							Operation:    VoiceOperationStreamSynthesize,
+							Provider:     provider,
+							Model:        model,
+							Start:        start,
+							FirstChunkAt: now,
+							ChunkBytes:   len(chunk.Data),
+						})
+					}
+				}
+				select {
+				case outCh <- chunk:
+				case <-ctx.Done():
+				}
+
 			case resp, ok := <-finalRecv:
 				finalRecv = nil
 				if ok && resp != nil {
+					finalResp = resp
 					finalCh <- resp
 				}
 			case err, ok := <-errRecv:
@@ -373,11 +492,35 @@ func wrapSpeechStreamWithTelemetry(
 			}
 		}
 
+		end := time.Now()
+		if observeChunks {
+			voiceEnd := VoiceRequestEndEvent{
+				Operation:         VoiceOperationStreamSynthesize,
+				Provider:          provider,
+				Model:             model,
+				VoiceID:           voiceID,
+				Start:             start,
+				End:               end,
+				FirstChunkLatency: firstChunkLatency,
+				OutputBytes:       outputBytes,
+				Chunks:            chunks,
+				Err:               finalErr,
+			}
+			if finalResp != nil {
+				voiceEnd.InputCharacters = finalResp.Usage.InputCharacters
+				voiceEnd.AudioDuration = finalResp.Usage.AudioDuration
+				if finalResp.Usage.OutputBytes > voiceEnd.OutputBytes {
+					voiceEnd.OutputBytes = finalResp.Usage.OutputBytes
+				}
+			}
+			voiceHook.OnVoiceRequestEnd(ctx, voiceEnd)
+		}
+
 		endEvent := RequestEndEvent{
 			Provider: provider,
 			Model:    model,
 			Start:    start,
-			End:      time.Now(),
+			End:      end,
 			Err:      finalErr,
 		}
 		if ctxHook, ok := hook.(ContextualTelemetryHook); ok {
@@ -388,7 +531,7 @@ func wrapSpeechStreamWithTelemetry(
 	}()
 
 	return &SpeechStream{
-		Ch:    stream.Ch,
+		Ch:    chOut,
 		Err:   errCh,
 		Final: finalCh,
 	}

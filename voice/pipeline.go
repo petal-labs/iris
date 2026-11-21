@@ -146,6 +146,10 @@ type PipelineConfig struct {
 	// ToolTimeout bounds each automatic tool execution when no shorter deadline exists.
 	// Zero uses DefaultToolTimeout (30s).
 	ToolTimeout time.Duration
+
+	// Telemetry optionally observes privacy-safe session, turn, first-audio
+	// latency, byte volume, tool call, interruption, and error metrics.
+	Telemetry core.VoiceTelemetryHook
 }
 
 // Validate checks that PipelineConfig has required providers and valid bounds.
@@ -365,6 +369,17 @@ func (p *Pipeline) StartVoiceSession(ctx context.Context, cfg core.VoiceSessionC
 
 	s.wg.Add(1)
 	go s.watchContext()
+
+	if p.cfg.Telemetry != nil {
+		return core.ObserveVoiceSession(ctx, s, p.cfg.Telemetry, core.VoiceSessionObserverMeta{
+			Provider:     p.cfg.LLM.ID(),
+			Mode:         "pipeline",
+			Model:        llmModel,
+			VoiceID:      voiceID,
+			InputFormat:  inputFormat,
+			OutputFormat: cfg.OutputFormat,
+		}), nil
+	}
 
 	return s, nil
 }

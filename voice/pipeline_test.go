@@ -1015,3 +1015,69 @@ func TestPipelineFailuresCancellationAndConcurrency(t *testing.T) {
 		<-drainDone
 	})
 }
+
+type pipelineTelemetryRecorder struct {
+	core.NoopVoiceTelemetryHook
+	mu          sync.Mutex
+	firstChunks int
+	turns       int
+	sessEnds    []core.VoiceSessionEndEvent
+}
+
+func (r *pipelineTelemetryRecorder) OnVoiceFirstChunk(_ context.Context, _ core.VoiceFirstChunkEvent) {
+	r.mu.Lock()
+	r.firstChunks++
+	r.mu.Unlock()
+}
+
+func (r *pipelineTelemetryRecorder) OnVoiceTurnEnd(_ context.Context, _ core.VoiceTurnEndEvent) {
+	r.mu.Lock()
+	r.turns++
+	r.mu.Unlock()
+}
+
+func (r *pipelineTelemetryRecorder) OnVoiceSessionEnd(_ context.Context, e core.VoiceSessionEndEvent) {
+	r.mu.Lock()
+	r.sessEnds = append(r.sessEnds, e)
+	r.mu.Unlock()
+}
+
+func TestPipelineTelemetryHook(t *testing.T) {
+	rec := &pipelineTelemetryRecorder{}
+	pipeline, err := NewPipeline(PipelineConfig{
+		LLM:         &fakeLLMProvider{id: "openai"},
+		LLMModel:    "gpt-5",
+		RealtimeTTS: &fakeRealtimeTTSProvider{},
+		VoiceID:     "v1",
+		Telemetry:   rec,
+	})
+	if err != nil {
+		t.Fatalf("NewPipeline() err = %v", err)
+	}
+
+	sess, err := pipeline.StartVoiceSession(context.Background(), core.VoiceSessionConfig{})
+	if err != nil {
+		t.Fatalf("StartVoiceSession() err = %v", err)
+	}
+
+	if err := sess.SendText(context.Background(), "Hello"); err != nil {
+		t.Fatalf("SendText() err = %v", err)
+	}
+	collectUntil(t, sess.Events(), func(e core.VoiceEvent) bool {
+		return e.Type == core.VoiceEventTurnCompleted
+	})
+
+	if err := sess.Close(); err != nil {
+		t.Fatalf("Close() err = %v", err)
+	}
+
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	if rec.firstChunks != 1 || rec.turns != 1 || len(rec.sessEnds) != 1 {
+		t.Fatalf("unexpected telemetry counts: firstChunks=%d turns=%d sessEnds=%d",
+			rec.firstChunks, rec.turns, len(rec.sessEnds))
+	}
+	if rec.sessEnds[0].Mode != "pipeline" || rec.sessEnds[0].OutputAudioBytes == 0 {
+		t.Errorf("unexpected session end metrics: %+v", rec.sessEnds[0])
+	}
+}
