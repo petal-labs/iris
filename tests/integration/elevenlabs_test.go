@@ -7,11 +7,13 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/petal-labs/iris/core"
 	"github.com/petal-labs/iris/providers/elevenlabs"
+	"github.com/petal-labs/iris/voice"
 )
 
 // defaultElevenLabsVoiceID is ElevenLabs' public "George" voice, overridable via ELEVENLABS_VOICE_ID.
@@ -396,4 +398,145 @@ func TestElevenLabs_AgentSession(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatalf("timed out waiting for ElevenAgents session event: %v", ctx.Err())
 	}
+}
+
+type liveEchoLLM struct{}
+
+func (liveEchoLLM) ID() string               { return "echo-llm" }
+func (liveEchoLLM) Models() []core.ModelInfo { return nil }
+func (liveEchoLLM) Supports(f core.Feature) bool {
+	return f == core.FeatureChat || f == core.FeatureChatStreaming
+}
+func (liveEchoLLM) Chat(_ context.Context, _ *core.ChatRequest) (*core.ChatResponse, error) {
+	return &core.ChatResponse{Output: "Acknowledged from Iris."}, nil
+}
+func (liveEchoLLM) StreamChat(_ context.Context, _ *core.ChatRequest) (*core.ChatStream, error) {
+	ch := make(chan core.ChatChunk, 3)
+	errCh := make(chan error, 1)
+	finalCh := make(chan *core.ChatResponse, 1)
+	ch <- core.ChatChunk{Delta: "Acknowledged "}
+	ch <- core.ChatChunk{Delta: "from Iris."}
+	close(ch)
+	finalCh <- &core.ChatResponse{Output: "Acknowledged from Iris."}
+	close(finalCh)
+	close(errCh)
+	return &core.ChatStream{Ch: ch, Err: errCh, Final: finalCh}, nil
+}
+
+type liveLatencyRecorder struct {
+	core.NoopVoiceTelemetryHook
+	mu              sync.Mutex
+	firstAudioDelay time.Duration
+}
+
+func (r *liveLatencyRecorder) OnVoiceFirstChunk(_ context.Context, e core.VoiceFirstChunkEvent) {
+	r.mu.Lock()
+	r.firstAudioDelay = e.FirstChunkLatency()
+	r.mu.Unlock()
+}
+
+func TestElevenLabs_LiveVoicePipeline(t *testing.T) {
+	skipIfNoElevenLabsKey(t)
+
+	el := elevenlabs.New(getElevenLabsKey(t), elevenlabs.WithTimeout(30*time.Second))
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+
+	// Synthesize a short PCM 16kHz user prompt to feed into real Scribe v2 Realtime.
+	promptAudio, err := el.Synthesize(ctx, &core.SpeechRequest{
+		Model:   elevenlabs.ModelElevenFlashV25,
+		VoiceID: elevenLabsTestVoiceID(),
+		Text:    "Hello Iris.",
+		Format:  core.AudioFormatPCM16000,
+	})
+	if err != nil {
+		t.Fatalf("Synthesize(prompt) err = %v", err)
+	}
+	pcm, err := promptAudio.Audio.GetBytes()
+	if err != nil || len(pcm) == 0 {
+		t.Fatalf("prompt PCM bytes err = %v, len = %d", err, len(pcm))
+	}
+
+	rec := &liveLatencyRecorder{}
+	pipeline, err := voice.NewPipeline(voice.PipelineConfig{
+		STT:            el,
+		STTModel:       elevenlabs.ModelScribeV2Realtime,
+		CommitStrategy: core.CommitStrategyManual,
+		LLM:            liveEchoLLM{},
+		LLMModel:       "echo-1",
+		RealtimeTTS:    el,
+		TTSModel:       elevenlabs.ModelElevenFlashV25,
+		VoiceID:        elevenLabsTestVoiceID(),
+		Telemetry:      rec,
+	})
+	if err != nil {
+		t.Fatalf("NewPipeline() err = %v", err)
+	}
+
+	sess, err := pipeline.StartVoiceSession(ctx, core.VoiceSessionConfig{
+		InputFormat:  core.AudioFormatPCM16000,
+		OutputFormat: core.AudioFormatPCM16000,
+	})
+	if err != nil {
+		t.Fatalf("StartVoiceSession() err = %v", err)
+	}
+	defer sess.Close()
+
+	// Stream PCM user audio in 8 KiB chunks and trigger manual commit via IsFinal.
+	const chunkSize = 8192
+	var seq int64
+	for off := 0; off < len(pcm); off += chunkSize {
+		end := min(off+chunkSize, len(pcm))
+		isLast := end == len(pcm)
+		if err := sess.SendAudio(ctx, core.AudioChunk{
+			Data:     pcm[off:end],
+			Format:   core.AudioFormatPCM16000,
+			Sequence: seq,
+			IsFinal:  isLast,
+		}); err != nil {
+			t.Fatalf("SendAudio(seq=%d) err = %v", seq, err)
+		}
+		seq++
+	}
+
+	var outputBytes int
+	var sawCommitted bool
+	var sawTurnDone bool
+	for !sawTurnDone {
+		select {
+		case evt, ok := <-sess.Events():
+			if !ok {
+				if err := <-sess.Err(); err != nil {
+					t.Fatalf("live pipeline session error: %v", err)
+				}
+				t.Fatal("live pipeline closed before TurnCompleted")
+			}
+			switch evt.Type {
+			case core.VoiceEventUserTranscriptCommitted:
+				sawCommitted = true
+			case core.VoiceEventAudioOutput:
+				if evt.Audio != nil {
+					outputBytes += len(evt.Audio.Data)
+				}
+			case core.VoiceEventError:
+				t.Fatalf("turn error: %v", evt.Err)
+			case core.VoiceEventTurnCompleted:
+				sawTurnDone = true
+			}
+		case err := <-sess.Err():
+			if err != nil {
+				t.Fatalf("live pipeline error: %v", err)
+			}
+		case <-ctx.Done():
+			t.Fatalf("timed out waiting for live pipeline turn completion (committed=%t outputBytes=%d)", sawCommitted, outputBytes)
+		}
+	}
+
+	if !sawCommitted || outputBytes == 0 {
+		t.Fatalf("live pipeline incomplete: committed=%t outputBytes=%d", sawCommitted, outputBytes)
+	}
+	rec.mu.Lock()
+	latency := rec.firstAudioDelay
+	rec.mu.Unlock()
+	t.Logf("LiveVoicePipeline completed: committed=%t output_bytes=%d first_audio_latency=%s", sawCommitted, outputBytes, latency)
 }
