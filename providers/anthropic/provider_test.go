@@ -72,8 +72,8 @@ func TestModels(t *testing.T) {
 	p := New("test-key")
 	models := p.Models()
 
-	if len(models) != 23 {
-		t.Errorf("Models() count = %d, want 23", len(models))
+	if len(models) != 22 {
+		t.Errorf("Models() count = %d, want 22", len(models))
 	}
 
 	// Verify model IDs
@@ -94,6 +94,7 @@ func TestModels(t *testing.T) {
 		ModelClaudeSonnet5Thinking,
 		ModelClaudeFable5,
 		ModelClaudeFable51,
+		ModelClaudeFable52,
 		ModelClaudeOpus48,
 		ModelClaudeOpus48Thinking,
 		ModelClaudeOpus47,
@@ -101,8 +102,6 @@ func TestModels(t *testing.T) {
 		ModelClaudeSonnet46Thinking,
 		ModelClaudeOpus46,
 		ModelClaudeOpus46Thinking,
-		ModelClaudeSonnet45,
-		ModelClaudeSonnet45Thinking,
 		ModelClaudeHaiku45,
 		ModelClaudeOpus45,
 		ModelClaudeOpus45Thinking,
@@ -182,7 +181,8 @@ func TestGetModelInfo(t *testing.T) {
 		wantNil bool
 		wantID  core.ModelID
 	}{
-		{ModelClaudeSonnet45, false, ModelClaudeSonnet45},
+		{ModelClaudeSonnet55, false, ModelClaudeSonnet55},
+		{ModelClaudeFable52, false, ModelClaudeFable52},
 		{ModelClaudeHaiku45, false, ModelClaudeHaiku45},
 		{ModelClaudeOpus45, false, ModelClaudeOpus45},
 		{"unknown-model", true, ""},
@@ -211,7 +211,7 @@ func TestGetModelInfo(t *testing.T) {
 }
 
 func TestModelCapabilities(t *testing.T) {
-	for _, id := range []core.ModelID{ModelClaudeSonnet45, ModelClaudeHaiku45, ModelClaudeOpus45} {
+	for _, id := range []core.ModelID{ModelClaudeSonnet55, ModelClaudeFable52, ModelClaudeHaiku45, ModelClaudeOpus45} {
 		t.Run(string(id), func(t *testing.T) {
 			info := GetModelInfo(id)
 			if info == nil {

@@ -29,8 +29,8 @@ func main() {
     // Create a client
     client := core.NewClient(provider)
 
-    // Send a chat request (using latest Claude Sonnet 5)
-    resp, err := client.Chat("claude-sonnet-5").
+    // Send a chat request (using latest Claude Sonnet 5.5)
+    resp, err := client.Chat("claude-sonnet-5-5").
         System("You are a helpful assistant.").
         User("What is the capital of France?").
         GetResponse(context.Background())
@@ -65,8 +65,8 @@ func main() {
     // Create a client
     client := core.NewClient(provider)
 
-    // Send a chat request (using latest Gemini 3.6 Flash)
-    resp, err := client.Chat("gemini-3.6-flash").
+    // Send a chat request (using latest Gemini 4 Neon)
+    resp, err := client.Chat("gemini-4-neon").
         System("You are a helpful assistant.").
         User("What is the capital of France?").
         GetResponse(context.Background())
@@ -167,8 +167,8 @@ func main() {
     // Create a client
     client := core.NewClient(provider)
 
-    // Send a chat request using GLM-5.2
-    resp, err := client.Chat(zai.ModelGLM52).
+    // Send a chat request using GLM-5.3
+    resp, err := client.Chat(zai.ModelGLM53).
         System("You are a helpful assistant.").
         User("What is the capital of France?").
         GetResponse(context.Background())
@@ -185,8 +185,8 @@ func main() {
 Z.ai GLM models with thinking support:
 
 ```go
-// Use thinking mode with GLM-5.2 (enabled by default)
-resp, err := client.Chat(zai.ModelGLM52).
+// Use thinking mode with GLM-5.3 (enabled by default)
+resp, err := client.Chat(zai.ModelGLM53).
     User("Solve this step by step: What is 15% of 240?").
     ReasoningEffort(core.ReasoningEffortHigh).
     GetResponse(ctx)
@@ -198,6 +198,8 @@ if resp.Reasoning != nil && len(resp.Reasoning.Summary) > 0 {
 ```
 
 ## Using Perplexity Search
+
+> **Note**: Upstream models.dev currently marks Perplexity's Sonar models as deprecated; Iris retains them until non-deprecated Sonar replacements are available.
 
 ```go
 package main

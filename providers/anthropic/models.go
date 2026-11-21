@@ -19,6 +19,7 @@ const (
 	ModelClaudeSonnet5Thinking core.ModelID = "claude-sonnet-5-thinking"
 	ModelClaudeFable5          core.ModelID = "claude-fable-5"
 	ModelClaudeFable51         core.ModelID = "claude-fable-5-1"
+	ModelClaudeFable52         core.ModelID = "claude-fable-5-2"
 
 	// Claude 4.8 series
 	ModelClaudeOpus48         core.ModelID = "claude-opus-4-8"
@@ -34,11 +35,9 @@ const (
 	ModelClaudeOpus46Thinking   core.ModelID = "claude-opus-4-6-thinking"
 
 	// Claude 4.5 series
-	ModelClaudeSonnet45         core.ModelID = "claude-sonnet-4-5"
-	ModelClaudeSonnet45Thinking core.ModelID = "claude-sonnet-4-5-thinking"
-	ModelClaudeHaiku45          core.ModelID = "claude-haiku-4-5"
-	ModelClaudeOpus45           core.ModelID = "claude-opus-4-5"
-	ModelClaudeOpus45Thinking   core.ModelID = "claude-opus-4-5-thinking"
+	ModelClaudeHaiku45        core.ModelID = "claude-haiku-4-5"
+	ModelClaudeOpus45         core.ModelID = "claude-opus-4-5"
+	ModelClaudeOpus45Thinking core.ModelID = "claude-opus-4-5-thinking"
 )
 
 // models is the static list of supported models.
@@ -155,6 +154,16 @@ var models = []core.ModelInfo{
 			core.FeatureReasoning,
 		},
 	},
+	{
+		ID:          ModelClaudeFable52,
+		DisplayName: "Claude Fable 5.2",
+		Capabilities: []core.Feature{
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+		},
+	},
 	// Claude 4.8 series
 	{
 		ID:          ModelClaudeOpus48,
@@ -229,26 +238,6 @@ var models = []core.ModelInfo{
 		},
 	},
 	// Claude 4.5 series
-	{
-		ID:          ModelClaudeSonnet45,
-		DisplayName: "Claude Sonnet 4.5",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
-		},
-	},
-	{
-		ID:          ModelClaudeSonnet45Thinking,
-		DisplayName: "Claude Sonnet 4.5 (Thinking)",
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
-		},
-	},
 	{
 		ID:          ModelClaudeHaiku45,
 		DisplayName: "Claude Haiku 4.5",

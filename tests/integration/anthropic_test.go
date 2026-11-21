@@ -51,7 +51,7 @@ func TestAnthropic_ChatCompletion_Sonnet(t *testing.T) {
 	defer cancel()
 
 	// Test with Sonnet model for more complex reasoning.
-	resp, err := client.Chat(anthropic.ModelClaudeSonnet45).
+	resp, err := client.Chat(anthropic.ModelClaudeSonnet55).
 		User("What is the capital of France? Answer in one word.").
 		GetResponse(ctx)
 	if err != nil {
@@ -68,7 +68,7 @@ func TestAnthropic_ChatCompletion_Sonnet(t *testing.T) {
 	}
 
 	t.Logf("Response: %s", resp.Output)
-	t.Logf("Model: %s", anthropic.ModelClaudeSonnet45)
+	t.Logf("Model: %s", anthropic.ModelClaudeSonnet55)
 }
 
 func anthropicChatConformanceConfig() chatConformanceConfig {

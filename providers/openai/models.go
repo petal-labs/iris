@@ -5,13 +5,18 @@ import "github.com/petal-labs/iris/core"
 
 // Model constants for OpenAI models.
 const (
-	// GPT-6 series (latest)
+	// GPT-6.2 series (latest)
+	ModelGPT62Astra core.ModelID = "gpt-6.2-astra"
+	ModelGPT62Sol   core.ModelID = "gpt-6.2-sol"
+
+	// GPT-6.1 series
+	ModelGPT61Sol   core.ModelID = "gpt-6.1-sol"
+	ModelGPT61Terra core.ModelID = "gpt-6.1-terra"
+
+	// GPT-6 series
 	ModelGPT6Astra core.ModelID = "gpt-6-astra"
 	ModelGPT6Luna  core.ModelID = "gpt-6-luna"
 	ModelGPT6Sol   core.ModelID = "gpt-6-sol"
-
-	// GPT-6.1 series
-	ModelGPT61Sol core.ModelID = "gpt-6.1-sol"
 
 	// GPT Daybreak series (cybersecurity-specialized aliases)
 	ModelGPTDaybreakBlueLatest core.ModelID = "gpt-daybreak-blue-latest"
@@ -53,38 +58,80 @@ const (
 	// GPT-4.1 series
 	ModelGPT41     core.ModelID = "gpt-4.1"
 	ModelGPT41Mini core.ModelID = "gpt-4.1-mini"
-	ModelGPT41Nano core.ModelID = "gpt-4.1-nano"
 
 	// GPT-4o series
 	ModelGPT4o     core.ModelID = "gpt-4o"
 	ModelGPT4oMini core.ModelID = "gpt-4o-mini"
 
-	// GPT-4 series
-	ModelGPT4Turbo core.ModelID = "gpt-4-turbo"
-	ModelGPT4      core.ModelID = "gpt-4"
-
-	// GPT-3.5 series
-	ModelGPT35Turbo core.ModelID = "gpt-3.5-turbo"
-
 	// Reasoning models (o-series)
-	ModelO4Mini core.ModelID = "o4-mini"
-	ModelO3     core.ModelID = "o3"
-	ModelO3Pro  core.ModelID = "o3-pro"
-	ModelO3Mini core.ModelID = "o3-mini"
-	ModelO1     core.ModelID = "o1"
-	ModelO1Pro  core.ModelID = "o1-pro"
+	ModelO3    core.ModelID = "o3"
+	ModelO3Pro core.ModelID = "o3-pro"
 
 	// Image generation models
-	ModelGPTImage2          core.ModelID = "gpt-image-2"
-	ModelGPTImage15         core.ModelID = "gpt-image-1.5"
-	ModelGPTImage1          core.ModelID = "gpt-image-1"
-	ModelGPTImage1Mini      core.ModelID = "gpt-image-1-mini"
-	ModelChatGPTImageLatest core.ModelID = "chatgpt-image-latest"
+	ModelGPTImage2 core.ModelID = "gpt-image-2"
 )
 
 // models is the static list of supported models.
 var models = []core.ModelInfo{
-	// GPT-6 series (latest - Responses API with reasoning and built-in tools)
+	// GPT-6.2 series (latest - Responses API with reasoning and built-in tools)
+	{
+		ID:          ModelGPT62Astra,
+		DisplayName: "GPT-6.2 Astra",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	{
+		ID:          ModelGPT62Sol,
+		DisplayName: "GPT-6.2 Sol",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	// GPT-6.1 series (Responses API with reasoning and built-in tools)
+	{
+		ID:          ModelGPT61Sol,
+		DisplayName: "GPT-6.1 Sol",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	{
+		ID:          ModelGPT61Terra,
+		DisplayName: "GPT-6.1 Terra",
+		APIEndpoint: core.APIEndpointResponses,
+		Capabilities: []core.Feature{
+			core.FeatureStructuredOutput,
+			core.FeatureChat,
+			core.FeatureChatStreaming,
+			core.FeatureToolCalling,
+			core.FeatureReasoning,
+			core.FeatureBuiltInTools,
+			core.FeatureResponseChain,
+		},
+	},
+	// GPT-6 series (Responses API with reasoning and built-in tools)
 	{
 		ID:          ModelGPT6Astra,
 		DisplayName: "GPT-6 Astra",
@@ -116,21 +163,6 @@ var models = []core.ModelInfo{
 	{
 		ID:          ModelGPT6Sol,
 		DisplayName: "GPT-6 Sol",
-		APIEndpoint: core.APIEndpointResponses,
-		Capabilities: []core.Feature{
-			core.FeatureStructuredOutput,
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
-			core.FeatureBuiltInTools,
-			core.FeatureResponseChain,
-		},
-	},
-	// GPT-6.1 series (Responses API with reasoning and built-in tools)
-	{
-		ID:          ModelGPT61Sol,
-		DisplayName: "GPT-6.1 Sol",
 		APIEndpoint: core.APIEndpointResponses,
 		Capabilities: []core.Feature{
 			core.FeatureStructuredOutput,
@@ -470,19 +502,6 @@ var models = []core.ModelInfo{
 			core.FeatureResponseChain,
 		},
 	},
-	{
-		ID:          ModelGPT41Nano,
-		DisplayName: "GPT-4.1 Nano",
-		APIEndpoint: core.APIEndpointResponses,
-		Capabilities: []core.Feature{
-			core.FeatureStructuredOutput,
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureBuiltInTools,
-			core.FeatureResponseChain,
-		},
-	},
 	// GPT-4o series (Chat Completions API)
 	{
 		ID:          ModelGPT4o,
@@ -506,53 +525,7 @@ var models = []core.ModelInfo{
 			core.FeatureToolCalling,
 		},
 	},
-	// GPT-4 series (Chat Completions API)
-	{
-		ID:          ModelGPT4Turbo,
-		DisplayName: "GPT-4 Turbo",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
-	{
-		ID:          ModelGPT4,
-		DisplayName: "GPT-4",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
-	// GPT-3.5 series (Chat Completions API)
-	{
-		ID:          ModelGPT35Turbo,
-		DisplayName: "GPT-3.5 Turbo",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-		},
-	},
 	// Reasoning models (o-series) - Responses API with reasoning
-	{
-		ID:          ModelO4Mini,
-		DisplayName: "o4-mini",
-		APIEndpoint: core.APIEndpointResponses,
-		Capabilities: []core.Feature{
-			core.FeatureStructuredOutput,
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
-			core.FeatureBuiltInTools,
-			core.FeatureResponseChain,
-		},
-	},
 	{
 		ID:          ModelO3,
 		DisplayName: "o3",
@@ -581,78 +554,10 @@ var models = []core.ModelInfo{
 			core.FeatureResponseChain,
 		},
 	},
-	{
-		ID:          ModelO3Mini,
-		DisplayName: "o3-mini",
-		APIEndpoint: core.APIEndpointResponses,
-		Capabilities: []core.Feature{
-			core.FeatureStructuredOutput,
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
-			core.FeatureBuiltInTools,
-			core.FeatureResponseChain,
-		},
-	},
-	{
-		ID:          ModelO1,
-		DisplayName: "o1",
-		APIEndpoint: core.APIEndpointResponses,
-		Capabilities: []core.Feature{
-			core.FeatureStructuredOutput,
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
-			core.FeatureResponseChain,
-		},
-	},
-	{
-		ID:          ModelO1Pro,
-		DisplayName: "o1 Pro",
-		APIEndpoint: core.APIEndpointResponses,
-		Capabilities: []core.Feature{
-			core.FeatureStructuredOutput,
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
-			core.FeatureResponseChain,
-		},
-	},
 	// Image generation models
 	{
 		ID:          ModelGPTImage2,
 		DisplayName: "GPT Image 2",
-		Capabilities: []core.Feature{
-			core.FeatureImageGeneration,
-		},
-	},
-	{
-		ID:          ModelGPTImage15,
-		DisplayName: "GPT Image 1.5",
-		Capabilities: []core.Feature{
-			core.FeatureImageGeneration,
-		},
-	},
-	{
-		ID:          ModelGPTImage1,
-		DisplayName: "GPT Image 1",
-		Capabilities: []core.Feature{
-			core.FeatureImageGeneration,
-		},
-	},
-	{
-		ID:          ModelGPTImage1Mini,
-		DisplayName: "GPT Image 1 Mini",
-		Capabilities: []core.Feature{
-			core.FeatureImageGeneration,
-		},
-	},
-	{
-		ID:          ModelChatGPTImageLatest,
-		DisplayName: "ChatGPT Image Latest",
 		Capabilities: []core.Feature{
 			core.FeatureImageGeneration,
 		},

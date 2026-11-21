@@ -336,10 +336,15 @@ func TestNoDuplicateModelIDs(t *testing.T) {
 func TestKnownModelsExist(t *testing.T) {
 	knownModels := []core.ModelID{
 		// OpenAI
+		"gpt-6.2-astra",
+		"gpt-6.2-sol",
+		"gpt-6.1-terra",
 		"gpt-5.6-terra",
 		"gpt-5.5",
 		"gpt-5",
 		"o3",
+		// Anthropic
+		"claude-fable-5-2",
 		// Embeddings
 		"text-embedding-3-large",
 		"text-embedding-3-small",

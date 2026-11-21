@@ -38,7 +38,7 @@ func main() {
 
 	// Stream an image with partial results
 	stream, err := provider.StreamImage(ctx, &core.ImageGenerateRequest{
-		Model:         openai.ModelGPTImage1,
+		Model:         openai.ModelGPTImage2,
 		Prompt:        "A futuristic cityscape with flying cars and neon lights at night",
 		Size:          core.ImageSize1024x1024,
 		Quality:       core.ImageQualityHigh,

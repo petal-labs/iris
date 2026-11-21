@@ -110,6 +110,9 @@ func TestModels(t *testing.T) {
 	}
 
 	expected := []core.ModelID{
+		ModelGemini4Neon,
+		ModelGemini4Hydrogen,
+		ModelGemini4Carbon,
 		ModelGemini4Argon,
 		ModelGemini38Flash,
 		ModelGemini37Flash,
@@ -119,10 +122,8 @@ func TestModels(t *testing.T) {
 		ModelGemini31Pro,
 		ModelGemini31FlashLite,
 		ModelGemini31FlashLiteImage,
-		ModelGemini31FlashImagePreview,
 		ModelGemini31FlashImage,
 		ModelGemini3Flash,
-		ModelGemini3ProImage,
 		ModelGemini3ProImageStable,
 		ModelGeminiFlashLatest,
 		ModelGeminiFlashLiteLatest,
@@ -130,7 +131,6 @@ func TestModels(t *testing.T) {
 		ModelGemini25Flash,
 		ModelGemini25FlashLite,
 		ModelGemini25Pro,
-		ModelGemini25FlashImage,
 		ModelGeminiEmbedding001,
 		ModelGeminiEmbedding2,
 	}
@@ -237,6 +237,9 @@ func TestGetModelInfo(t *testing.T) {
 		wantID  core.ModelID
 	}{
 		{ModelGemini3Flash, false, ModelGemini3Flash},
+		{ModelGemini4Neon, false, ModelGemini4Neon},
+		{ModelGemini4Hydrogen, false, ModelGemini4Hydrogen},
+		{ModelGemini4Carbon, false, ModelGemini4Carbon},
 		{ModelGemini4Argon, false, ModelGemini4Argon},
 		{ModelGemini25Flash, false, ModelGemini25Flash},
 		{ModelGemini25FlashLite, false, ModelGemini25FlashLite},
@@ -268,6 +271,9 @@ func TestGetModelInfo(t *testing.T) {
 
 func TestModelCapabilities(t *testing.T) {
 	allModelIDs := []core.ModelID{
+		ModelGemini4Neon,
+		ModelGemini4Hydrogen,
+		ModelGemini4Carbon,
 		ModelGemini4Argon,
 		ModelGemini3Flash,
 		ModelGemini25Flash,
@@ -351,6 +357,9 @@ func TestUsesThinkingLevel(t *testing.T) {
 		{string(ModelGemini37Flash), true},
 		{string(ModelGemini38Flash), true},
 		{string(ModelGemini4Argon), true},
+		{string(ModelGemini4Carbon), true},
+		{string(ModelGemini4Hydrogen), true},
+		{string(ModelGemini4Neon), true},
 		{string(ModelGemini25Flash), false},
 		{string(ModelGemini25FlashLite), false},
 		{string(ModelGemini25Pro), false},

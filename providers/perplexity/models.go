@@ -4,6 +4,11 @@ package perplexity
 import "github.com/petal-labs/iris/core"
 
 // Model constants for Perplexity models.
+//
+// Note: models.dev marks all four Sonar models as deprecated, with no
+// non-deprecated replacement Sonar models currently listed for the
+// /chat/completions endpoint. Iris retains these constants and catalog
+// entries until replacement models are available.
 const (
 	// Search Models
 	ModelSonar    core.ModelID = "sonar"     // Lightweight, cost-effective search with grounding

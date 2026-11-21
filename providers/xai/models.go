@@ -21,9 +21,6 @@ const (
 	ModelGrok420MultiAgent   core.ModelID = "grok-4.20-multi-agent-0309"
 	ModelGrok420Reasoning    core.ModelID = "grok-4.20-0309-reasoning"
 	ModelGrok420NonReasoning core.ModelID = "grok-4.20-0309-non-reasoning"
-
-	// Grok Build
-	ModelGrokBuild01 core.ModelID = "grok-build-0.1"
 )
 
 // models is the static list of supported models.
@@ -106,18 +103,6 @@ var models = []core.ModelInfo{
 			core.FeatureChat,
 			core.FeatureChatStreaming,
 			core.FeatureToolCalling,
-		},
-	},
-	// Grok Build
-	{
-		ID:          ModelGrokBuild01,
-		DisplayName: "Grok Build 0.1",
-		APIEndpoint: core.APIEndpointCompletions,
-		Capabilities: []core.Feature{
-			core.FeatureChat,
-			core.FeatureChatStreaming,
-			core.FeatureToolCalling,
-			core.FeatureReasoning,
 		},
 	},
 }

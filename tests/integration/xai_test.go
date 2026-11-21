@@ -71,38 +71,6 @@ func TestXai_ChatCompletion_Grok47(t *testing.T) {
 	t.Logf("Model: %s", xai.ModelGrok47)
 }
 
-func TestXai_ChatCompletion_GrokBuild01(t *testing.T) {
-	skipIfNoXaiKey(t)
-
-	apiKey := getXaiKey(t)
-	provider := xai.New(apiKey)
-	client := core.NewClient(provider)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Test with Grok Build model.
-	resp, err := client.Chat(xai.ModelGrokBuild01).
-		User("Write a Python function that adds two numbers. Just the function, no explanation.").
-		GetResponse(ctx)
-	if err != nil {
-		t.Fatalf("Chat() error = %v", err)
-	}
-
-	if resp.Output == "" {
-		t.Error("Response output is empty")
-	}
-
-	// Should contain Python function syntax.
-	output := strings.ToLower(resp.Output)
-	if !strings.Contains(output, "def") {
-		t.Logf("Note: Expected response to contain 'def', got: %s", resp.Output)
-	}
-
-	t.Logf("Response: %s", resp.Output)
-	t.Logf("Model: %s", xai.ModelGrokBuild01)
-}
-
 func xaiChatConformanceConfig() chatConformanceConfig {
 	return chatConformanceConfig{
 		getAPIKey: func(t *testing.T) string {
