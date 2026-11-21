@@ -29,4 +29,25 @@ var (
 var (
 	// IrisStreamMode indicates whether the request was streaming.
 	IrisStreamMode = attribute.Key("iris.stream_mode")
+
+	// Voice and speech operational attribute keys (never carry audio bytes,
+	// transcripts, prompts, or credentials).
+	IrisVoiceOperation          = attribute.Key("iris.voice.operation")
+	IrisVoiceSessionID          = attribute.Key("iris.voice.session_id")
+	IrisVoiceTurnID             = attribute.Key("iris.voice.turn_id")
+	IrisVoiceMode               = attribute.Key("iris.voice.mode")
+	IrisVoiceAudioEncoding      = attribute.Key("iris.voice.audio.encoding")
+	IrisVoiceAudioSampleRate    = attribute.Key("iris.voice.audio.sample_rate")
+	IrisVoiceAudioDirection     = attribute.Key("iris.voice.audio.direction")
+	IrisVoiceInputBytes         = attribute.Key("iris.voice.input_bytes")
+	IrisVoiceOutputBytes        = attribute.Key("iris.voice.output_bytes")
+	IrisVoiceInputCharacters    = attribute.Key("iris.voice.input_characters")
+	IrisVoiceAudioChunks        = attribute.Key("iris.voice.audio_chunks")
+	IrisVoiceFirstChunkMS       = attribute.Key("iris.voice.first_chunk_ms")
+	IrisVoiceInterrupted        = attribute.Key("iris.voice.interrupted")
+	IrisVoiceInterruptionReason = attribute.Key("iris.voice.interruption_reason")
+	IrisVoiceTurns              = attribute.Key("iris.voice.turns")
+	IrisVoiceInterruptions      = attribute.Key("iris.voice.interruptions")
+	IrisVoiceToolCalls          = attribute.Key("iris.voice.tool_calls")
+	IrisVoiceErrorCount         = attribute.Key("iris.voice.error_count")
 )

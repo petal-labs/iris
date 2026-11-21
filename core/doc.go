@@ -221,6 +221,11 @@
 //     [VoiceSession], [VoiceTurnTracker] (turn ID generation, cancellation, and
 //     stale-audio filtering after interruption), and [VoiceEventEmitter]
 //     (bounded, race-free event stream delivery)
+//   - Privacy-safe voice telemetry: [VoiceTelemetryHook],
+//     [NoopVoiceTelemetryHook], [WithVoiceTelemetry], and
+//     [ObserveVoiceSession] for request, first-chunk latency, session, turn,
+//     interruption, byte/character usage, and error metrics without logging
+//     raw audio or transcript content
 //   - [Client.Synthesize], [Client.StreamSynthesize],
 //     [Client.StartRealtimeSynthesis], [Client.Transcribe],
 //     [Client.StartRealtimeTranscription], and [Client.StartVoiceSession] for

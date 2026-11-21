@@ -305,13 +305,13 @@ Architectural distinction & limitations:
   - Raw PCM transcription input must be `16000Hz` mono signed 16-bit little-endian (`pcm_s16le_16`); container formats (`mp3`, `wav`, `flac`, `ogg`, `opus`, `aac`, `webm`) are uploaded directly.
   - Default upload cap is `100 MiB` (`DefaultMaxTranscriptionBytes`), overridable per request via `TranscriptionRequest.MaxBytes`.
 - **Retries with `io.Reader`**: `core.Client.Transcribe` automatically retries transient 429/5xx/network errors only for in-memory `AudioData` inputs. Requests backed by `Reader` are attempted once because `io.Reader` cannot be rewound safely.
-- **Planned (not yet implemented)**: Voice metrics/tracing hooks and consent-gated voice management/cloning.
+- **Planned (not yet implemented)**: Consent-gated voice management/cloning.
 
 ## Privacy and Reliability Defaults
 
 - **No secrets, audio, or transcripts in default logs**: `core.Secret` redacts API keys in `String`, `GoString`, and JSON; `ElevenLabs`, `Config`, `AudioData`, `AudioChunk`, `SpeechRequest`, `SpeechResponse`, `TranscriptionRequest`, and `TranscriptionResponse` emit metadata summaries only in `String()`/`GoString()`.
 - **Error scrubbing**: `ProviderError.Message` and retained error `Body` scrub the configured API key if an upstream server or proxy reflects it.
-- **Telemetry**: `core.TelemetryHook` events carry provider, model, timing, and error metadata only—never raw audio, prompts, or transcripts.
+- **Telemetry**: `core.TelemetryHook` and `core.VoiceTelemetryHook` (via `core.WithVoiceTelemetry`, `voice.PipelineConfig.Telemetry`, `core.ObserveVoiceSession`, and OpenTelemetry `contrib/otel.NewVoiceHook`) emit provider, model, operation, timing, first-chunk latency, byte/character/turn/interruption/tool counts, and error status only—never raw audio, prompts, transcripts, or credentials.
 - **Bounded retries**: `core.Client` honors server `Retry-After` headers on HTTP 429, retries 5xx/network errors up to `MaxRetries`, and never retries 400/401/403/404/422 errors.
 
 ## Runnable Examples and Live Tests

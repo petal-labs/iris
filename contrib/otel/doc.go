@@ -49,12 +49,35 @@
 //	    ),
 //	)
 //
+// # Voice and Speech Instrumentation
+//
+// [VoiceHook] (created via [NewVoiceHook]) implements [core.VoiceTelemetryHook]
+// to emit OpenTelemetry spans and metrics for speech synthesis, streaming
+// first-chunk latency, transcription, full-duplex voice sessions, and
+// conversational turns:
+//
+//	voiceHook := irisotel.NewVoiceHook(
+//	    irisotel.WithVoiceTracerProvider(tp),
+//	    irisotel.WithVoiceMeterProvider(mp),
+//	)
+//	client := core.NewClient(provider, core.WithVoiceTelemetry(voiceHook))
+//
+//	// Or attach to an Iris-managed voice.Pipeline:
+//	pipeline, _ := voice.NewPipeline(voice.PipelineConfig{
+//	    LLM:         openAIProvider,
+//	    RealtimeTTS: elevenLabsProvider,
+//	    Telemetry:   voiceHook,
+//	})
+//
 // # Security
 //
-// Following Iris's security design, spans never include sensitive data such as:
-//   - API keys or credentials
+// Following Iris's security design, spans and metrics never include sensitive
+// data such as:
+//   - API keys, signed URLs, or credentials
 //   - Prompt content (user messages)
 //   - Response content (model outputs)
+//   - Raw audio bytes or speech transcripts
 //
-// Only operational metadata (provider, model, timing, token counts) is captured.
+// Only operational metadata (provider, model, timing, first-chunk latency,
+// token/byte/character counts, turn/interruption/tool counts) is captured.
 package otel
