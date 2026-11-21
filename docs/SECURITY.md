@@ -91,7 +91,7 @@ iris keys migrate
 The same operation is available programmatically:
 
 ```go
-import "github.com/petal-labs/iris/cli/keystore"
+import "github.com/petal-labs/iris/v2/cli/keystore"
 
 ks, _ := keystore.NewKeystoreAtPath(keystore.DefaultKeystorePath())
 if fk, ok := ks.(*keystore.FileKeystore); ok {
@@ -104,7 +104,7 @@ if fk, ok := ks.(*keystore.FileKeystore); ok {
 Iris uses a `core.Secret` type for API keys to prevent accidental exposure. `core.NewSecret` trims leading and trailing whitespace from the input — including trailing newlines that some secret managers commonly append — so `Expose()` never returns a padded credential. `IsEmpty()` is whitespace-aware too: a value consisting only of whitespace is treated as empty, not as a present-but-blank secret.
 
 ```go
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 secret := core.NewSecret("sk-abc123...")
 

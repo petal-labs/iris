@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // DefaultBaseURL is the default base URL for the Z.ai API (coding endpoint).

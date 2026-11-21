@@ -7,11 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-21
+
+Iris 2.0.0 introduces full speech and real-time voice agent capabilities
+(ElevenLabs TTS/STT, full-duplex `voice.Pipeline`, Speech Engine, ElevenAgents,
+and privacy-safe voice telemetry), upgrades Anthropic to API version `2026-10-21`,
+refreshes all provider model catalogs against models.dev, and moves the Go module
+path to `github.com/petal-labs/iris/v2` to follow Go semantic import versioning
+for the breaking removals of deprecated model constants.
+
+### Added
+
+- **Audio & speech core contracts:** provider-agnostic audio formats and speech types (`core.AudioFormat`, `core.AudioData`, `core.SpeechRequest`, `core.TranscriptionRequest`, `core.VoiceSettings`), optional provider interfaces (`core.SpeechSynthesizer`, `core.RealtimeSpeechSynthesizer`, `core.SpeechRecognizer`, `core.RealtimeSpeechRecognizer`, `core.VoiceSessionProvider`), symmetric `As*` discovery helpers, `core.Client` speech methods, and typed real-time voice session/event contracts (`core.VoiceSession`, `core.VoiceEvent`, `core.VoiceTurnTracker`, `core.VoiceEventEmitter`) (#144, #145, #155, #163, #164, #174)
+- **ElevenLabs provider (`providers/elevenlabs`):** synchronous and HTTP streaming TTS (`eleven_multilingual_v2`, `eleven_flash_v2_5`, `eleven_v3`), incremental-input WebSocket TTS, Scribe batch and real-time WebSocket STT (`scribe_v1`, `scribe_v2`, `scribe_v2_realtime`), read-only voice discovery and settings, opt-in consent-gated voice management and cloning, Speech Engine upstream WebSocket handler (`NewSpeechEngineHandler`), and hosted ElevenAgents session adapter (#146–#154, #157, #158, #161, #165–#173, #176, #177, #180)
+- **Iris-managed full-duplex voice pipeline (`voice`):** `voice.Pipeline` composing real-time STT, any Iris chat LLM provider, tool calling, barge-in interruption handling, and streaming TTS into a unified `core.VoiceSession` (#156, #175)
+- **Voice telemetry & OpenTelemetry hooks:** privacy-safe `core.VoiceTelemetryHook`, `core.ObserveVoiceSession`, and `contrib/otel` `VoiceHook` spans/metrics that never log raw audio or transcript content (#159, #178)
+- **PetalFlow voice integration spec & voice samples:** contract tests, integration specification (`docs/guides/petalflow-voice-integration.md`), speech guide (`docs/guides/speech.md`), real-time voice-agent integration tests and latency benchmarks, and runnable speech/voice examples under `examples/speech/` and `examples/voice/` (#160, #162, #179, #181, #182)
+- **New provider models (models.dev syncs):** added OpenAI (`gpt-6-astra`, `gpt-6-luna`, `gpt-6-sol`, `gpt-6.1-sol`, `gpt-6.1-terra`, `gpt-6.2-astra`, `gpt-6.2-sol`, `gpt-daybreak-blue-latest`, `gpt-daybreak-red-latest`), Anthropic (`claude-fable-5-1`, `claude-fable-5-2`, `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`), Gemini (`gemini-3.7-flash`, `gemini-3.8-flash`, `gemini-4-argon`, `gemini-4-carbon`, `gemini-4-hydrogen`, `gemini-4-neon`, `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-pro-latest`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, `gemini-3-pro-image`, `gemini-embedding-2`), xAI (`grok-4.6`, `grok-4.7`, GA `grok-4.20-*`), Z.ai (`glm-5.3`, `glm-5.3-flash`, `glm-5.3-flashx`), and rebuilt the Azure AI Foundry representative catalog (#124, #138, #183)
+
 ### Changed
 
-- **Breaking:** provider model catalogs synced against `https://models.dev/api.json?type=all` (2026-11-21). Added new models: OpenAI (`gpt-6.2-astra`, `gpt-6.2-sol`, `gpt-6.1-terra`), Anthropic (`claude-fable-5-2`), Gemini (`gemini-4-neon`, `gemini-4-hydrogen`, `gemini-4-carbon`), and Azure AI Foundry (`gpt-6.2-astra`, `gpt-6.2-sol`, `gpt-6.1-terra`, `claude-fable-5-2`). Removed models absent from or marked `deprecated` in models.dev: OpenAI (`gpt-image-1`, `gpt-image-1.5`, `gpt-image-1-mini`, `chatgpt-image-latest`, `gpt-4.1-nano`, `gpt-4-turbo`, `gpt-4`, `gpt-3.5-turbo`, `o4-mini`, `o3-mini`, `o1`, `o1-pro`), Anthropic (`claude-sonnet-4-5`, `claude-sonnet-4-5-thinking`), Gemini (`gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `gemini-2.5-flash-image`), and xAI (`grok-build-0.1`). Perplexity's four Sonar models are retained and documented as deprecated upstream pending replacement models. Updated `iris init` defaults, README, guides, examples, and integration tests.
-- **Anthropic API version 2026-10-21:** the default `anthropic-version` header is now `2026-10-21` (was `2023-06-01`); pin the old version with `anthropic.WithVersion` (#137). API version 2026-10-21 removed the sampling parameters, so the provider omits `ChatBuilder.Temperature` from requests on that version (the API rejects requests that send `temperature`/`top_p`/`top_k`, even at the default value) and only sends it when pinned to an older version. Document blocks in assistant messages and citations on user `text` blocks are also rejected by the new version, but Iris never sent either.
-- **Breaking:** provider model catalogs synced against models.dev (2026-10-23) (#138). Removed deprecated model ids: OpenAI (`dall-e-2`, `dall-e-3`, `gpt-3.5-turbo-16k`, `gpt-3.5-turbo-instruct`, `gpt-5-codex`, `gpt-5-thinking`, `gpt-5.1-codex`, `gpt-5.1-codex-mini`, `gpt-5.1-codex-max`, `gpt-5.2-codex`, `o4-mini-deep-research`), Anthropic (`claude-3-5-haiku-latest`), Gemini (`gemini-2.0-flash-lite`, `gemini-3-pro-preview`), xAI (Grok 3, Grok 4/4.1, Grok 4.20 beta ids, `grok-code-fast`), and Z.ai (`glm-4-32b-0414-128k`, `glm-4.5-x`, `glm-4.5-airx`, `glm-4.6v-flashx`, `glm-for-coding`). Added new flagships: `gpt-6-luna`, `gpt-6-sol`, `gpt-6.1-sol`, `gpt-daybreak-blue-latest`, `gpt-daybreak-red-latest`, `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `gemini-4-argon`, `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-pro-latest`, `gemini-3.1-flash-lite-image`, `grok-4.7`, and `glm-5.3-flashx`. The Azure AI Foundry representative catalog was rebuilt from the current models.dev `azure` entry. Gemini's thinking-level mapping now covers Gemini 4, and `iris init` defaults were bumped to current models.
+- **Breaking (Go module path v2):** the root module path is now `github.com/petal-labs/iris/v2` (was `github.com/petal-labs/iris`). Update imports to `github.com/petal-labs/iris/v2/...`, install the SDK with `go get github.com/petal-labs/iris/v2`, and install the CLI with `go install github.com/petal-labs/iris/v2/cmd/iris@latest`.
+- **Breaking (Provider model catalog removals):** synced against `https://models.dev/api.json?type=all` (2026-10-23 and 2026-11-21) (#138, #183). Removed exported constants and catalog entries for absent and deprecated models:
+  - **OpenAI:** `dall-e-2`, `dall-e-3`, `gpt-3.5-turbo`, `gpt-3.5-turbo-16k`, `gpt-3.5-turbo-instruct`, `gpt-4`, `gpt-4-turbo`, `gpt-4.1-nano`, `gpt-5-codex`, `gpt-5-thinking`, `gpt-5.1-codex`, `gpt-5.1-codex-mini`, `gpt-5.1-codex-max`, `gpt-5.2-codex`, `o1`, `o1-pro`, `o3-mini`, `o4-mini`, `o4-mini-deep-research`, `gpt-image-1`, `gpt-image-1.5`, `gpt-image-1-mini`, `chatgpt-image-latest`
+  - **Anthropic:** `claude-3-5-haiku-latest`, `claude-sonnet-4-5`, `claude-sonnet-4-5-thinking`
+  - **Gemini:** `gemini-2.0-flash-lite`, `gemini-2.5-flash-image`, `gemini-3-pro-preview`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`
+  - **xAI:** Grok 3, Grok 4/4.1, Grok 4.20 beta IDs, `grok-code-fast`, `grok-build-0.1`
+  - **Z.ai:** `glm-4-32b-0414-128k`, `glm-4.5-x`, `glm-4.5-airx`, `glm-4.6v-flashx`, `glm-for-coding`
+  - **Perplexity:** retained all four Sonar models (`sonar`, `sonar-pro`, `sonar-reasoning-pro`, `sonar-deep-research`) and documented their upstream deprecation status pending replacement models.
+- **Anthropic API version 2026-10-21:** the default `anthropic-version` header is now `2026-10-21` (was `2023-06-01`); pin the old version with `anthropic.WithVersion` (#137). API version `2026-10-21` removed the sampling parameters, so the provider omits `ChatBuilder.Temperature` from requests on that version and only sends it when pinned to an older version.
+- **Gemini `thinkingLevel`:** extended `usesThinkingLevel` to cover the Gemini 4 series alongside Gemini 3 (#138, #183).
+- **`iris init` defaults & docs:** updated default scaffold models (`gpt-6.2-astra` for OpenAI and Azure AI Foundry, `claude-sonnet-5-5`, `gemini-4-neon`, `grok-4.7`, `glm-5.3-flash`), `scaffoldSDKVersionFallback` (`v2.0.0`), README, guides, examples, and integration tests.
 
 ## [1.0.0] - 2026-08-28
 
@@ -270,7 +296,8 @@ wiring that landed across the 0.18.0 development cycle.
 - Telemetry hooks and retry policies
 - Typed error handling
 
-[Unreleased]: https://github.com/petal-labs/iris/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/petal-labs/iris/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/petal-labs/iris/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/petal-labs/iris/compare/v0.17.0...v1.0.0
 [0.17.0]: https://github.com/petal-labs/iris/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/petal-labs/iris/compare/v0.15.0...v0.16.0

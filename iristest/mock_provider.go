@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // MockCall records a call made to the mock provider.

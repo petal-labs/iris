@@ -40,15 +40,15 @@
 // # Core Re-exports
 //
 // The historical core type, feature, role, and error aliases in this package
-// are deprecated and frozen. Import github.com/petal-labs/iris/core directly
+// are deprecated and frozen. Import github.com/petal-labs/iris/v2/core directly
 // for those APIs. Registry functions in this package remain supported.
 package providers
 
-import "github.com/petal-labs/iris/core"
+import "github.com/petal-labs/iris/v2/core"
 
 // Deprecated: The partial core re-export layer is frozen for backward
 // compatibility and will not receive new core APIs. Import
-// github.com/petal-labs/iris/core directly. Registry APIs in this package are
+// github.com/petal-labs/iris/v2/core directly. Registry APIs in this package are
 // not deprecated.
 type (
 	// Provider is the interface that LLM providers must implement.
@@ -91,21 +91,21 @@ type (
 	ProviderError = core.ProviderError
 )
 
-// Deprecated: Import feature constants from github.com/petal-labs/iris/core.
+// Deprecated: Import feature constants from github.com/petal-labs/iris/v2/core.
 const (
 	FeatureChat          = core.FeatureChat
 	FeatureChatStreaming = core.FeatureChatStreaming
 	FeatureToolCalling   = core.FeatureToolCalling
 )
 
-// Deprecated: Import role constants from github.com/petal-labs/iris/core.
+// Deprecated: Import role constants from github.com/petal-labs/iris/v2/core.
 const (
 	RoleSystem    = core.RoleSystem
 	RoleUser      = core.RoleUser
 	RoleAssistant = core.RoleAssistant
 )
 
-// Deprecated: Import sentinel errors from github.com/petal-labs/iris/core.
+// Deprecated: Import sentinel errors from github.com/petal-labs/iris/v2/core.
 var (
 	ErrUnauthorized  = core.ErrUnauthorized
 	ErrRateLimited   = core.ErrRateLimited

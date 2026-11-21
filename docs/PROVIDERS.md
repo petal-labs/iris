@@ -24,7 +24,7 @@ Cells reflect each provider's `Supports()` implementation. For chat-based featur
 
 Perplexity additionally supports web-search grounding (`core.SearchOptions`, response citations) via `core.FeatureWebSearch`.
 
-For **Voice** (`*`), ElevenLabs implements the full Iris speech and real-time voice capability set, while `voice.Pipeline` (`github.com/petal-labs/iris/voice`) and `elevenlabs.SpeechEngineHandler` compose ElevenLabs voice capabilities with **any** Iris chat LLM provider above:
+For **Voice** (`*`), ElevenLabs implements the full Iris speech and real-time voice capability set, while `voice.Pipeline` (`github.com/petal-labs/iris/v2/voice`) and `elevenlabs.SpeechEngineHandler` compose ElevenLabs voice capabilities with **any** Iris chat LLM provider above:
 
 | Provider | Sync TTS | HTTP Stream TTS | Realtime WS TTS | File/Reader STT | Realtime WS STT | Voice Sessions (ElevenAgents) | Speech Engine Upstream | Voice Discovery | Voice Management (Opt-In) |
 |----------|----------|-----------------|-----------------|-----------------|-----------------|-------------------------------|------------------------|-----------------|---------------------------|

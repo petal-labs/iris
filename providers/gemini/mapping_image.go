@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // mapImageGenerateRequest converts a core image request to Gemini format.

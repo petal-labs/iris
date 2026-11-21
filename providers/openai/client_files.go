@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/internal/normalize"
-	"github.com/petal-labs/iris/providers/internal/timeoutx"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/internal/normalize"
+	"github.com/petal-labs/iris/v2/providers/internal/timeoutx"
 )
 
 // UploadFile uploads a file to OpenAI.

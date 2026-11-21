@@ -4,7 +4,7 @@ package gemini
 import (
 	"strings"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // Model constants for Google Gemini models.

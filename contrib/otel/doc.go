@@ -9,8 +9,8 @@
 // Create an OTelHook and pass it to the Iris client:
 //
 //	import (
-//	    "github.com/petal-labs/iris/core"
-//	    "github.com/petal-labs/iris/providers/openai"
+//	    "github.com/petal-labs/iris/v2/core"
+//	    "github.com/petal-labs/iris/v2/providers/openai"
 //	    irisotel "github.com/petal-labs/iris/contrib/otel"
 //	)
 //

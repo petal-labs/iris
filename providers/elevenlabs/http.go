@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/petal-labs/iris/providers/internal/normalize"
-	"github.com/petal-labs/iris/providers/internal/timeoutx"
+	"github.com/petal-labs/iris/v2/providers/internal/normalize"
+	"github.com/petal-labs/iris/v2/providers/internal/timeoutx"
 )
 
 const apiKeyHeader = "xi-api-key"

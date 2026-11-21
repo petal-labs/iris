@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/zai"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/zai"
 )
 
 // zaiTestMutex ensures Z.ai tests run sequentially to avoid rate limiting.

@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/elevenlabs"
-	"github.com/petal-labs/iris/voice"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/elevenlabs"
+	"github.com/petal-labs/iris/v2/voice"
 )
 
 // defaultElevenLabsVoiceID is ElevenLabs' public "George" voice, overridable via ELEVENLABS_VOICE_ID.

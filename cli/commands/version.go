@@ -9,7 +9,7 @@ import (
 )
 
 // Version information set at build time via ldflags.
-// Example: go build -ldflags "-X github.com/petal-labs/iris/cli/commands.Version=v1.0.0"
+// Example: go build -ldflags "-X github.com/petal-labs/iris/v2/cli/commands.Version=v2.0.0"
 var (
 	// Version is the semantic version of the CLI.
 	Version = "dev"

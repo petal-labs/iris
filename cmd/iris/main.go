@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/petal-labs/iris/cli/commands"
+	"github.com/petal-labs/iris/v2/cli/commands"
 )
 
 // ExitCoder is an interface for errors that have an exit code.

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // ErrInvalidJSON is returned when assembled tool arguments are not valid JSON.

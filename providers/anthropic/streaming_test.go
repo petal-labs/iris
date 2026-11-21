@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 func TestToolCallAssembler(t *testing.T) {

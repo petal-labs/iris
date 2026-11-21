@@ -16,7 +16,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // DefaultAgentMaxChunkBytes caps each SendAudio payload to an ElevenAgents session (256 KiB).
@@ -130,7 +130,7 @@ func (p *ElevenLabs) GetAgentSignedURL(ctx context.Context, req *AgentSignedURLR
 //
 // Important architectural distinction: ElevenAgents executes its hosted LLM,
 // prompt, and turn-taking logic inside ElevenLabs' platform. Use package voice
-// (github.com/petal-labs/iris/voice) or [SpeechEngineHandler] when you want
+// (github.com/petal-labs/iris/v2/voice) or [SpeechEngineHandler] when you want
 // Iris to control external LLM reasoning directly.
 //
 // Privacy: String and GoString redact SignedURL, SystemPrompt, FirstMessage,

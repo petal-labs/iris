@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers/internal/normalize"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers/internal/normalize"
 )
 
 // Sentinel errors for Azure AI Foundry.

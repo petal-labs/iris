@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/tools"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/tools"
 )
 
 func TestMapMessages(t *testing.T) {

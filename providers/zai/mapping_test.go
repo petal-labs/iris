@@ -3,7 +3,7 @@ package zai
 import (
 	"testing"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 func TestMapMessages(t *testing.T) {

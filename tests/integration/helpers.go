@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/tools"
+	"github.com/petal-labs/iris/v2/tools"
 )
 
 // isCI returns true if running in a CI environment.

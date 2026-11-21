@@ -3,7 +3,7 @@ package tools
 import (
 	"encoding/json"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // ParseArgs parses tool call arguments into a typed struct.

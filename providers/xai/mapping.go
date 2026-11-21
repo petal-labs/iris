@@ -3,7 +3,7 @@ package xai
 import (
 	"encoding/json"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // mapMessages converts Iris messages to xAI message format.

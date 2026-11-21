@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // RecordedCall contains details about a call made to the underlying provider.

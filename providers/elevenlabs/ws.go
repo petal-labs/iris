@@ -11,7 +11,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 const maxWSMessageBytes int64 = 4 * 1024 * 1024 // 4 MiB per WebSocket message

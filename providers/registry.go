@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 // ProviderFactory creates a provider instance with the given API key.

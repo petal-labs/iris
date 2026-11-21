@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 func TestNormalizeError400(t *testing.T) {

@@ -3,16 +3,16 @@ package tests
 import (
 	"testing"
 
-	"github.com/petal-labs/iris/core"
-	"github.com/petal-labs/iris/providers"
-	"github.com/petal-labs/iris/providers/anthropic"
-	"github.com/petal-labs/iris/providers/azurefoundry"
-	"github.com/petal-labs/iris/providers/gemini"
-	"github.com/petal-labs/iris/providers/openai"
-	"github.com/petal-labs/iris/providers/perplexity"
-	"github.com/petal-labs/iris/providers/voyageai"
-	"github.com/petal-labs/iris/providers/xai"
-	"github.com/petal-labs/iris/providers/zai"
+	"github.com/petal-labs/iris/v2/core"
+	"github.com/petal-labs/iris/v2/providers"
+	"github.com/petal-labs/iris/v2/providers/anthropic"
+	"github.com/petal-labs/iris/v2/providers/azurefoundry"
+	"github.com/petal-labs/iris/v2/providers/gemini"
+	"github.com/petal-labs/iris/v2/providers/openai"
+	"github.com/petal-labs/iris/v2/providers/perplexity"
+	"github.com/petal-labs/iris/v2/providers/voyageai"
+	"github.com/petal-labs/iris/v2/providers/xai"
+	"github.com/petal-labs/iris/v2/providers/zai"
 )
 
 // TestGetModelInfoMutationIsolation verifies that GetModelInfo in every

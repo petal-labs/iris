@@ -2,7 +2,7 @@
 //
 // ElevenLabs is a speech-focused provider (text-to-speech synthesis and
 // speech-to-text transcription). It implements [core.Provider] so it can be
-// registered with [github.com/petal-labs/iris/providers] and wrapped by
+// registered with [github.com/petal-labs/iris/v2/providers] and wrapped by
 // [core.Client], while chat methods ([ElevenLabs.Chat] and
 // [ElevenLabs.StreamChat]) return [core.ErrNotSupported].
 //
@@ -175,7 +175,7 @@
 // SHA-256 hash of your ElevenLabs API key, iss/sub claims, and 60s clock-skew
 // leeway). Higher event_id transcripts immediately cancel in-flight LLM turns.
 // Speech Engine is distinct from hosted ElevenAgents and from client-initiated
-// raw-audio streaming; use package voice ([github.com/petal-labs/iris/voice])
+// raw-audio streaming; use package voice ([github.com/petal-labs/iris/v2/voice])
 // when your application needs client-initiated audio streaming.
 //
 // # Hosted ElevenAgents Sessions (Conversational AI)

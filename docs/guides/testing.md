@@ -4,7 +4,7 @@ The `iristest` package provides deterministic stand-ins for real providers so
 your tests never make network calls.
 
 ```go
-import "github.com/petal-labs/iris/iristest"
+import "github.com/petal-labs/iris/v2/iristest"
 
 // MockProvider for predictable responses
 mock := iristest.NewMockProvider().

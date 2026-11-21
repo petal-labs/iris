@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/petal-labs/iris/providers/internal/timeoutx"
+	"github.com/petal-labs/iris/v2/providers/internal/timeoutx"
 )
 
 // ModelStatus represents the inference status of a model on Hugging Face.

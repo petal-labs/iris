@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/petal-labs/iris/providers/huggingface"
+	"github.com/petal-labs/iris/v2/providers/huggingface"
 )
 
 func main() {

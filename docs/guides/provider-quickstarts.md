@@ -18,8 +18,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/anthropic"
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/anthropic"
 )
 
 func main() {
@@ -54,8 +54,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/gemini"
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/gemini"
 )
 
 func main() {
@@ -105,8 +105,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/xai"
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/xai"
 )
 
 func main() {
@@ -156,8 +156,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/zai"
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/zai"
 )
 
 func main() {
@@ -209,8 +209,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/perplexity"
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/perplexity"
 )
 
 func main() {
@@ -272,8 +272,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/petal-labs/iris/core"
-    "github.com/petal-labs/iris/providers/elevenlabs"
+    "github.com/petal-labs/iris/v2/core"
+    "github.com/petal-labs/iris/v2/providers/elevenlabs"
 )
 
 func main() {

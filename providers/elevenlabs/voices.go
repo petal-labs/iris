@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/petal-labs/iris/core"
+	"github.com/petal-labs/iris/v2/core"
 )
 
 const (
